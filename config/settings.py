@@ -57,6 +57,8 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     'apps.users',
+    'apps.companies',
+    'apps.geo',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
