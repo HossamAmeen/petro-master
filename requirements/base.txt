@@ -3,6 +3,7 @@ djangorestframework==3.15.2
 drf-standardized-errors==0.14.1
 django-filter==25.1
 djangorestframework_simplejwt==5.5.0
+django-jazzmin==3.0.1
 
 drf-yasg==1.21.8
 

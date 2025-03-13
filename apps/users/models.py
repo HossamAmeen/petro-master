@@ -4,7 +4,7 @@ from .managements import CustomUserManager
 
 
 class User(AbstractUser):
-    username = first_name = last_name = groups = user_permissions = None
+    username = first_name = last_name = last_login = date_joined = groups = user_permissions = None
     name = models.CharField(max_length=255)
     email = models.EmailField(max_length=255, unique=True)
     phone_number = models.CharField(max_length=11, unique=True)

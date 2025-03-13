@@ -1,0 +1,10 @@
+[
+{
+  "model": "geo.country",
+  "pk": 1,
+  "fields": {
+    "name": "Egypt",
+    "code": "EGP"
+  }
+}
+]
