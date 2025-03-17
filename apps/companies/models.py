@@ -1,6 +1,7 @@
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
+from django.core.exceptions import ValidationError
 
 
 class Company(TimeStampedModel):
@@ -35,6 +36,21 @@ class CompanyBranch(TimeStampedModel):
 
 
 class Car(AbstractBaseModel):
+    class FuelType(models.TextChoices):
+        DIESEL = 'Diesel'
+        GASOLINE = 'Gasoline'
+        ELECTRIC = 'Electric'
+        HYDROGEN = 'Hydrogen'
+
+    class FuelAllowedDay(models.TextChoices):
+        MON = 'Monday'
+        TUE = 'Tuesday'
+        WED = 'Wednesday'
+        THU = 'Thursday'
+        FRI = 'Friday'
+        SAT = 'Saturday'
+        SUN = 'Sunday'
+
     code = models.CharField(max_length=10, unique=True, verbose_name="car code")
     plate = models.CharField(max_length=10, verbose_name="car number plate")
     color = models.CharField(max_length=10)
@@ -44,7 +60,7 @@ class Car(AbstractBaseModel):
     is_with_odometer = models.BooleanField()
     tank_capacity = models.IntegerField()
     permitted_fuel_amount = models.IntegerField()
-    fuel_type = models.CharField(max_length=10)
+    fuel_type = models.CharField(max_length=20, choices=FuelType.choices)
     number_of_fuelings_per_day = models.IntegerField()
     fuel_allowed_days = models.JSONField(default=list, blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2)
@@ -53,6 +69,14 @@ class Car(AbstractBaseModel):
 
     def __str__(self):
         return self.code + " - " + self.plate
+    
+    def clean(self):
+        if self.permitted_fuel_amount > self.tank_capacity:
+            raise ValidationError('Permitted fuel amount must be less than or equal to tank capacity.')
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
     
     class Meta:
         verbose_name = 'Car'
