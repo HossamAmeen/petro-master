@@ -61,6 +61,7 @@ LOCAL_APPS = [
     'apps.users',
     'apps.companies',
     'apps.geo',
+    'apps.stations',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
@@ -171,4 +172,27 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=env('ACCESS_TOKEN_LIFETIME', default=60)),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=env('REFRESH_TOKEN_LIFETIME', default=10)),
 
+}
+
+
+JAZZMIN_SETTINGS = {
+    "site_header": "Dashboard",
+    "site_brand": "Petro Master",
+    "order_with_respect_to": [
+        "stations.Station",
+        "stations.StationBranch",
+        "stations.StationService",
+    ],
+}
+
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Enter token as: Bearer <your_token>",
+        }
+    },
+    "USE_SESSION_AUTH": False,  # Disable Django session authentication
 }

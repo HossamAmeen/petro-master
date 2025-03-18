@@ -73,15 +73,15 @@ class Car(AbstractBaseModel):
 
     def __str__(self):
         return self.code + " - " + self.plate
-    
+
     def clean(self):
         if self.permitted_fuel_amount > self.tank_capacity:
             raise ValidationError('Permitted fuel amount must be less than or equal to tank capacity.')
-    
+
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
-    
+
     class Meta:
         verbose_name = 'Car'
         verbose_name_plural = 'Cars'

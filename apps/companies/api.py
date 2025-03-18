@@ -3,9 +3,14 @@ from rest_framework import viewsets
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 
 from .models import Company, CompanyBranch, Driver
-from .serializers import (CompanyBranchSerializer, CompanySerializer,
-                          DriverSerializer, ListCompanyBranchSerializer,
-                          ListCompanySerializer, ListDriverSerializer)
+from .serializers import (
+    CompanyBranchSerializer,
+    CompanySerializer,
+    DriverSerializer,
+    ListCompanyBranchSerializer,
+    ListCompanySerializer,
+    ListDriverSerializer,
+)
 
 
 class CompanyViewSet(viewsets.ModelViewSet):

@@ -9,11 +9,11 @@ class CompanyAdmin(admin.ModelAdmin):
     search_fields = ('name', 'address', 'phone_number')
     list_filter = ('name', 'address', 'phone_number')
 
+
 class CompanyBranchAdmin(admin.ModelAdmin):
     list_display = ('name', 'email', 'phone_number')
     search_fields = ('name', 'email', 'phone_number')
     list_filter = ('name', 'email', 'phone_number')
-
 
 
 class CarForm(forms.ModelForm):
@@ -41,7 +41,6 @@ class CarForm(forms.ModelForm):
                 raise forms.ValidationError(f"{day} is not a valid choice.")
         return fuel_allowed_days
 
-    
 
 class CarAdmin(admin.ModelAdmin):
     form = CarForm
@@ -49,12 +48,13 @@ class CarAdmin(admin.ModelAdmin):
                     'is_with_odometer', 'tank_capacity', 'permitted_fuel_amount', 'fuel_type',
                     'number_of_fuelings_per_day', 'fuel_allowed_days', 'balance', 'city', 'branch')
     search_fields = ('code', 'plate', 'color', 'license_expiration_date', 'model_year', 'brand',
-                    'is_with_odometer', 'tank_capacity', 'permitted_fuel_amount', 'fuel_type',
-                    'number_of_fuelings_per_day', 'fuel_allowed_days', 'balance', 'city', 'branch')
+                     'is_with_odometer', 'tank_capacity', 'permitted_fuel_amount', 'fuel_type',
+                     'number_of_fuelings_per_day', 'fuel_allowed_days', 'balance', 'city', 'branch')
     list_filter = ('code', 'plate', 'color', 'license_expiration_date', 'model_year', 'brand',
-                    'is_with_odometer', 'tank_capacity', 'permitted_fuel_amount', 'fuel_type',
-                    'number_of_fuelings_per_day', 'fuel_allowed_days', 'balance', 'city', 'branch')
+                   'is_with_odometer', 'tank_capacity', 'permitted_fuel_amount', 'fuel_type',
+                   'number_of_fuelings_per_day', 'fuel_allowed_days', 'balance', 'city', 'branch')
     readonly_fields = ('balance',)
+
 
 class DriverAdmin(admin.ModelAdmin):
     list_display = ('name', 'phone_number', 'code', 'lincense_number', 'lincense_expiration_date', 'branch', 'created_by', 'updated_by', 'created', 'modified')
@@ -83,6 +83,7 @@ class DriverAdmin(admin.ModelAdmin):
             obj.created_by = request.user
         obj.updated_by = request.user
         obj.save()
+
 
 admin.site.register(Company, CompanyAdmin)
 admin.site.register(CompanyBranch, CompanyBranchAdmin)

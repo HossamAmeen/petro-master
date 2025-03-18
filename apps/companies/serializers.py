@@ -17,6 +17,7 @@ class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = '__all__'
+from .models import CompanyBranch, Driver
 
 
 class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):
@@ -32,13 +33,13 @@ class ListDriverSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Driver
-        fields = '__all__'
+        exclude = ('created_by', 'updated_by')
 
 
 class DriverSerializer(serializers.ModelSerializer):
     class Meta:
         model = Driver
-        fields = '__all__'
+        exclude = ('created_by', 'updated_by')
         read_only_fields = ('code',)
 
 
