@@ -17,7 +17,6 @@ class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = '__all__'
-from .models import CompanyBranch, Driver
 
 
 class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):
