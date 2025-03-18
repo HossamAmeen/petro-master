@@ -2,14 +2,8 @@ from apps.utilities.enhancement_request import enhance_request
 
 
 class InjectUserMixin:
-    def create(self, request, *args, **kwargs):
-        request = enhance_request(request)
-        return super().create(request, *args, **kwargs)
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
 
-    def update(self, request, *args, **kwargs):
-        request = enhance_request(request)
-        return super().update(request, *args, **kwargs)
-
-    def partial_update(self, request, *args, **kwargs):
-        request = enhance_request(request)
-        return super().partial_update(request, *args, **kwargs)
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)

@@ -1,15 +1,21 @@
 [
-{
-  "model": "users.user",
-  "pk": 1,
-  "fields": {
-    "is_superuser": true,
-    "is_staff": true,
-    "is_active": true,
-    "name": "Hossam",
-    "email": "",
-    "phone_number": "01010079798",
-    "password": "pbkdf2_sha256$600000$hx2saC0xYaoUQAKUrPtZwr$lMlJHCtDEbAUx7Vlaujo+j/PxNHTiIg1jnvIDm9OgiU="
+  {
+    "model": "users.user",
+    "pk": 1,
+    "fields": {
+      "is_superuser": true,
+      "is_staff": true,
+      "is_active": true,
+      "created": "2025-03-18T15:36:15.374Z",
+      "modified": "2025-03-18T15:36:15.375Z",
+      "name": "Hossam",
+      "email": "",
+      "phone_number": "01010079798",
+      "password": "pbkdf2_sha256$600000$eKTKXHTMkz41shU3Y6wFZ2$pR9j9PyjE99tqhCbYX28XXUy85FhBSW6Pr0KSfyiBl0=",
+      "role": "admin",
+      "created_by": null,
+      "updated_by": null
+    }
   }
-}
-]
+  ]
+  
