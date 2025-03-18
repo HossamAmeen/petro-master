@@ -1,8 +1,11 @@
+import uuid
+
+from django.core.exceptions import ValidationError
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
+
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
-from django.core.exceptions import ValidationError
-import uuid
+
 
 class Company(TimeStampedModel):
     name = models.CharField(max_length=255)

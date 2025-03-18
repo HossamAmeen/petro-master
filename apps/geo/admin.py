@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Country, City, District
+
+from .models import City, Country, District
 
 admin.site.site_header = "Geo Management"
 admin.site.index_title = "Manage Geo Data"

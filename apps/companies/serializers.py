@@ -1,5 +1,22 @@
 from rest_framework import serializers
-from .models import Driver, CompanyBranch
+
+from apps.geo.serializers import ListDistrictSerializer
+
+from .models import Company, CompanyBranch, Driver
+
+
+class ListCompanySerializer(serializers.ModelSerializer):
+    district = ListDistrictSerializer()
+
+    class Meta:
+        model = Company
+        fields = '__all__'
+
+
+class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = '__all__'
 
 
 class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):
@@ -23,3 +40,18 @@ class DriverSerializer(serializers.ModelSerializer):
         model = Driver
         fields = '__all__'
         read_only_fields = ('code',)
+
+
+class ListCompanyBranchSerializer(serializers.ModelSerializer):
+    district = ListDistrictSerializer()
+    company = ListCompanySerializer()
+
+    class Meta:
+        model = CompanyBranch
+        fields = '__all__'
+
+
+class CompanyBranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyBranch
+        fields = '__all__'
