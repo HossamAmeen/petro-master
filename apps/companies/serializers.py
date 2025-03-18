@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Driver, CompanyBranch
+
+from .models import CompanyBranch, Driver
 
 
 class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):

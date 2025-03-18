@@ -1,8 +1,8 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.contrib.auth.models import  AbstractUser
-from .managements import CustomUserManager
-from apps.utilities.models.abstract_base_model import AbstractBaseModel
 from django_extensions.db.models import TimeStampedModel
+
+from .managements import CustomUserManager
 
 
 class UserRoles(models.TextChoices):
@@ -13,7 +13,6 @@ class UserRoles(models.TextChoices):
     StationManager = 'station_manager'
     StationEmployee = 'station_employee'
     StationWorker = 'station_worker'
-
 
 
 class User(AbstractUser, TimeStampedModel):

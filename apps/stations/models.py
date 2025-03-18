@@ -12,7 +12,7 @@ class Station(models.Model):
         verbose_name_plural = 'Stations'
 
 
-class StationBranch(models.Model):  
+class StationBranch(models.Model):
     name = models.CharField(max_length=100)
     address = models.CharField(max_length=255)
     station = models.ForeignKey(Station, on_delete=models.CASCADE)
