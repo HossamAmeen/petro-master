@@ -2,7 +2,7 @@ from django.db import models
 from django_extensions.db.models import TimeStampedModel
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
 from django.core.exceptions import ValidationError
-
+import uuid
 
 class Company(TimeStampedModel):
     name = models.CharField(max_length=255)
@@ -81,3 +81,31 @@ class Car(AbstractBaseModel):
     class Meta:
         verbose_name = 'Car'
         verbose_name_plural = 'Cars'
+
+
+class Driver(AbstractBaseModel):
+    name = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=11)
+    code = models.CharField(max_length=10, unique=True, verbose_name="driver code")
+    lincense_number = models.CharField(max_length=20, unique=True, verbose_name="driver license number")
+    lincense_expiration_date = models.DateField()
+    branch = models.ForeignKey(CompanyBranch, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def generate_unique_code(self):
+        """Generate a unique alphanumeric code."""
+        while True:
+            new_code = f"DR-{uuid.uuid4().hex[:10].upper()}"  # Example: DR-ABC123
+            if not Driver.objects.filter(code=new_code).exists():
+                return new_code
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = self.generate_unique_code()
+        super().save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = 'Driver'
+        verbose_name_plural = 'Drivers'

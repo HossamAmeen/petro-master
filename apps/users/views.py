@@ -17,7 +17,7 @@ class LoginAPIView(APIView):
         responses={200: openapi.Response("JWT tokens")},
     )
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+        serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
         user = User.objects.get(Q(phone_number=serializer.validated_data['identifier']) |
