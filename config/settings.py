@@ -62,6 +62,7 @@ LOCAL_APPS = [
     'apps.companies',
     'apps.geo',
     'apps.stations',
+    'apps.notifications',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS

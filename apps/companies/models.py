@@ -57,6 +57,7 @@ class Car(AbstractBaseModel):
 
     code = models.CharField(max_length=10, unique=True, verbose_name="car code")
     plate = models.CharField(max_length=10, verbose_name="car number plate")
+    plate_color = models.CharField(max_length=10)
     color = models.CharField(max_length=10)
     license_expiration_date = models.DateField()
     model_year = models.IntegerField()
