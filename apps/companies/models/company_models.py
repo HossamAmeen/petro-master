@@ -67,6 +67,7 @@ class Car(AbstractBaseModel):
     permitted_fuel_amount = models.IntegerField()
     fuel_type = models.CharField(max_length=20, choices=FuelType.choices)
     number_of_fuelings_per_day = models.IntegerField()
+    number_of_washes_per_month = models.IntegerField()
     fuel_allowed_days = models.JSONField(default=list, blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2)
     city = models.ForeignKey('geo.City', on_delete=models.SET_NULL, null=True, blank=True)

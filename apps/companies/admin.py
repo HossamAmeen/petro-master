@@ -1,7 +1,15 @@
 from django import forms
 from django.contrib import admin
 
-from .models import Car, Company, CompanyBranch, Driver
+from .models.company_models import Car, Company, CompanyBranch, Driver
+from .models.company_cash_models import CompanyCashRequest
+
+
+class CompanyCashRequestAdmin(admin.ModelAdmin):
+    list_display = ('company', 'amount', 'status', 'driver', 'station', 'created_by', 'updated_by', 'created', 'modified')
+    search_fields = ('company__name', 'amount', 'status', 'driver__name', 'station__name')
+    list_filter = ('company', 'status', 'driver', 'station')
+    readonly_fields = ('created_by', 'updated_by')
 
 
 class CompanyAdmin(admin.ModelAdmin):
@@ -89,3 +97,4 @@ admin.site.register(Company, CompanyAdmin)
 admin.site.register(CompanyBranch, CompanyBranchAdmin)
 admin.site.register(Car, CarAdmin)
 admin.site.register(Driver, DriverAdmin)
+admin.site.register(CompanyCashRequest, CompanyCashRequestAdmin)
