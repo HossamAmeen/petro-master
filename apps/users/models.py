@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 
-from .managements import CustomUserManager
+from .v1.managements import CustomUserManager
 
 
 class UserRoles(models.TextChoices):

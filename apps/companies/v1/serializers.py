@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
-from apps.geo.serializers import ListDistrictSerializer
-
-from .models.company_models import Company, CompanyBranch, Driver
+from apps.companies.models.company_models import Company, CompanyBranch, Driver
+from apps.geo.v1.serializers import ListDistrictSerializer
 
 
 class ListCompanySerializer(serializers.ModelSerializer):

@@ -1,12 +1,12 @@
 from typing import override
-from rest_framework import generics, mixins, views
+
+from rest_framework import generics, mixins, views, viewsets
 
 from apps.notifications.models import Notification
-from apps.notifications.serializers import (
+from apps.notifications.v1.serializers import (
     ListNotificationSerializer,
     NotificationSerializer,
 )
-from rest_framework import viewsets
 
 
 class NotificationViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
