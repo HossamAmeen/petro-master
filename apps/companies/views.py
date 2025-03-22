@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-
+from django.db.models import Count
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 
 from .models.company_models import Company, CompanyBranch, Driver
@@ -13,7 +13,7 @@ from .serializers import (
 )
 
 
-class CompanyViewSet(viewsets.ModelViewSet):
+class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = Company.objects.select_related('district').order_by('-id')
 
     def get_serializer_class(self):
@@ -32,9 +32,16 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return DriverSerializer
 
 
-class CompanyBranchViewSet(viewsets.ModelViewSet):
+class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CompanyBranch.objects.select_related(
         'district', 'company').order_by('-id')
+
+    def get_queryset(self):
+        return CompanyBranch.objects.select_related(
+            'district', 'company').order_by('-id').annotate(
+            cars_count=Count("cars"),
+            drivers_count=Count("drivers")
+        )
 
     def get_serializer_class(self):
         if self.request.method == 'GET':

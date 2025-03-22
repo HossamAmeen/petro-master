@@ -19,6 +19,12 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class CompanyNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ['name']
+
+
 class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):
     district = serializers.CharField(source='district.name')
 
@@ -44,7 +50,9 @@ class DriverSerializer(serializers.ModelSerializer):
 
 class ListCompanyBranchSerializer(serializers.ModelSerializer):
     district = ListDistrictSerializer()
-    company = ListCompanySerializer()
+    company = CompanyNameSerializer()
+    cars_count = serializers.IntegerField()
+    drivers_count = serializers.IntegerField()
 
     class Meta:
         model = CompanyBranch
