@@ -1,7 +1,8 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Station, StationBranch, StationService
+from .models.stations_models import Station, StationBranch, StationService
+
 
 admin.site.register(Station)
 admin.site.register(StationService)
