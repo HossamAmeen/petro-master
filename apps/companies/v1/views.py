@@ -1,8 +1,9 @@
-from rest_framework import viewsets
 from django.db.models import Count
+from rest_framework import viewsets
+
+from apps.companies.models.company_models import Company, CompanyBranch, Driver
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 
-from .models.company_models import Company, CompanyBranch, Driver
 from .serializers import (
     CompanyBranchSerializer,
     CompanySerializer,
@@ -22,16 +23,6 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return CompanySerializer
 
 
-class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    queryset = Driver.objects.select_related(
-        'branch__district').order_by('-id')
-
-    def get_serializer_class(self):
-        if self.request.method == 'GET':
-            return ListDriverSerializer
-        return DriverSerializer
-
-
 class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CompanyBranch.objects.select_related(
         'district', 'company').order_by('-id')
@@ -47,3 +38,13 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.request.method == 'GET':
             return ListCompanyBranchSerializer
         return CompanyBranchSerializer
+
+
+class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
+    queryset = Driver.objects.select_related(
+        'branch__district').order_by('-id')
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ListDriverSerializer
+        return DriverSerializer

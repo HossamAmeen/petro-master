@@ -1,7 +1,8 @@
 from django.db import models
-from apps.utilities.models.abstract_base_model import AbstractBaseModel
+
 from apps.companies.models.company_models import Company, Driver
 from apps.stations.models.stations_models import Station
+from apps.utilities.models.abstract_base_model import AbstractBaseModel
 
 
 class CompanyCashRequest(AbstractBaseModel):

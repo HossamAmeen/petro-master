@@ -1,12 +1,16 @@
-import factory
 import random
 import uuid
-from faker import Faker
 from decimal import Decimal
-from apps.geo.models import District, City
-from apps.companies.models import Company, CompanyBranch, Car, Driver
-from apps.users.models import User
+
+import factory
+from faker import Faker
+
+from apps.companies.models.company_models import Car, Company, CompanyBranch, Driver
+from apps.geo.models import City, Country, District
 from apps.notifications.models import Notification
+from apps.stations.models.stations_models import Station, StationService
+from apps.users.models import User
+
 fake = Faker()
 
 
@@ -22,6 +26,22 @@ class UserFactory(factory.django.DjangoModelFactory):
                                         [random.randint(0, 6)])
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+
+
+class CityFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = City
+
+    name = factory.Faker("city")  # Generates a random city name
+    country = factory.LazyFunction(lambda: Country.objects.order_by("?").first())
+
+
+class DistrictFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = District
+
+    name = factory.Faker("street_name")  # Generates a random district name
+    city = factory.SubFactory(CityFactory)  # Ensures city exists
 
 
 class CompanyFactory(factory.django.DjangoModelFactory):
@@ -72,6 +92,7 @@ class CarFactory(factory.django.DjangoModelFactory):
     balance = factory.LazyFunction(lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01")))
     city = factory.LazyFunction(lambda: City.objects.order_by("?").first())
     branch = factory.SubFactory(CompanyBranchFactory)
+    number_of_washes_per_month = factory.LazyFunction(lambda: random.randint(1, 10))
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 
@@ -98,4 +119,28 @@ class NotificationFactory(factory.django.DjangoModelFactory):
     is_read = factory.Faker('boolean')
     title = factory.Faker('sentence', nb_words=3)
     type = factory.Faker('word')
-    user = factory.SubFactory(UserFactory)
+    user = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+
+
+class StationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Station
+
+    name = factory.Faker("company")
+    address = factory.Faker("address")
+    lat = factory.Faker("latitude")
+    lang = factory.Faker("longitude")
+    district = factory.LazyFunction(lambda: District.objects.order_by("?").first())
+    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+
+
+class StationServiceFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = StationService
+
+    name = factory.Faker("company")
+    cost = factory.LazyFunction(lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01")))
+    station = factory.SubFactory(StationFactory)
+    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())

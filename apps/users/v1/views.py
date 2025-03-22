@@ -2,17 +2,20 @@ from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.users.models import User
 
-from .models import User
 from .serializers import ListUserSerializer, LoginSerializer, UserSerializer
 
 
 class LoginAPIView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny,]
 
     @swagger_auto_schema(
         request_body=LoginSerializer,

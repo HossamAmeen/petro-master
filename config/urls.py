@@ -20,11 +20,12 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('v1/api/users/', include('apps.users.urls')),
-    path('v1/api/companies/', include('apps.companies.urls')),
-    path('v1/api/stations/', include('apps.stations.urls')),
-    path('v1/api/notifications/', include('apps.notifications.urls')),
+    path('api/v1/users/', include('apps.users.v1.urls')),
+    path('api/v1/companies/', include('apps.companies.v1.urls')),
+    path('api/v1/stations/', include('apps.stations.v1.urls')),
+    path('api/v1/notifications/', include('apps.notifications.v1.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]
