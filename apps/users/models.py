@@ -5,18 +5,17 @@ from django_extensions.db.models import TimeStampedModel
 from .v1.managements import CustomUserManager
 
 
-class UserRoles(models.TextChoices):
-    Admin = 'admin'
-    CompanyOwner = 'company_owner'
-    BranchManager = 'branch_manager'
-    Driver = 'driver'
-    StationManager = 'station_manager'
-    StationEmployee = 'station_employee'
-    StationWorker = 'station_worker'
-
-
 class User(AbstractUser, TimeStampedModel):
     username = first_name = last_name = last_login = date_joined = groups = user_permissions = None
+    class UserRoles(models.TextChoices):
+        Admin = 'admin'
+        CompanyOwner = 'company_owner'
+        CompanyBranchManager = 'company_branch_manager'
+        Driver = 'driver'
+        StationManager = 'station_manager'
+        StationEmployee = 'station_employee'
+        StationWorker = 'station_worker'
+
     name = models.CharField(max_length=255)
     email = models.EmailField(max_length=255, unique=True)
     phone_number = models.CharField(max_length=11, unique=True)

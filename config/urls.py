@@ -27,5 +27,6 @@ urlpatterns = [
     path('api/v1/companies/', include('apps.companies.v1.urls')),
     path('api/v1/stations/', include('apps.stations.v1.urls')),
     path('api/v1/notifications/', include('apps.notifications.v1.urls')),
+    path('api/v1/auth/', include('apps.auth.v1.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]

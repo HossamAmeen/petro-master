@@ -40,4 +40,4 @@ class Command(BaseCommand):
         StationServiceFactory.create_batch(50)
 
         self.stdout.write(self.style.SUCCESS(
-            f"Created 5 companies, 5 branches, 20 cars, 5 cities, 5 districts, 50 notifications, 25 stations and 15 drivers successfully."))
+            "Created 5 companies, 5 branches, 20 cars, 5 cities, 5 districts, 50 notifications, 25 stations and 15 drivers successfully."))

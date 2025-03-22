@@ -79,7 +79,7 @@ class DriverAdmin(admin.ModelAdmin):
     def get_fields(self, request, obj=None):
         """ Hide 'created_by' field in the add form but show it in the edit form. """
         fields = super().get_fields(request, obj)
-        if not obj:  # If creating a new Driver (obj is None), remove 'created_by'
+        if not obj:
             fields = [field for field in fields if field not in ["created_by", "updated_by", 'code']]
         return fields
 

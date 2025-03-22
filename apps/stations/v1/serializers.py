@@ -6,11 +6,11 @@ from apps.stations.models.stations_models import Station, StationService
 class SingleStationServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = StationService
-        fields = ['id','name', 'cost', 'station']
+        fields = ['id', 'name', 'cost', 'station']
 
 
 class ListStationSerializer(serializers.ModelSerializer):
-    services = SingleStationServiceSerializer(source='station_services',many=True)
+    services = SingleStationServiceSerializer(source='station_services', many=True)
 
     class Meta:
         model = Station
