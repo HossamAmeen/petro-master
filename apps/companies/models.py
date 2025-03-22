@@ -7,7 +7,7 @@ from django_extensions.db.models import TimeStampedModel
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
 
 
-class Company(TimeStampedModel):
+class Company(AbstractBaseModel):
     name = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
     balance = models.DecimalField(max_digits=10, decimal_places=2)
@@ -23,7 +23,7 @@ class Company(TimeStampedModel):
         verbose_name_plural = 'Companies'
 
 
-class CompanyBranch(TimeStampedModel):
+class CompanyBranch(AbstractBaseModel):
     name = models.CharField(max_length=255)
     email = models.EmailField(max_length=255, null=True, blank=True)
     phone_number = models.CharField(max_length=11, null=True, blank=True)
@@ -70,7 +70,7 @@ class Car(AbstractBaseModel):
     fuel_allowed_days = models.JSONField(default=list, blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2)
     city = models.ForeignKey('geo.City', on_delete=models.SET_NULL, null=True, blank=True)
-    branch = models.ForeignKey(CompanyBranch, on_delete=models.CASCADE)
+    branch = models.ForeignKey(CompanyBranch, on_delete=models.CASCADE, related_name='cars')
 
     def __str__(self):
         return self.code + " - " + self.plate
@@ -94,7 +94,7 @@ class Driver(AbstractBaseModel):
     code = models.CharField(max_length=10, unique=True, verbose_name="driver code")
     lincense_number = models.CharField(max_length=20, unique=True, verbose_name="driver license number")
     lincense_expiration_date = models.DateField()
-    branch = models.ForeignKey(CompanyBranch, on_delete=models.CASCADE)
+    branch = models.ForeignKey(CompanyBranch, on_delete=models.CASCADE, related_name='drivers')
 
     def __str__(self):
         return self.name

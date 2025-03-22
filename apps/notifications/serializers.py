@@ -5,7 +5,6 @@ from apps.users.serializers import UserSerializer
 
 
 class ListNotificationSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
 
     class Meta:
         model = Notification
@@ -16,4 +15,4 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        fields = '__all__'
+        fields = ['is_read']
