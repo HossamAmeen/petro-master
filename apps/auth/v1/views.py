@@ -8,7 +8,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import User
 
-from .serializers import LoginSerializer
+from .serializers import LoginSerializer, ProfileSerializer
+from rest_framework.generics import RetrieveUpdateAPIView
 
 
 class CompanyLoginAPIView(APIView):
@@ -43,5 +44,8 @@ class CompanyLoginAPIView(APIView):
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-class ProfileAPIView(APIView):
-    pass
+class ProfileAPIView(RetrieveUpdateAPIView):
+    serializer_class = ProfileSerializer
+
+    def get_object(self):
+        return self.request.user  # Return the authenticated user
