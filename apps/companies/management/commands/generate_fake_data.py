@@ -10,6 +10,7 @@ from apps.companies.factories import (
     DistrictFactory,
     DriverFactory,
     NotificationFactory,
+    ServiceFactory,
     StationFactory,
     StationServiceFactory,
     UserFactory,
@@ -77,6 +78,7 @@ class Command(BaseCommand):
         DriverFactory.create_batch(90)
         NotificationFactory.create_batch(50)
         StationFactory.create_batch(25)
+        ServiceFactory.create_batch(10)
         StationServiceFactory.create_batch(50)
         CompanyBranchManager.objects.create(
             user=company_branch_manager,

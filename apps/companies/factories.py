@@ -8,7 +8,7 @@ from faker import Faker
 from apps.companies.models.company_models import Car, Company, CompanyBranch, Driver
 from apps.geo.models import City, Country, District
 from apps.notifications.models import Notification
-from apps.stations.models.stations_models import Station, StationService
+from apps.stations.models.stations_models import Service, Station, StationService
 from apps.users.models import CompanyBranchManager, CompanyUser, User
 
 fake = Faker()
@@ -134,13 +134,22 @@ class StationFactory(factory.django.DjangoModelFactory):
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 
 
+class ServiceFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Service
+
+    name = factory.Faker("company")
+    type = factory.LazyFunction(lambda: random.choice(Service.ServiceType.values))
+    cost = factory.LazyFunction(lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01")))
+    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+
+
 class StationServiceFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = StationService
-
-    name = factory.Faker("company")
-    cost = factory.LazyFunction(lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01")))
-    station = factory.SubFactory(StationFactory)
+    service = factory.LazyFunction(lambda: Service.objects.order_by("?").first())
+    station = factory.LazyFunction(lambda: Station.objects.order_by("?").first())
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 

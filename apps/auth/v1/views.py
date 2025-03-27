@@ -2,6 +2,7 @@ from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -9,7 +10,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.users.models import User
 
 from .serializers import LoginSerializer, ProfileSerializer
-from rest_framework.generics import RetrieveUpdateAPIView
 
 
 class CompanyLoginAPIView(APIView):

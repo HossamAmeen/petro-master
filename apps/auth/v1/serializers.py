@@ -1,7 +1,8 @@
-from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
+from rest_framework import serializers
 
 from apps.users.models import CompanyUser
+
 
 class LoginSerializer(serializers.Serializer):
     identifier = serializers.CharField()
