@@ -55,7 +55,6 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return DriverSerializer
 
     def get_queryset(self):
-        print(self.request.user.companyuser.company.id)
         if self.request.user.role == User.UserRoles.CompanyOwner:
             return self.queryset.filter(branch__company__owners=self.request.user)
         return self.queryset

@@ -48,3 +48,8 @@ class CompanyBranchManagerSerializer(serializers.ModelSerializer):
         validated_data['password'] = make_password(validated_data['password'])
         validated_data['company_id'] = self.context['request'].company_id
         return CompanyUser.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        if 'password' in validated_data:
+            validated_data['password'] = make_password(validated_data['password'])
+        return super().update(instance, validated_data)
