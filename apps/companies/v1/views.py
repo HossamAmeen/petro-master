@@ -3,7 +3,7 @@ from rest_framework import viewsets
 
 from apps.companies.models.company_models import Company, CompanyBranch, Driver
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
-
+from apps.users.models import User
 from .serializers import (
     CompanyBranchSerializer,
     CompanySerializer,
@@ -25,14 +25,18 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CompanyBranch.objects.select_related(
-        'district', 'company').order_by('-id')
+        'district__city', 'company').annotate(
+            cars_count=Count("cars"),
+            drivers_count=Count("drivers"),
+            managers_count=Count("managers", distinct=True)
+        ).order_by('-id')
 
     def get_queryset(self):
-        return CompanyBranch.objects.select_related(
-            'district', 'company').order_by('-id').annotate(
-            cars_count=Count("cars"),
-            drivers_count=Count("drivers")
-        )
+        if self.request.user.role == User.UserRoles.CompanyOwner:
+            return self.queryset.filter(company__owners=self.request.user)
+        if self.request.user.role == User.UserRoles.CompanyBranchManager:
+            return self.queryset.filter(managers__user=self.request.user)
+        return self.queryset
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -48,3 +52,9 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.request.method == 'GET':
             return ListDriverSerializer
         return DriverSerializer
+
+    def get_queryset(self):
+        print(self.request.user.companyuser.company.id)
+        if self.request.user.role == User.UserRoles.CompanyOwner:
+            return self.queryset.filter(branch__company__owners=self.request.user)
+        return self.queryset

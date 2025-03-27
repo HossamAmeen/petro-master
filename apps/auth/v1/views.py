@@ -31,6 +31,8 @@ class CompanyLoginAPIView(APIView):
             data = {
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
+                'user_name': user.name,
+                'role': user.role
             }
             return Response(data, status=status.HTTP_200_OK)
         else:

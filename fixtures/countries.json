@@ -6,5 +6,21 @@
     "name": "Egypt",
     "code": "EGP"
   }
+},
+{
+  "model": "geo.city",
+  "pk": 1,
+  "fields": {
+    "name": "Cairo",
+    "country": 1
+  }
+},
+{
+  "model": "geo.district",
+  "pk": 1,
+  "fields": {
+    "name": "New Cairo",
+    "city": 1
+  }
 }
 ]

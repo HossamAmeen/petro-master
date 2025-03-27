@@ -9,7 +9,7 @@ from apps.companies.models.company_models import Car, Company, CompanyBranch, Dr
 from apps.geo.models import City, Country, District
 from apps.notifications.models import Notification
 from apps.stations.models.stations_models import Station, StationService
-from apps.users.models import User
+from apps.users.models import User, CompanyUser, CompanyBranchManager
 
 fake = Faker()
 
@@ -21,9 +21,8 @@ class UserFactory(factory.django.DjangoModelFactory):
     name = factory.Faker("name")
     email = factory.Faker("company_email")
     phone_number = factory.Faker("phone_number")
-    role = factory.LazyFunction(lambda: ["admin", "company_owner", "branch_manager", "driver",
-                                         "station_manager", "station_employee", "station_worker"]
-                                        [random.randint(0, 6)])
+    role = factory.LazyFunction(lambda: ["admin", "station_manager", "station_employee", "station_worker"]
+                                        [random.randint(0, 3)])
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 
@@ -66,7 +65,7 @@ class CompanyBranchFactory(factory.django.DjangoModelFactory):
     email = factory.Faker("company_email")
     phone_number = factory.Faker("phone_number")
     address = factory.Faker("address")
-    company = factory.SubFactory(CompanyFactory)
+    company = factory.LazyFunction(lambda: Company.objects.order_by("?").first())
     district = factory.LazyFunction(lambda: District.objects.order_by("?").first())
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
@@ -106,7 +105,7 @@ class DriverFactory(factory.django.DjangoModelFactory):
     code = factory.LazyFunction(lambda: f"DR-{uuid.uuid4().hex[:10].upper()}")
     lincense_number = factory.Faker("ssn")
     lincense_expiration_date = factory.Faker("future_date")
-    branch = factory.SubFactory(CompanyBranchFactory)
+    branch = factory.LazyFunction(lambda: CompanyBranch.objects.order_by("?").first())
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 
@@ -142,5 +141,28 @@ class StationServiceFactory(factory.django.DjangoModelFactory):
     name = factory.Faker("company")
     cost = factory.LazyFunction(lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01")))
     station = factory.SubFactory(StationFactory)
+    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+
+
+class CompanyUserFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CompanyUser
+
+    name = factory.Faker("name")
+    email = factory.Faker("company_email")
+    phone_number = factory.Faker("phone_number")
+    role = User.UserRoles.CompanyOwner
+    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    company = factory.LazyFunction(lambda: Company.objects.order_by("?").first())
+
+
+class CompanyBranchManagerFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CompanyBranchManager
+
+    company_branch = factory.SubFactory(CompanyBranchFactory)
+    user = factory.SubFactory(CompanyUserFactory)
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())

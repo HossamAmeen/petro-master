@@ -16,23 +16,6 @@
       "created_by": null,
       "updated_by": null
     }
-  },
-  {  "model": "users.user",
-     "pk": 2,
-     "fields": {
-      "is_superuser": false,
-      "is_staff": false,
-      "is_active": true,
-      "created": "2025-03-22T14:31:21.800Z",
-      "modified": "2025-03-22T14:31:35.182Z",
-      "name": "company owner",
-      "email": "company@gmail.com",
-      "phone_number": "01010079791",
-      "password": "pbkdf2_sha256$600000$eKTKXHTMkz41shU3Y6wFZ2$pR9j9PyjE99tqhCbYX28XXUy85FhBSW6Pr0KSfyiBl0=",
-      "role": "company_owner",
-      "created_by": null,
-      "updated_by": null
-      }
   }
 ]
   

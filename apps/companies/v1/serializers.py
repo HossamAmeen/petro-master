@@ -52,6 +52,7 @@ class ListCompanyBranchSerializer(serializers.ModelSerializer):
     company = CompanyNameSerializer()
     cars_count = serializers.IntegerField()
     drivers_count = serializers.IntegerField()
+    managers_count = serializers.IntegerField()
 
     class Meta:
         model = CompanyBranch
