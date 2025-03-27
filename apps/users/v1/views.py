@@ -1,9 +1,14 @@
 from rest_framework import viewsets
 
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
-from apps.users.models import User, CompanyUser
+from apps.users.models import CompanyUser, User
 
-from .serializers import ListUserSerializer, UserSerializer, ListCompanyBranchManagerSerializer, CompanyBranchManagerSerializer
+from .serializers import (
+    CompanyBranchManagerSerializer,
+    ListCompanyBranchManagerSerializer,
+    ListUserSerializer,
+    UserSerializer,
+)
 
 
 class UserViewSet(InjectUserMixin, viewsets.ModelViewSet):
@@ -27,5 +32,3 @@ class CompanyBranchManagerViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.action == 'list':
             return ListCompanyBranchManagerSerializer
         return CompanyBranchManagerSerializer
-
-    

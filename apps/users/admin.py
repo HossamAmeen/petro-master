@@ -1,7 +1,8 @@
+from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django import forms
 from django.utils.translation import gettext_lazy as _
+
 from .models import User
 
 
@@ -69,5 +70,6 @@ class CustomUserAdmin(UserAdmin):
 
     created.admin_order_field = 'created'
     created.short_description = _('Created')
+
 
 admin.site.register(User, CustomUserAdmin)

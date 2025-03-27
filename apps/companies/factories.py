@@ -9,7 +9,7 @@ from apps.companies.models.company_models import Car, Company, CompanyBranch, Dr
 from apps.geo.models import City, Country, District
 from apps.notifications.models import Notification
 from apps.stations.models.stations_models import Station, StationService
-from apps.users.models import User, CompanyUser, CompanyBranchManager
+from apps.users.models import CompanyBranchManager, CompanyUser, User
 
 fake = Faker()
 

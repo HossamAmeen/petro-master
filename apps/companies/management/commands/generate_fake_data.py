@@ -1,9 +1,7 @@
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from faker import Faker
-from apps.users.models import User, CompanyUser, CompanyBranchManager
-from apps.companies.models.company_models import Company, CompanyBranch
-from apps.geo.models import District, City
+
 from apps.companies.factories import (
     CarFactory,
     CityFactory,
@@ -16,6 +14,9 @@ from apps.companies.factories import (
     StationServiceFactory,
     UserFactory,
 )
+from apps.companies.models.company_models import Company, CompanyBranch
+from apps.geo.models import City, District
+from apps.users.models import CompanyBranchManager, CompanyUser, User
 
 fake = Faker()
 
@@ -52,7 +53,7 @@ class Command(BaseCommand):
             )
             company_user.set_password("admin")
             company_user.save()
-        company_branch_manager =  CompanyUser.objects.filter(phone_number="01010079792", email="petro_company_manager@petro.com").first()
+        company_branch_manager = CompanyUser.objects.filter(phone_number="01010079792", email="petro_company_manager@petro.com").first()
         if not company_branch_manager:
             company_branch_manager = CompanyUser.objects.create(
                 name="petro company manager",

@@ -1,6 +1,7 @@
-from rest_framework import serializers
-from apps.users.models import User, CompanyUser
 from django.contrib.auth.hashers import make_password
+from rest_framework import serializers
+
+from apps.users.models import CompanyUser, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -31,8 +32,8 @@ class ListCompanyBranchManagerSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyUser
         fields = ['id', 'name', 'email', 'phone_number', 'role', 'password', 'created', 'modified', 'created_by', 'updated_by', 'company_id']
- 
- 
+
+
 class CompanyBranchManagerSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)
     password = serializers.CharField(required=True, write_only=True)

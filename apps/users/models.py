@@ -1,12 +1,15 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
+
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
+
 from .v1.managements import CustomUserManager
 
 
 class User(AbstractUser, TimeStampedModel):
     username = first_name = last_name = last_login = date_joined = groups = user_permissions = None
+
     class UserRoles(models.TextChoices):
         Admin = 'admin'
         CompanyOwner = 'company_owner'

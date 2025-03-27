@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from apps.companies.models.company_models import Company, CompanyBranch, Driver
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.users.models import User
+
 from .serializers import (
     CompanyBranchSerializer,
     CompanySerializer,
@@ -29,7 +30,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             cars_count=Count("cars"),
             drivers_count=Count("drivers"),
             managers_count=Count("managers", distinct=True)
-        ).order_by('-id')
+    ).order_by('-id')
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
