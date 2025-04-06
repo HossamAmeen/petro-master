@@ -1,9 +1,11 @@
 from django.db.models import Count
 from rest_framework import viewsets
-
+from rest_framework.permissions import AllowAny
 from apps.companies.models.company_models import Company, CompanyBranch, Driver
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.users.models import User
+from apps.companies.models.company_cash_models import CompanyCashRequest
+from apps.companies.v1.serializers import ListCompanyCashRequestSerializer, CompanyCashRequestSerializer
 
 from .serializers import (
     CompanyBranchSerializer,
@@ -58,3 +60,15 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.request.user.role == User.UserRoles.CompanyOwner:
             return self.queryset.filter(branch__company__owners=self.request.user)
         return self.queryset
+
+class CompanyCashRequestViewSet(viewsets.ModelViewSet):
+    queryset = CompanyCashRequest.objects.select_related(
+        'company', 'driver', 'station').order_by('-id')
+    authentication_classes = []    
+    permission_classes = [AllowAny]
+    
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ListCompanyCashRequestSerializer
+        return CompanyCashRequestSerializer
