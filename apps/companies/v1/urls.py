@@ -1,6 +1,11 @@
 from rest_framework.routers import DefaultRouter
 
-from .views import CompanyBranchViewSet, CompanyViewSet, DriverViewSet, CompanyCashRequestViewSet
+from .views import (
+    CompanyBranchViewSet,
+    CompanyCashRequestViewSet,
+    CompanyViewSet,
+    DriverViewSet,
+)
 
 router = DefaultRouter()
 
