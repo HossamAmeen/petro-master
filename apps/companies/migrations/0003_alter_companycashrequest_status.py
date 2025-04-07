@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='companycashrequest',
             name='status',
-            field=models.CharField(choices=[('Pending', 'Pending'), ('In_Progress', 'In Progress'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending', max_length=20),
+            field=models.CharField(choices=[('pending', 'Pending'), ('in_progress', 'In Progress'), ('approved', 'Approved'), ('rejected', 'Rejected')], default='pending', max_length=20),
         ),
     ]

@@ -2,8 +2,8 @@ from rest_framework import serializers
 
 from apps.companies.models.company_models import Company, CompanyBranch, Driver
 from apps.geo.v1.serializers import ListDistrictSerializer
-
-
+from apps.companies.models.company_cash_models import CompanyCashRequest
+from apps.stations.v1.serializers import ListStationSerializer
 class ListCompanySerializer(serializers.ModelSerializer):
     district = ListDistrictSerializer()
 
@@ -47,6 +47,12 @@ class DriverSerializer(serializers.ModelSerializer):
         read_only_fields = ('code',)
 
 
+class SingleDriverSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Driver
+        fields = ['id', 'name', 'phone_number', 'branch', 'code']
+
+
 class ListCompanyBranchSerializer(serializers.ModelSerializer):
     district = ListDistrictSerializer()
     company = CompanyNameSerializer()
@@ -63,3 +69,17 @@ class CompanyBranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyBranch
         fields = '__all__'
+
+class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
+    driver = SingleDriverSerializer()
+    station = ListStationSerializer()
+
+    class Meta:
+        model = CompanyCashRequest
+        fields = ['id', 'driver', 'amount', 'status', 'company', 'station', 'created', 'modified']
+
+
+class CompanyCashRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyCashRequest
+        fields = ['driver', 'amount']
