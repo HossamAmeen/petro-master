@@ -27,6 +27,7 @@ class StationBranch(AbstractBaseModel):
         verbose_name = 'Station Branch'
         verbose_name_plural = 'Station Branches'
 
+
 class Service(AbstractBaseModel):
     class ServiceType(models.TextChoices):
         PETROL = 'petrol'

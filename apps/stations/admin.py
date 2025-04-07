@@ -3,6 +3,7 @@ from django.contrib import admin
 # Register your models here.
 from .models.stations_models import Service, Station, StationBranch, StationService
 
+
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
     list_display = ('name', 'type', 'unit', 'cost', 'created_by')  # Display in list view
