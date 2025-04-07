@@ -51,7 +51,7 @@ THIRD_PARTY_APPS = [
     'rest_framework',
     'drf_standardized_errors',
     'corsheaders',
-    'drf_yasg',
+    'drf_spectacular',
     'django_filters',
     'django_extensions',
     'rest_framework_simplejwt'
@@ -163,6 +163,7 @@ REST_FRAMEWORK = {
     ),
     # set filter_backends as default 
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -194,14 +195,33 @@ JAZZMIN_SETTINGS = {
     ],
 }
 
-SWAGGER_SETTINGS = {
+# By Default swagger ui is available only to admin user(s). You can change permission classes to change that
+# See more configuration options at https://drf-spectacular.readthedocs.io/en/latest/settings.html#settings
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Petro Master API",
+    "DESCRIPTION": "Documentation of API endpoints of Petro Master",
+    "VERSION": "1.0.0",
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,  # Persist authorization across page reloads
+    },
+    "SECURITY": [
+        {
+            "jwtAuth": [],  # Apply Bearer token security globally
+        }
+    ],
     "SECURITY_DEFINITIONS": {
-        "Bearer": {
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header",
-            "description": "Enter token as: Bearer <your_token>",
+        "jwtAuth": {
+            "type": "http",
+            "scheme": "Bearer",
+            "bearerFormat": "JWT",  # Optional: Specify the format (e.g., JWT)
+            "description": "Bearer token authentication. Example: 'Bearer <your_jwt_token_here>'",
         }
     },
-    "USE_SESSION_AUTH": False,  # Disable Django session authentication
+    "AUTHENTICATION_CLASSES": [
+        "users.services.jwt_authenticator.PasswordChangedJWTAuthentication",  # Register the custom authentication
+    ],
 }
