@@ -47,6 +47,12 @@ class DriverSerializer(serializers.ModelSerializer):
         read_only_fields = ('code',)
 
 
+class SingleDriverSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Driver
+        fields = ['id', 'name', 'phone_number', 'branch', 'code']
+
+
 class ListCompanyBranchSerializer(serializers.ModelSerializer):
     district = ListDistrictSerializer()
     company = CompanyNameSerializer()
@@ -65,15 +71,15 @@ class CompanyBranchSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
-    company = CompanySerializer()
-    driver = ListDriverSerializer()
+    driver = SingleDriverSerializer()
     station = ListStationSerializer()
 
     class Meta:
         model = CompanyCashRequest
-        fields = '__all__'
+        fields = ['id', 'driver', 'amount', 'status', 'company', 'station', 'created', 'modified']
+
 
 class CompanyCashRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyCashRequest
-        fields = '__all__'
+        fields = ['driver', 'amount']
