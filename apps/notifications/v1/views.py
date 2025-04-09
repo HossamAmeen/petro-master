@@ -7,13 +7,16 @@ from apps.notifications.v1.serializers import (
 )
 
 
-class NotificationViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
-    queryset = Notification.objects.order_by('-id')
+class NotificationViewSet(
+    mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet
+):
+    queryset = Notification.objects.order_by("-id")
 
     def get_queryset(self):
-        return Notification.objects.filter(user=self.request.user).order_by('-id')
+        return Notification.objects.filter(user=self.request.user).order_by("-id")
 
     def get_serializer_class(self):
-        if self.request.method == 'GET':
+        if self.request.method == "GET":
             return ListNotificationSerializer
-        return NotificationSerializer
+        if self.request.method == "PATCH":
+            return NotificationSerializer
