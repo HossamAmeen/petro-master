@@ -29,7 +29,7 @@ class CompanyBranch(AbstractBaseModel):
     email = models.EmailField(max_length=255, null=True, blank=True)
     phone_number = models.CharField(max_length=11, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
-    balance = models.DecimalField(max_digits=10, decimal_places=2)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     district = models.ForeignKey(
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
