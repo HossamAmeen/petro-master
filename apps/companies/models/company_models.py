@@ -12,14 +12,16 @@ class Company(AbstractBaseModel):
     balance = models.DecimalField(max_digits=10, decimal_places=2)
     email = models.EmailField(max_length=255, null=True, blank=True)
     phone_number = models.CharField(max_length=11, null=True, blank=True)
-    district = models.ForeignKey('geo.District', on_delete=models.SET_NULL, null=True, blank=True)
+    district = models.ForeignKey(
+        "geo.District", on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     def __str__(self):
         return self.name
 
     class Meta:
-        verbose_name = 'Company'
-        verbose_name_plural = 'Companies'
+        verbose_name = "Company"
+        verbose_name_plural = "Companies"
 
 
 class CompanyBranch(AbstractBaseModel):
@@ -27,32 +29,35 @@ class CompanyBranch(AbstractBaseModel):
     email = models.EmailField(max_length=255, null=True, blank=True)
     phone_number = models.CharField(max_length=11, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
+    balance = models.DecimalField(max_digits=10, decimal_places=2)
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    district = models.ForeignKey('geo.District', on_delete=models.SET_NULL, null=True, blank=True)
+    district = models.ForeignKey(
+        "geo.District", on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     def __str__(self):
         return self.name
 
     class Meta:
-        verbose_name = 'Company Branch'
-        verbose_name_plural = 'Company Branches'
+        verbose_name = "Company Branch"
+        verbose_name_plural = "Company Branches"
 
 
 class Car(AbstractBaseModel):
     class FuelType(models.TextChoices):
-        DIESEL = 'Diesel'
-        GASOLINE = 'Gasoline'
-        ELECTRIC = 'Electric'
-        HYDROGEN = 'Hydrogen'
+        DIESEL = "Diesel"
+        GASOLINE = "Gasoline"
+        ELECTRIC = "Electric"
+        HYDROGEN = "Hydrogen"
 
     class FuelAllowedDay(models.TextChoices):
-        MON = 'Monday'
-        TUE = 'Tuesday'
-        WED = 'Wednesday'
-        THU = 'Thursday'
-        FRI = 'Friday'
-        SAT = 'Saturday'
-        SUN = 'Sunday'
+        MON = "Monday"
+        TUE = "Tuesday"
+        WED = "Wednesday"
+        THU = "Thursday"
+        FRI = "Friday"
+        SAT = "Saturday"
+        SUN = "Sunday"
 
     code = models.CharField(max_length=10, unique=True, verbose_name="car code")
     plate = models.CharField(max_length=10, verbose_name="car number plate")
@@ -69,32 +74,42 @@ class Car(AbstractBaseModel):
     number_of_washes_per_month = models.IntegerField()
     fuel_allowed_days = models.JSONField(default=list, blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2)
-    city = models.ForeignKey('geo.City', on_delete=models.SET_NULL, null=True, blank=True)
-    branch = models.ForeignKey(CompanyBranch, on_delete=models.CASCADE, related_name='cars')
+    city = models.ForeignKey(
+        "geo.City", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    branch = models.ForeignKey(
+        CompanyBranch, on_delete=models.CASCADE, related_name="cars"
+    )
 
     def __str__(self):
         return self.code + " - " + self.plate
 
     def clean(self):
         if self.permitted_fuel_amount > self.tank_capacity:
-            raise ValidationError('Permitted fuel amount must be less than or equal to tank capacity.')
+            raise ValidationError(
+                "Permitted fuel amount must be less than or equal to tank capacity."
+            )
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
 
     class Meta:
-        verbose_name = 'Car'
-        verbose_name_plural = 'Cars'
+        verbose_name = "Car"
+        verbose_name_plural = "Cars"
 
 
 class Driver(AbstractBaseModel):
     name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=11)
     code = models.CharField(max_length=10, unique=True, verbose_name="driver code")
-    lincense_number = models.CharField(max_length=20, unique=True, verbose_name="driver license number")
+    lincense_number = models.CharField(
+        max_length=20, unique=True, verbose_name="driver license number"
+    )
     lincense_expiration_date = models.DateField()
-    branch = models.ForeignKey(CompanyBranch, on_delete=models.CASCADE, related_name='drivers')
+    branch = models.ForeignKey(
+        CompanyBranch, on_delete=models.CASCADE, related_name="drivers"
+    )
 
     def __str__(self):
         return self.name
@@ -112,5 +127,5 @@ class Driver(AbstractBaseModel):
         super().save(*args, **kwargs)
 
     class Meta:
-        verbose_name = 'Driver'
-        verbose_name_plural = 'Drivers'
+        verbose_name = "Driver"
+        verbose_name_plural = "Drivers"
