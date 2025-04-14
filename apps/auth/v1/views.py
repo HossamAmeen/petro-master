@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.shared.base_exception_class import CustomValidationError
 from apps.users.models import User
 
 from .serializers import LoginSerializer, ProfileSerializer
@@ -51,8 +52,11 @@ class CompanyLoginAPIView(APIView):
             }
             return Response(data, status=status.HTTP_200_OK)
         else:
-            return Response(
-                {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
+            raise CustomValidationError(
+                message="Invalid credentials",
+                code="invalid_credentials",
+                errors=[],
+                status_code=status.HTTP_401_UNAUTHORIZED,
             )
 
 
