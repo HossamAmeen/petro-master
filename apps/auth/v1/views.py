@@ -1,6 +1,9 @@
+from django.conf import settings
+from django.core.mail import send_mail
 from django.db.models import Q
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from django.shortcuts import render
+from django.urls import reverse
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
@@ -10,16 +13,24 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.shared.base_exception_class import CustomValidationError
 from apps.users.models import User
 
-from .serializers import LoginSerializer, ProfileSerializer
+from .serializers import (
+    LoginSerializer,
+    PasswordResetRequestSerializer,
+    ProfileSerializer,
+    SetNewPasswordSerializer,
+)
 
 
 class CompanyLoginAPIView(APIView):
     authentication_classes = []
     permission_classes = []
 
-    @swagger_auto_schema(
-        request_body=LoginSerializer,
-        responses={200: openapi.Response("JWT tokens")},
+    @extend_schema(
+        request=LoginSerializer,
+        responses={
+            200: OpenApiResponse(description="Successful login"),
+            401: OpenApiResponse(description="Invalid credentials"),
+        },
     )
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -65,3 +76,119 @@ class ProfileAPIView(RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class PasswordResetRequestAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(
+        request=PasswordResetRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Password reset request sent successfully"
+            ),
+            404: OpenApiResponse(description="User not found"),
+            500: OpenApiResponse(description="Failed to send password reset request"),
+        },
+    )
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = User.objects.filter(
+            email=serializer.validated_data["email"], is_active=True
+        ).first()
+
+        if user:
+            reset_token = user.create_password_reset_token()
+            reset_url = reverse("password_reset_confirm", kwargs={"token": reset_token})
+            reset_link = request.build_absolute_uri(reset_url)
+
+            subject = "Password Reset Request"
+            message = (
+                f"Please click the following link to reset your password: {reset_link}"
+            )
+            from_email = settings.DEFAULT_FROM_EMAIL
+            recipient_list = [user.email]
+
+            try:
+                send_mail(subject, message, from_email, recipient_list)
+                return Response(
+                    {"message": "Password reset request sent successfully"},
+                    status=status.HTTP_200_OK,
+                )
+            except Exception as e:
+                raise CustomValidationError(
+                    message="Failed to send password reset request",
+                    code="failed_to_send_password_reset_request",
+                    errors=[str(e)],
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+        else:
+            raise CustomValidationError(
+                message="User not found",
+                code="user_not_found",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+
+class PasswordResetConfirmAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = SetNewPasswordSerializer
+
+    def get(self, request, token):
+        user = User.objects.filter(reset_password_token=token).first()
+        if not user:
+            return render(
+                request,
+                "reset_password_form.html",
+                {
+                    "token_valid": False,
+                    "message": "Invalid or expired token.",
+                    "token": None,
+                },
+            )
+
+        return render(
+            request,
+            "reset_password_form.html",
+            {"token_valid": True, "token": token},
+        )
+
+    @extend_schema(
+        request=SetNewPasswordSerializer,
+        responses={
+            200: OpenApiResponse(description="Password reset successful"),
+            400: OpenApiResponse(description="Invalid or expired reset link"),
+            404: OpenApiResponse(description="User not found"),
+            500: OpenApiResponse(description="Failed to reset password"),
+        },
+    )
+    def post(self, request, token):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            user = User.objects.get(reset_password_token=token)
+            if user.is_valid_password_reset_token(token):
+                new_password = serializer.validated_data["password"]
+                user.set_password(new_password)
+                user.reset_password_token = None
+                user.reset_password_token_created_at = None
+                user.save()
+                return Response(
+                    {"detail": "Password reset successful."}, status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"detail": "Invalid or expired reset link."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "Invalid reset link."}, status=status.HTTP_400_BAD_REQUEST
+            )

@@ -228,3 +228,19 @@ SPECTACULAR_SETTINGS = {
         "users.services.jwt_authenticator.PasswordChangedJWTAuthentication",  # Register the custom authentication
     ],
 }
+
+
+# EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+# EMAIL_HOST_USER = '403c618db534ff'
+# EMAIL_HOST_PASSWORD = "2af349497cece3"
+# EMAIL_PORT = 2525
+# DEFAULT_FROM_EMAIL="hosamameen948@gmail.com"
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "baronlearning.com"  # Incoming/Outgoing Server
+EMAIL_PORT = 465  # SMTP Port for SSL/TLS
+EMAIL_USE_TLS = False  # We are using SSL, not STARTTLS
+EMAIL_USE_SSL = True
+EMAIL_HOST_USER = "learn@baronlearning.com"
+EMAIL_HOST_PASSWORD = "KMPjHt%b!U7j"  # Replace with your actual email password
+DEFAULT_FROM_EMAIL = "learn@baronlearning.com"
