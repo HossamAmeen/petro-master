@@ -17,6 +17,7 @@ class ServiceAdmin(admin.ModelAdmin):
         "unit",
         "cost",
         "created_by",
+        "updated_by",
     )  # Display in list view
     list_filter = ("type", "unit")  # Filter sidebar
     search_fields = ("name",)  # Search by name
@@ -35,10 +36,10 @@ class StationAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "address",
-        "district__name",
+        "district",
         "created_by",
+        "updated_by",
     )
-    readonly_fields = ("created_by", "updated_by")
     search_fields = ("name", "address", "district__name")
     exclude = ("created_by", "updated_by")
 
@@ -56,6 +57,7 @@ class StationServiceAdmin(admin.ModelAdmin):
         "service",
         "station",
         "created_by",
+        "updated_by",
     )
     readonly_fields = ("created_by", "updated_by")
     search_fields = ("service__name", "station__name")
@@ -74,11 +76,12 @@ class StationBranchAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "address",
-        "district__name",
+        "district",
         "created_by",
+        "updated_by",
     )
     readonly_fields = ("created_by", "updated_by")
-    search_fields = ("name", "address", "district__name")
+    search_fields = ("name", "address", "district")
     exclude = ("created_by", "updated_by")
 
     def save_model(self, request, obj, form, change):
@@ -95,6 +98,7 @@ class StationBranchServiceAdmin(admin.ModelAdmin):
         "service",
         "station_branch",
         "created_by",
+        "updated_by",
     )
     readonly_fields = ("created_by", "updated_by")
     search_fields = ("service__name", "station_branch__name")
