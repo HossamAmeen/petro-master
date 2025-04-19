@@ -20,9 +20,16 @@ class SingleStationServiceSerializer(serializers.ModelSerializer):
 
 
 class ListStationSerializer(serializers.ModelSerializer):
-    services = SingleStationServiceSerializer(source="station_services", many=True)
+    services = ServiceNameSerializer(source="station_services__service", many=True)
     district = DistrictWithcitynameSerializer()
 
     class Meta:
         model = Station
         fields = "__all__"
+
+    def get_services(self, instance):
+        # Directly query Service objects through the StationService relationship
+        services = Service.objects.filter(station_service__station=instance).values(
+            "id", "name"
+        )
+        return list(services)
