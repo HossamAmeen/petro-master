@@ -1,7 +1,10 @@
 from rest_framework import viewsets
 
 from apps.stations.models.stations_models import Station, StationBranch
-from apps.stations.v1.serializers import ListStationSerializer
+from apps.stations.v1.serializers import (
+    ListStationBranchSerializer,
+    ListStationSerializer,
+)
 
 
 class StationViewSet(viewsets.ModelViewSet):
@@ -13,4 +16,4 @@ class StationViewSet(viewsets.ModelViewSet):
 
 class StationBranchViewSet(viewsets.ModelViewSet):
     queryset = StationBranch.objects.all()
-    serializer_class = ListStationSerializer
+    serializer_class = ListStationBranchSerializer
