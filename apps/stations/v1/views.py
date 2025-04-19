@@ -8,12 +8,12 @@ from apps.stations.v1.serializers import (
 
 
 class StationViewSet(viewsets.ModelViewSet):
-    permission_classes = []
-    authentication_classes = []
     queryset = Station.objects.prefetch_related("station_services").order_by("-id")
     serializer_class = ListStationSerializer
 
 
 class StationBranchViewSet(viewsets.ModelViewSet):
-    queryset = StationBranch.objects.all()
+    queryset = StationBranch.objects.prefetch_related(
+        "station_branch_services"
+    ).order_by("-id")
     serializer_class = ListStationBranchSerializer
