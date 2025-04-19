@@ -1,7 +1,12 @@
 from rest_framework import serializers
 
 from apps.geo.v1.serializers import DistrictWithcitynameSerializer
-from apps.stations.models.stations_models import Service, Station, StationService
+from apps.stations.models.stations_models import (
+    Service,
+    Station,
+    StationBranch,
+    StationService,
+)
 
 
 class ServiceNameSerializer(serializers.ModelSerializer):
@@ -20,7 +25,7 @@ class SingleStationServiceSerializer(serializers.ModelSerializer):
 
 
 class ListStationSerializer(serializers.ModelSerializer):
-    services = ServiceNameSerializer(source="station_services__service", many=True)
+    services = serializers.SerializerMethodField()
     district = DistrictWithcitynameSerializer()
 
     class Meta:
@@ -28,8 +33,21 @@ class ListStationSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_services(self, instance):
-        # Directly query Service objects through the StationService relationship
-        services = Service.objects.filter(station_service__station=instance).values(
-            "id", "name"
-        )
+        services = Service.objects.filter(
+            station_branch_services__station_branch__station=instance
+        ).values("id", "name")
+        return list(services)
+
+
+class ListStationBranchSerializer(serializers.ModelSerializer):
+    district = DistrictWithcitynameSerializer()
+
+    class Meta:
+        model = StationBranch
+        fields = "__all__"
+
+    def get_services(self, instance):
+        services = Service.objects.filter(
+            station_branch_services__station_branch=instance
+        ).values("id", "name")
         return list(services)

@@ -76,3 +76,17 @@ class StationService(AbstractBaseModel):
     class Meta:
         verbose_name = "Station Service"
         verbose_name_plural = "Station Services"
+
+
+class StationBranchService(AbstractBaseModel):
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    station_branch = models.ForeignKey(
+        StationBranch, on_delete=models.CASCADE, related_name="station_branch_services"
+    )
+
+    def __str__(self):
+        return f"{self.service.name} - {self.station_branch.name}"
+
+    class Meta:
+        verbose_name = "Station Branch Service"
+        verbose_name_plural = "Station Branch Services"
