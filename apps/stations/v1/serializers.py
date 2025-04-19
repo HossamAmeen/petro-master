@@ -20,7 +20,7 @@ class SingleStationServiceSerializer(serializers.ModelSerializer):
 
 
 class ListStationSerializer(serializers.ModelSerializer):
-    services = SingleStationServiceSerializer(many=True)
+    services = SingleStationServiceSerializer(source="station_services", many=True)
     district = DistrictWithcitynameSerializer()
 
     class Meta:
