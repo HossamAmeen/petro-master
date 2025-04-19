@@ -34,7 +34,7 @@ class ListStationSerializer(serializers.ModelSerializer):
 
     def get_services(self, instance):
         services = Service.objects.filter(
-            station_branch_services__station_branch__station=instance
+            stationbranchservice__station_branch__station=instance
         ).values("id", "name")
         return list(services)
 
@@ -56,6 +56,6 @@ class ListStationBranchSerializer(serializers.ModelSerializer):
 
     def get_services(self, instance):
         services = Service.objects.filter(
-            station_branch_services__station_branch=instance
+            stationbranchservice__station_branch=instance
         ).values("id", "name")
         return list(services)
