@@ -56,6 +56,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_extensions",
     "rest_framework_simplejwt",
+    "gunicorn",
 ]
 
 LOCAL_APPS = [
