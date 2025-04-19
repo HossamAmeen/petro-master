@@ -41,7 +41,7 @@ class StationAdmin(admin.ModelAdmin):
         "updated_by",
     )
     search_fields = ("name", "address", "district__name")
-    exclude = ("created_by", "updated_by")
+    readonly_fields = ("created_by", "updated_by")
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""
@@ -61,7 +61,6 @@ class StationServiceAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("created_by", "updated_by")
     search_fields = ("service__name", "station__name")
-    exclude = ("created_by", "updated_by")
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""
@@ -82,7 +81,6 @@ class StationBranchAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("created_by", "updated_by")
     search_fields = ("name", "address", "district")
-    exclude = ("created_by", "updated_by")
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""
@@ -102,7 +100,6 @@ class StationBranchServiceAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("created_by", "updated_by")
     search_fields = ("service__name", "station_branch__name")
-    exclude = ("created_by", "updated_by")
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""

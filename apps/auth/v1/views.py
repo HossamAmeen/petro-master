@@ -113,7 +113,9 @@ class PasswordResetRequestAPIView(APIView):
             recipient_list = [user.email]
 
             try:
-                send_mail(subject, message, from_email, recipient_list)
+                send_mail(
+                    subject, message, from_email, recipient_list, fail_silently=False
+                )
                 return Response(
                     {"message": "Password reset request sent successfully"},
                     status=status.HTTP_200_OK,
