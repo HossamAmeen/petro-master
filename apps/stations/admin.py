@@ -39,6 +39,8 @@ class StationAdmin(admin.ModelAdmin):
         "created_by",
     )
     readonly_fields = ("created_by", "updated_by")
+    search_fields = ("name", "address", "district__name")
+    exclude = ("created_by", "updated_by")
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""
@@ -48,6 +50,59 @@ class StationAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-admin.site.register(StationService)
-admin.site.register(StationBranch)
-admin.site.register(StationBranchService)
+@admin.register(StationService)
+class StationServiceAdmin(admin.ModelAdmin):
+    list_display = (
+        "service",
+        "station",
+        "created_by",
+    )
+    readonly_fields = ("created_by", "updated_by")
+    search_fields = ("service__name", "station__name")
+    exclude = ("created_by", "updated_by")
+
+    def save_model(self, request, obj, form, change):
+        """Assign the logged-in user to created_by before saving."""
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(StationBranch)
+class StationBranchAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "address",
+        "district__name",
+        "created_by",
+    )
+    readonly_fields = ("created_by", "updated_by")
+    search_fields = ("name", "address", "district__name")
+    exclude = ("created_by", "updated_by")
+
+    def save_model(self, request, obj, form, change):
+        """Assign the logged-in user to created_by before saving."""
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(StationBranchService)
+class StationBranchServiceAdmin(admin.ModelAdmin):
+    list_display = (
+        "service",
+        "station_branch",
+        "created_by",
+    )
+    readonly_fields = ("created_by", "updated_by")
+    search_fields = ("service__name", "station_branch__name")
+    exclude = ("created_by", "updated_by")
+
+    def save_model(self, request, obj, form, change):
+        """Assign the logged-in user to created_by before saving."""
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
