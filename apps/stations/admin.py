@@ -1,6 +1,5 @@
 from django.contrib import admin
 
-# Register your models here.
 from .models.stations_models import (
     Service,
     Station,
@@ -31,7 +30,24 @@ class ServiceAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-admin.site.register(Station)
+@admin.register(Station)
+class StationAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "address",
+        "district__name",
+        "created_by",
+    )
+    readonly_fields = ("created_by", "updated_by")
+
+    def save_model(self, request, obj, form, change):
+        """Assign the logged-in user to created_by before saving."""
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
 admin.site.register(StationService)
 admin.site.register(StationBranch)
 admin.site.register(StationBranchService)
