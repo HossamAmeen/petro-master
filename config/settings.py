@@ -49,24 +49,6 @@ INSTALLED_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-    'rest_framework',
-    'drf_standardized_errors',
-    'corsheaders',
-    'drf_yasg',
-    'django_filters',
-    'django_extensions',
-    'rest_framework_simplejwt',
-    'polymorphic'
-]
-
-LOCAL_APPS = [
-    'apps.users',
-    'apps.companies',
-    'apps.geo',
-    'apps.stations',
-    'apps.notifications',
-    'apps.auth',
-    'apps.accounting',
     "rest_framework",
     "drf_standardized_errors",
     "corsheaders",
@@ -74,6 +56,7 @@ LOCAL_APPS = [
     "django_filters",
     "django_extensions",
     "rest_framework_simplejwt",
+    'polymorphic',
     "gunicorn",
 ]
 
@@ -84,6 +67,7 @@ LOCAL_APPS = [
     "apps.stations",
     "apps.notifications",
     "apps.auth",
+    'apps.accounting',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
