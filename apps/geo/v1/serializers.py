@@ -9,6 +9,12 @@ class CitySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class CityNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = City
+        fields = ["name"]
+
+
 class ListDistrictSerializer(serializers.ModelSerializer):
     city = CitySerializer()
 
@@ -21,3 +27,11 @@ class DistrictSerializer(serializers.ModelSerializer):
     class Meta:
         model = District
         fields = "__all__"
+
+
+class DistrictWithcitynameSerializer(serializers.ModelSerializer):
+    city = CityNameSerializer()
+
+    class Meta:
+        model = District
+        fields = ["id", "name", "city"]

@@ -9,7 +9,7 @@
       "created": "2025-03-18T15:36:15.374Z",
       "modified": "2025-03-18T15:36:15.375Z",
       "name": "Hossam",
-      "email": "",
+      "email": "hosamameen948@gmail.com",
       "phone_number": "01010079798",
       "password": "pbkdf2_sha256$600000$eKTKXHTMkz41shU3Y6wFZ2$pR9j9PyjE99tqhCbYX28XXUy85FhBSW6Pr0KSfyiBl0=",
       "role": "admin",
@@ -18,4 +18,3 @@
     }
   }
 ]
-  

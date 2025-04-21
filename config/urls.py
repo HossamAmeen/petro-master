@@ -1,32 +1,36 @@
 """
 URL configuration for config project.
 """
+
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from rest_framework import permissions
-
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Petro Master API",
-        default_version="v1",
-        description="Test description",
-        terms_of_service="https://www.google.com/policies/terms/",
-        contact=openapi.Contact(email="example@example.com"),
-        license=openapi.License(name="BSD License"),
-    ),
-    public=True,
-    permission_classes=(permissions.AllowAny,),
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
 )
 
-
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/v1/users/', include('apps.users.v1.urls')),
-    path('api/v1/companies/', include('apps.companies.v1.urls')),
-    path('api/v1/stations/', include('apps.stations.v1.urls')),
-    path('api/v1/notifications/', include('apps.notifications.v1.urls')),
-    path('api/v1/auth/', include('apps.auth.v1.urls')),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-]
+    path("admin/", admin.site.urls),
+    path("api/v1/users/", include("apps.users.v1.urls")),
+    path("api/v1/companies/", include("apps.companies.v1.urls")),
+    path("api/v1/stations/", include("apps.stations.v1.urls")),
+    path("api/v1/notifications/", include("apps.notifications.v1.urls")),
+    path("api/v1/auth/", include("apps.auth.v1.urls")),
+    path("api/v1/geo/", include("apps.geo.v1.urls")),
+    # swagger
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    # Optional UI:
+    path(
+        "api/schema/swagger-ui/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
+    path(
+        "api/schema/redoc/",
+        SpectacularRedocView.as_view(url_name="schema"),
+        name="redoc",
+    ),
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
