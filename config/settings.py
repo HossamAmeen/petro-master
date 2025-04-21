@@ -54,7 +54,8 @@ THIRD_PARTY_APPS = [
     'drf_yasg',
     'django_filters',
     'django_extensions',
-    'rest_framework_simplejwt'
+    'rest_framework_simplejwt',
+    'polymorphic'
 ]
 
 LOCAL_APPS = [
@@ -63,7 +64,8 @@ LOCAL_APPS = [
     'apps.geo',
     'apps.stations',
     'apps.notifications',
-    "apps.auth"
+    'apps.auth',
+    'apps.accounting',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
