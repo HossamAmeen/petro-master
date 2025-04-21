@@ -195,4 +195,6 @@ class CompanyUserInterface(admin.ModelAdmin):
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(CompanyUser, CompanyUserInterface)
-admin.site.register(FirebaseToken)
+admin.site.register(
+    FirebaseToken,
+)
