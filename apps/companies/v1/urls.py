@@ -1,4 +1,3 @@
-from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
@@ -18,11 +17,3 @@ router.register(
 router.register("", CompanyViewSet, basename="companies")
 
 urlpatterns = router.urls
-
-urlpatterns += [
-    path(
-        "branches/<int:pk>/assign-managers/",
-        CompanyBranchViewSet.as_view({"post": "assign_managers"}),
-        name="branch-assign-managers",
-    )
-]

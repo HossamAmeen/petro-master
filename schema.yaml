@@ -1,0 +1,3420 @@
+openapi: 3.0.3
+info:
+  title: Petro Master API
+  version: 1.0.0
+  description: Documentation of API endpoints of Petro Master
+paths:
+  /api/v1/auth/company/login/:
+    post:
+      operationId: auth_company_login_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Successful login
+        '401':
+          description: Invalid credentials
+  /api/v1/auth/password-reset-confirm/{token}/:
+    get:
+      operationId: auth_password_reset_confirm_retrieve
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: auth_password_reset_confirm_create
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetNewPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetNewPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetNewPasswordRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Password reset successful
+        '400':
+          description: Invalid or expired reset link
+        '404':
+          description: User not found
+        '500':
+          description: Failed to reset password
+  /api/v1/auth/password-reset-request/:
+    post:
+      operationId: auth_password_reset_request_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Password reset request sent successfully
+        '404':
+          description: User not found
+        '500':
+          description: Failed to send password reset request
+  /api/v1/auth/profile/:
+    get:
+      operationId: auth_profile_retrieve
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    put:
+      operationId: auth_profile_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    patch:
+      operationId: auth_profile_partial_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+  /api/v1/companies/:
+    get:
+      operationId: companies_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListCompanyList'
+          description: ''
+    post:
+      operationId: companies_create
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+          description: ''
+  /api/v1/companies/{id}/:
+    get:
+      operationId: companies_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company.
+        required: true
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCompany'
+          description: ''
+    put:
+      operationId: companies_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+          description: ''
+    patch:
+      operationId: companies_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+          description: ''
+    delete:
+      operationId: companies_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company.
+        required: true
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/companies/branches/:
+    get:
+      operationId: companies_branches_list
+      parameters:
+      - in: query
+        name: city
+        schema:
+          type: integer
+      - in: query
+        name: company
+        schema:
+          type: integer
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListCompanyBranchList'
+          description: ''
+    post:
+      operationId: companies_branches_create
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyBranch'
+          description: ''
+  /api/v1/companies/branches/{id}/:
+    get:
+      operationId: companies_branches_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Branch.
+        required: true
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrieveCompanyBranch'
+          description: ''
+    put:
+      operationId: companies_branches_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Branch.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyBranch'
+          description: ''
+    patch:
+      operationId: companies_branches_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Branch.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyBranchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyBranchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyBranchRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyBranch'
+          description: ''
+    delete:
+      operationId: companies_branches_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Branch.
+        required: true
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/companies/branches/{id}/assign_managers/:
+    post:
+      operationId: companies_branches_assign_managers_create
+      description: |-
+        Assign multiple managers to a branch
+        Expects: {'managers': [list_of_user_ids]}
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Branch.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchAssignManagersRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchAssignManagersRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchAssignManagersRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyBranchAssignManagers'
+          description: ''
+  /api/v1/companies/branches/{id}/update-balance/:
+    post:
+      operationId: companies_branches_update_balance_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Branch.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchBalanceUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BranchBalanceUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BranchBalanceUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchBalanceUpdate'
+          description: ''
+  /api/v1/companies/cash-requests/:
+    get:
+      operationId: companies_cash_requests_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - approved
+          - in_progress
+          - pending
+          - rejected
+        description: |-
+          * `pending` - Pending
+          * `in_progress` - In Progress
+          * `approved` - Approved
+          * `rejected` - Rejected
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListCompanyCashRequestList'
+          description: ''
+    post:
+      operationId: companies_cash_requests_create
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyCashRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyCashRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyCashRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyCashRequest'
+          description: ''
+  /api/v1/companies/cash-requests/{id}/:
+    get:
+      operationId: companies_cash_requests_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Cash Request.
+        required: true
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCompanyCashRequest'
+          description: ''
+    patch:
+      operationId: companies_cash_requests_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Cash Request.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyCashRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyCashRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyCashRequestRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyCashRequest'
+          description: ''
+  /api/v1/companies/drivers/:
+    get:
+      operationId: companies_drivers_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListDriverList'
+          description: ''
+    post:
+      operationId: companies_drivers_create
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DriverRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DriverRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+          description: ''
+  /api/v1/companies/drivers/{id}/:
+    get:
+      operationId: companies_drivers_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Driver.
+        required: true
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListDriver'
+          description: ''
+    put:
+      operationId: companies_drivers_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Driver.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DriverRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DriverRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+          description: ''
+    patch:
+      operationId: companies_drivers_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Driver.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDriverRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDriverRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDriverRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+          description: ''
+    delete:
+      operationId: companies_drivers_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Driver.
+        required: true
+      tags:
+      - companies
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/geo/cities/:
+    get:
+      operationId: geo_cities_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - geo
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCityList'
+          description: ''
+  /api/v1/geo/cities/{id}/:
+    get:
+      operationId: geo_cities_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this City.
+        required: true
+      tags:
+      - geo
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/City'
+          description: ''
+  /api/v1/geo/districts/:
+    get:
+      operationId: geo_districts_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - geo
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListDistrictList'
+          description: ''
+  /api/v1/geo/districts/{id}/:
+    get:
+      operationId: geo_districts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this District.
+        required: true
+      tags:
+      - geo
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListDistrict'
+          description: ''
+  /api/v1/notifications/:
+    get:
+      operationId: notifications_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListNotificationList'
+          description: ''
+  /api/v1/notifications/{id}/:
+    put:
+      operationId: notifications_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this notification.
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: notifications_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this notification.
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedNotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedNotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedNotificationRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/stations/:
+    get:
+      operationId: stations_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - stations
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListStationList'
+          description: ''
+    post:
+      operationId: stations_create
+      tags:
+      - stations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListStationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ListStationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ListStationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListStation'
+          description: ''
+  /api/v1/stations/{id}/:
+    get:
+      operationId: stations_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Station.
+        required: true
+      tags:
+      - stations
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListStation'
+          description: ''
+    put:
+      operationId: stations_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Station.
+        required: true
+      tags:
+      - stations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListStationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ListStationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ListStationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListStation'
+          description: ''
+    patch:
+      operationId: stations_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Station.
+        required: true
+      tags:
+      - stations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedListStationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedListStationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedListStationRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListStation'
+          description: ''
+    delete:
+      operationId: stations_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Station.
+        required: true
+      tags:
+      - stations
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/stations/branches/:
+    get:
+      operationId: stations_branches_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - stations
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListStationBranchList'
+          description: ''
+    post:
+      operationId: stations_branches_create
+      tags:
+      - stations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListStationBranchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ListStationBranchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ListStationBranchRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListStationBranch'
+          description: ''
+  /api/v1/stations/branches/{id}/:
+    get:
+      operationId: stations_branches_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Station Branch.
+        required: true
+      tags:
+      - stations
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListStationBranch'
+          description: ''
+    put:
+      operationId: stations_branches_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Station Branch.
+        required: true
+      tags:
+      - stations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListStationBranchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ListStationBranchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ListStationBranchRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListStationBranch'
+          description: ''
+    patch:
+      operationId: stations_branches_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Station Branch.
+        required: true
+      tags:
+      - stations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedListStationBranchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedListStationBranchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedListStationBranchRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListStationBranch'
+          description: ''
+    delete:
+      operationId: stations_branches_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Station Branch.
+        required: true
+      tags:
+      - stations
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/users/company-branch-managers/:
+    get:
+      operationId: users_company_branch_managers_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListCompanyBranchManagerList'
+          description: ''
+    post:
+      operationId: users_company_branch_managers_create
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchManagerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchManagerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchManagerRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyBranchManager'
+          description: ''
+  /api/v1/users/company-branch-managers/{id}/:
+    get:
+      operationId: users_company_branch_managers_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Owner.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyBranchManager'
+          description: ''
+    put:
+      operationId: users_company_branch_managers_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Owner.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchManagerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchManagerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyBranchManagerRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyBranchManager'
+          description: ''
+    patch:
+      operationId: users_company_branch_managers_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Owner.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyBranchManagerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyBranchManagerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyBranchManagerRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyBranchManager'
+          description: ''
+    delete:
+      operationId: users_company_branch_managers_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company Owner.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/users/firebase-tokens/:
+    post:
+      operationId: users_firebase_tokens_create
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FirebaseTokenRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FirebaseTokenRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FirebaseTokenRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FirebaseToken'
+          description: ''
+  /api/v1/users/firebase-tokens/{id}/:
+    delete:
+      operationId: users_firebase_tokens_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/users/users/:
+    get:
+      operationId: users_users_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListUserList'
+          description: ''
+    post:
+      operationId: users_users_create
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/users/users/{id}/:
+    get:
+      operationId: users_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: users_users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: users_users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: users_users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    BranchBalanceUpdate:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+      required:
+      - amount
+      - type
+    BranchBalanceUpdateRequest:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+      required:
+      - amount
+      - type
+    City:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        country:
+          type: integer
+      required:
+      - country
+      - id
+      - name
+    CityName:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+      required:
+      - name
+    CityNameRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - name
+    Company:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+          maxLength: 255
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 11
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+        district:
+          type: integer
+          nullable: true
+      required:
+      - address
+      - balance
+      - created
+      - created_by
+      - id
+      - modified
+      - name
+    CompanyBranch:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 11
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+        company:
+          type: integer
+        district:
+          type: integer
+          nullable: true
+      required:
+      - company
+      - created
+      - created_by
+      - id
+      - modified
+      - name
+    CompanyBranchAssignManagers:
+      type: object
+      properties:
+        managers:
+          type: array
+          items:
+            type: integer
+      required:
+      - managers
+    CompanyBranchAssignManagersRequest:
+      type: object
+      properties:
+        managers:
+          type: array
+          items:
+            type: integer
+      required:
+      - managers
+    CompanyBranchManager:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+        phone_number:
+          type: string
+          maxLength: 11
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - id
+      - name
+      - phone_number
+    CompanyBranchManagerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          minLength: 1
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 11
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - name
+      - password
+      - phone_number
+    CompanyBranchRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 11
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+        company:
+          type: integer
+        district:
+          type: integer
+          nullable: true
+      required:
+      - company
+      - created_by
+      - name
+    CompanyCashRequest:
+      type: object
+      properties:
+        driver:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - driver
+    CompanyCashRequestRequest:
+      type: object
+      properties:
+        driver:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - driver
+    CompanyName:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+      required:
+      - name
+    CompanyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 11
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+        district:
+          type: integer
+          nullable: true
+      required:
+      - address
+      - balance
+      - created_by
+      - name
+    DistrictWithcityname:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        city:
+          $ref: '#/components/schemas/CityName'
+      required:
+      - city
+      - id
+      - name
+    DistrictWithcitynameRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        city:
+          $ref: '#/components/schemas/CityNameRequest'
+      required:
+      - city
+      - name
+    Driver:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        phone_number:
+          type: string
+          maxLength: 11
+        code:
+          type: string
+          readOnly: true
+          title: Driver code
+        lincense_number:
+          type: string
+          title: Driver license number
+          maxLength: 20
+        lincense_expiration_date:
+          type: string
+          format: date
+        branch:
+          type: integer
+      required:
+      - branch
+      - code
+      - created
+      - id
+      - lincense_expiration_date
+      - lincense_number
+      - modified
+      - name
+      - phone_number
+    DriverRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 11
+        lincense_number:
+          type: string
+          minLength: 1
+          title: Driver license number
+          maxLength: 20
+        lincense_expiration_date:
+          type: string
+          format: date
+        branch:
+          type: integer
+      required:
+      - branch
+      - lincense_expiration_date
+      - lincense_number
+      - name
+      - phone_number
+    FirebaseToken:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        token:
+          type: string
+          maxLength: 255
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created
+      - id
+      - token
+    FirebaseTokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - token
+    ListCompany:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        district:
+          $ref: '#/components/schemas/ListDistrict'
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+          maxLength: 255
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 11
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+      required:
+      - address
+      - balance
+      - created
+      - created_by
+      - district
+      - id
+      - modified
+      - name
+    ListCompanyBranch:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        district:
+          $ref: '#/components/schemas/ListDistrict'
+        company:
+          $ref: '#/components/schemas/CompanyName'
+        cars_count:
+          type: integer
+        drivers_count:
+          type: integer
+        managers_count:
+          type: integer
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 11
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+      required:
+      - cars_count
+      - company
+      - created
+      - created_by
+      - district
+      - drivers_count
+      - id
+      - managers_count
+      - modified
+      - name
+    ListCompanyBranchManager:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        phone_number:
+          type: string
+          maxLength: 11
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        password:
+          type: string
+          maxLength: 255
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          $ref: '#/components/schemas/SingleUser'
+        updated_by:
+          $ref: '#/components/schemas/SingleUser'
+        company_id:
+          type: integer
+          readOnly: true
+      required:
+      - company_id
+      - created
+      - created_by
+      - email
+      - id
+      - modified
+      - name
+      - password
+      - phone_number
+      - updated_by
+    ListCompanyCashRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        driver:
+          $ref: '#/components/schemas/SingleDriver'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        company:
+          type: integer
+        station:
+          $ref: '#/components/schemas/ListStation'
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - company
+      - created
+      - driver
+      - id
+      - modified
+      - station
+    ListDistrict:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        city:
+          $ref: '#/components/schemas/City'
+        name:
+          type: string
+          maxLength: 255
+      required:
+      - city
+      - id
+      - name
+    ListDriver:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        branch:
+          $ref: '#/components/schemas/SingleBranchWithDistrict'
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        phone_number:
+          type: string
+          maxLength: 11
+        code:
+          type: string
+          title: Driver code
+          maxLength: 10
+        lincense_number:
+          type: string
+          title: Driver license number
+          maxLength: 20
+        lincense_expiration_date:
+          type: string
+          format: date
+      required:
+      - branch
+      - code
+      - created
+      - id
+      - lincense_expiration_date
+      - lincense_number
+      - modified
+      - name
+      - phone_number
+    ListNotification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        description:
+          type: string
+        is_read:
+          type: boolean
+        title:
+          type: string
+          maxLength: 255
+        type:
+          type: string
+          maxLength: 20
+        user:
+          type: integer
+      required:
+      - created
+      - description
+      - id
+      - modified
+      - title
+      - type
+      - user
+    ListStation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        services:
+          type: string
+          readOnly: true
+        district:
+          $ref: '#/components/schemas/DistrictWithcityname'
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        address:
+          type: string
+          maxLength: 255
+        lang:
+          type: number
+          format: double
+        lat:
+          type: number
+          format: double
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+      required:
+      - address
+      - created
+      - created_by
+      - district
+      - id
+      - lang
+      - lat
+      - modified
+      - name
+      - services
+    ListStationBranch:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        services:
+          type: string
+          readOnly: true
+        district:
+          $ref: '#/components/schemas/DistrictWithcityname'
+        station:
+          $ref: '#/components/schemas/StationName'
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        address:
+          type: string
+          maxLength: 255
+        lang:
+          type: number
+          format: double
+        lat:
+          type: number
+          format: double
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+      required:
+      - address
+      - created
+      - created_by
+      - district
+      - id
+      - lang
+      - lat
+      - modified
+      - name
+      - services
+      - station
+    ListStationBranchRequest:
+      type: object
+      properties:
+        district:
+          $ref: '#/components/schemas/DistrictWithcitynameRequest'
+        station:
+          $ref: '#/components/schemas/StationNameRequest'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        lang:
+          type: number
+          format: double
+        lat:
+          type: number
+          format: double
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+      required:
+      - address
+      - created_by
+      - district
+      - lang
+      - lat
+      - name
+      - station
+    ListStationRequest:
+      type: object
+      properties:
+        district:
+          $ref: '#/components/schemas/DistrictWithcitynameRequest'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        lang:
+          type: number
+          format: double
+        lat:
+          type: number
+          format: double
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+      required:
+      - address
+      - created_by
+      - district
+      - lang
+      - lat
+      - name
+    ListUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        phone_number:
+          type: string
+          maxLength: 11
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          $ref: '#/components/schemas/SingleUser'
+        updated_by:
+          $ref: '#/components/schemas/SingleUser'
+      required:
+      - created
+      - created_by
+      - email
+      - id
+      - modified
+      - name
+      - phone_number
+      - updated_by
+    LoginRequest:
+      type: object
+      properties:
+        identifier:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+      required:
+      - identifier
+      - password
+    Notification:
+      type: object
+      properties:
+        is_read:
+          type: boolean
+    PaginatedCityList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/City'
+    PaginatedListCompanyBranchList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListCompanyBranch'
+    PaginatedListCompanyBranchManagerList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListCompanyBranchManager'
+    PaginatedListCompanyCashRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListCompanyCashRequest'
+    PaginatedListCompanyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListCompany'
+    PaginatedListDistrictList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListDistrict'
+    PaginatedListDriverList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListDriver'
+    PaginatedListNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListNotification'
+    PaginatedListStationBranchList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListStationBranch'
+    PaginatedListStationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListStation'
+    PaginatedListUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListUser'
+    PasswordResetRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    PatchedCompanyBranchManagerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          minLength: 1
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 11
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+    PatchedCompanyBranchRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 11
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+        company:
+          type: integer
+        district:
+          type: integer
+          nullable: true
+    PatchedCompanyCashRequestRequest:
+      type: object
+      properties:
+        driver:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+    PatchedCompanyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 11
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+        district:
+          type: integer
+          nullable: true
+    PatchedDriverRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 11
+        lincense_number:
+          type: string
+          minLength: 1
+          title: Driver license number
+          maxLength: 20
+        lincense_expiration_date:
+          type: string
+          format: date
+        branch:
+          type: integer
+    PatchedListStationBranchRequest:
+      type: object
+      properties:
+        district:
+          $ref: '#/components/schemas/DistrictWithcitynameRequest'
+        station:
+          $ref: '#/components/schemas/StationNameRequest'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        lang:
+          type: number
+          format: double
+        lat:
+          type: number
+          format: double
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+    PatchedListStationRequest:
+      type: object
+      properties:
+        district:
+          $ref: '#/components/schemas/DistrictWithcitynameRequest'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        lang:
+          type: number
+          format: double
+        lat:
+          type: number
+          format: double
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+    PatchedNotificationRequest:
+      type: object
+      properties:
+        is_read:
+          type: boolean
+    PatchedProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 255
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 255
+    PatchedUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 255
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 11
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    Profile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        phone_number:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+      required:
+      - email
+      - id
+      - name
+      - phone_number
+      - role
+    ProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 255
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 255
+      required:
+      - email
+      - name
+      - password
+    RetrieveCompanyBranch:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        district:
+          $ref: '#/components/schemas/ListDistrict'
+        company:
+          $ref: '#/components/schemas/CompanyName'
+        cars_count:
+          type: integer
+        drivers_count:
+          type: integer
+        managers_count:
+          type: integer
+        managers:
+          type: string
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 11
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+          nullable: true
+      required:
+      - cars_count
+      - company
+      - created
+      - created_by
+      - district
+      - drivers_count
+      - id
+      - managers
+      - managers_count
+      - modified
+      - name
+    RoleEnum:
+      enum:
+      - admin
+      - company_owner
+      - company_branch_manager
+      - driver
+      - station_manager
+      - station_employee
+      - station_worker
+      type: string
+      description: |-
+        * `admin` - Admin
+        * `company_owner` - Companyowner
+        * `company_branch_manager` - Companybranchmanager
+        * `driver` - Driver
+        * `station_manager` - Stationmanager
+        * `station_employee` - Stationemployee
+        * `station_worker` - Stationworker
+    SetNewPasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        confirm_password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - confirm_password
+      - password
+    SingleBranchWithDistrict:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 11
+        district:
+          type: string
+        company:
+          type: integer
+      required:
+      - company
+      - district
+      - id
+      - name
+    SingleDriver:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        phone_number:
+          type: string
+          maxLength: 11
+        branch:
+          type: integer
+        code:
+          type: string
+          title: Driver code
+          maxLength: 10
+      required:
+      - branch
+      - code
+      - id
+      - name
+      - phone_number
+    SingleUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        phone_number:
+          type: string
+          maxLength: 11
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - id
+      - name
+      - phone_number
+    StationName:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+      required:
+      - id
+      - name
+    StationNameRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - name
+    StatusEnum:
+      enum:
+      - pending
+      - in_progress
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `in_progress` - In Progress
+        * `approved` - Approved
+        * `rejected` - Rejected
+    TypeEnum:
+      enum:
+      - add
+      - pull
+      type: string
+      description: |-
+        * `add` - add
+        * `pull` - pull
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        phone_number:
+          type: string
+          maxLength: 11
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+      - id
+      - name
+      - phone_number
+    UserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 255
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 11
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+      - name
+      - phone_number
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

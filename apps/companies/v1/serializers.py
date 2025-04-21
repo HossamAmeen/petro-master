@@ -33,7 +33,7 @@ class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CompanyBranch
-        fields = ["id", "name", "email", "phone_number", "district"]
+        fields = ["id", "name", "email", "phone_number", "district", "company"]
 
 
 class ListDriverSerializer(serializers.ModelSerializer):
@@ -133,6 +133,13 @@ class CompanyBranchAssignManagersSerializer(serializers.Serializer):
         return attrs
 
 
+class BranchBalanceUpdateSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
+    type = serializers.ChoiceField(
+        choices=[("add", "add"), ("subtract", "subtract")], required=True
+    )
+
+
 class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
     driver = SingleDriverSerializer()
     station = ListStationSerializer()
@@ -152,6 +159,24 @@ class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
 
 
 class CompanyCashRequestSerializer(serializers.ModelSerializer):
+    driver = serializers.PrimaryKeyRelatedField(
+        queryset=Driver.objects.none(),
+        error_messages={
+            "does_not_exist": "هذا السائق غير موجود",
+            "incorrect_type": "Invalid type. Expected a driver ID.",
+        },
+    )
+
     class Meta:
         model = CompanyCashRequest
         fields = ["driver", "amount"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+
+        queryset = Driver.objects.all()
+        if request and hasattr(request, "company_id"):
+            queryset = queryset.filter(branch__company_id=request.company_id)
+
+        self.fields["driver"].queryset = queryset

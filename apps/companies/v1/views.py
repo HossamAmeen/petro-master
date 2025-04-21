@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.views import Response, status
@@ -12,6 +13,7 @@ from apps.companies.v1.serializers import (
     CompanyCashRequestSerializer,
     ListCompanyCashRequestSerializer,
 )
+from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import (
     InjectCompanyUserMixin,
     InjectUserMixin,
@@ -19,6 +21,7 @@ from apps.shared.mixins.inject_user_mixins import (
 from apps.users.models import CompanyBranchManager, User
 
 from .serializers import (
+    BranchBalanceUpdateSerializer,
     CompanyBranchAssignManagersSerializer,
     CompanyBranchSerializer,
     CompanySerializer,
@@ -67,6 +70,8 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return RetrieveCompanyBranchSerializer
         if self.action == "assign_managers":
             return CompanyBranchAssignManagersSerializer
+        if self.action == "update_balance":
+            return BranchBalanceUpdateSerializer
         return CompanyBranchSerializer
 
     @action(detail=True, methods=["post"], url_name="assign-managers")
@@ -103,6 +108,79 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return Response(
             {"message": "تم تعيين المديرين بنجاح"}, status=status.HTTP_200_OK
         )
+
+    @extend_schema(
+        request=BranchBalanceUpdateSerializer,
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {
+                        "balance": {"type": "number", "format": "decimal"},
+                    },
+                    "required": ["balance"],
+                },
+                description="Current branch balance after the update.",
+            )
+        },
+        examples=[
+            OpenApiExample(
+                "Add Balance Example",
+                value={"amount": "100.00", "type": "add"},
+                request_only=True,
+            ),
+            OpenApiExample(
+                "Pull Balance Example",
+                value={"amount": "50.00", "type": "subtract"},
+                request_only=True,
+            ),
+        ],
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="update-balance",
+        url_name="update_balance",
+    )
+    def update_balance(self, request, *args, **kwargs):
+        company_branch = self.get_object()
+        company = company_branch.company
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        with transaction.atomic():
+            if serializer.validated_data["type"] == "add":
+                company.refresh_from_db()
+                if company.balance >= serializer.validated_data["amount"]:
+                    company.balance -= serializer.validated_data["amount"]
+                    company.save()
+                    company_branch.refresh_from_db()
+                    company_branch.balance += serializer.validated_data["amount"]
+                    company_branch.save()
+                else:
+                    raise CustomValidationError(
+                        message="الشركة لا تمتلك كافٍ من المال",
+                        code="not_enough_balance",
+                        errors=[],
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+            elif serializer.validated_data["type"] == "subtract":
+                company_branch.refresh_from_db()
+                if company_branch.balance >= serializer.validated_data["amount"]:
+                    company_branch.balance -= serializer.validated_data["amount"]
+                    company_branch.save()
+                    company.refresh_from_db()
+                    company.balance += serializer.validated_data["amount"]
+                    company.save()
+                else:
+                    raise CustomValidationError(
+                        message="الفرع لا تمتلك كافٍ من المال",
+                        code="not_enough_balance",
+                        errors=[],
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+
+        return Response({"balance": company_branch.balance}, status=status.HTTP_200_OK)
 
 
 class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
