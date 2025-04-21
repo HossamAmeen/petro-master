@@ -38,3 +38,7 @@ class FirebaseTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = FirebaseToken
         fields = ["id", "token", "created"]
+
+
+class FirebaseTokenDeleteSerializer(serializers.Serializer):
+    token = serializers.CharField(help_text="Firebase token to be deleted")

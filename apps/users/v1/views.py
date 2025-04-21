@@ -10,6 +10,7 @@ from .serializers.company_user_serializer import (
     ListCompanyBranchManagerSerializer,
 )
 from .serializers.user_serializers import (
+    FirebaseTokenDeleteSerializer,
     FirebaseTokenSerializer,
     ListUserSerializer,
     UserSerializer,
@@ -50,6 +51,8 @@ class FirebaseTokenViewSet(viewsets.ModelViewSet):
         return FirebaseToken.objects.filter(user=self.request.user).order_by("-id")
 
     def get_serializer_class(self):
+        if self.action == "delete_by_token":
+            return FirebaseTokenDeleteSerializer
         return FirebaseTokenSerializer
 
     def perform_create(self, serializer):
