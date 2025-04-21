@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from .models import CompanyUser, User
+from .models import CompanyUser, FirebaseToken, User
 
 
 class CustomUserChangeForm(forms.ModelForm):
@@ -195,3 +195,4 @@ class CompanyUserInterface(admin.ModelAdmin):
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(CompanyUser, CompanyUserInterface)
+admin.site.register(FirebaseToken)
