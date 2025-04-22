@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 # flake8: noqa
 from datetime import timedelta
 from pathlib import Path
+import firebase_admin
 
 import environ
 
@@ -245,3 +246,12 @@ EMAIL_USE_SSL = True
 EMAIL_HOST_USER = "learn@baronlearning.com"
 EMAIL_HOST_PASSWORD = "KMPjHt%b!U7j"  # Replace with your actual email password
 DEFAULT_FROM_EMAIL = "learn@baronlearning.com"
+
+
+FCM_SERVICE_ACCOUNT = BASE_DIR / "firebase_service_account.json"
+
+try:
+    cred = firebase_admin.credentials.Certificate(FCM_SERVICE_ACCOUNT)
+    firebase_admin.initialize_app(cred)
+except Exception as e:
+    pass
