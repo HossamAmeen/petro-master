@@ -16,8 +16,6 @@ class FCMManager:
 
         try:
             response = messaging.send_each(messages)
-
-            # Inspect responses for errors
             for i, resp in enumerate(response.responses):
                 if not resp.success:
                     pass

@@ -13,8 +13,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 # flake8: noqa
 from datetime import timedelta
 from pathlib import Path
+import os
+import json
+import base64
 import firebase_admin
-
+from firebase_admin import credentials
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -248,10 +251,20 @@ EMAIL_HOST_PASSWORD = "KMPjHt%b!U7j"  # Replace with your actual email password
 DEFAULT_FROM_EMAIL = "learn@baronlearning.com"
 
 
-FCM_SERVICE_ACCOUNT = BASE_DIR / "firebase_service_account.json"
+import os
+import json
+import base64
+import firebase_admin
+from firebase_admin import credentials
 
-try:
-    cred = firebase_admin.credentials.Certificate(FCM_SERVICE_ACCOUNT)
-    firebase_admin.initialize_app(cred)
-except Exception as e:
+encoded_credentials = env("FIREBASE_CREDENTIALS", default=None)
+if encoded_credentials:
+    decoded_credentials = base64.b64decode(encoded_credentials)
+    try:
+        cred_dict = json.loads(decoded_credentials)
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+    except Exception as e:  # Catch potential file not found errors during decoding
+        pass
+else:
     pass
