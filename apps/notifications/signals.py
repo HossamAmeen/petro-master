@@ -11,5 +11,7 @@ def send_fcm_message_after_notification_created(sender, instance, created, **kwa
         FCMManager.send_fcm_message(
             title=instance.title,
             body=instance.description,
-            device_tokens=list(instance.user.values_list("device_token", flat=True)),
+            device_tokens=list(
+                instance.user.firebase_tokens.values_list("token", flat=True)
+            ),
         )
