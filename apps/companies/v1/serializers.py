@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.companies.models.company_cash_models import CompanyCashRequest
-from apps.companies.models.company_models import Company, CompanyBranch, Driver
+from apps.companies.models.company_models import Car, Company, CompanyBranch, Driver
 from apps.geo.v1.serializers import ListDistrictSerializer
 from apps.stations.v1.serializers import ListStationSerializer
 from apps.users.models import CompanyBranchManager, CompanyUser, User
@@ -180,3 +180,17 @@ class CompanyCashRequestSerializer(serializers.ModelSerializer):
             queryset = queryset.filter(branch__company_id=request.company_id)
 
         self.fields["driver"].queryset = queryset
+
+
+class ListCarSerializer(serializers.ModelSerializer):
+    branch = SingleBranchWithDistrictSerializer()
+
+    class Meta:
+        model = Car
+        fields = "__all__"
+
+
+class CarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Car
+        fields = "__all__"

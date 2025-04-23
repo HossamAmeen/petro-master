@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.views import Response, status
 
 from apps.companies.models.company_cash_models import CompanyCashRequest
-from apps.companies.models.company_models import Company, CompanyBranch, Driver
+from apps.companies.models.company_models import Car, Company, CompanyBranch, Driver
 from apps.companies.v1.filters import CompanyBranchFilter
 from apps.companies.v1.serializers import (
     CompanyCashRequestSerializer,
@@ -22,10 +22,12 @@ from apps.users.models import CompanyBranchManager, User
 
 from .serializers import (
     BranchBalanceUpdateSerializer,
+    CarSerializer,
     CompanyBranchAssignManagersSerializer,
     CompanyBranchSerializer,
     CompanySerializer,
     DriverSerializer,
+    ListCarSerializer,
     ListCompanyBranchSerializer,
     ListCompanySerializer,
     ListDriverSerializer,
@@ -190,6 +192,20 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.request.method == "GET":
             return ListDriverSerializer
         return DriverSerializer
+
+    def get_queryset(self):
+        if self.request.user.role == User.UserRoles.CompanyOwner:
+            return self.queryset.filter(branch__company__owners=self.request.user)
+        return self.queryset
+
+
+class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
+    queryset = Car.objects.select_related("branch__district").order_by("-id")
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return ListCarSerializer
+        return CarSerializer
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
