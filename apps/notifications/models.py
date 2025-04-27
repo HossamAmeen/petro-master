@@ -3,9 +3,15 @@ from django_extensions.db.models import TimeStampedModel
 
 
 class Notification(TimeStampedModel):
+
+    class NotificationType(models.TextChoices):
+        FUEL = "fuel"
+        MONEY = "money"
+        GENERAL = "general"
+
     description = models.TextField()
     is_read = models.BooleanField(default=False)
     title = models.CharField(max_length=255)
-    type = models.CharField(max_length=20)
+    type = models.CharField(max_length=20, choices=NotificationType.choices)
     is_success = models.BooleanField(default=False)
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)

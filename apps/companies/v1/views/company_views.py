@@ -10,8 +10,20 @@ from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Car, Company, CompanyBranch, Driver
 from apps.companies.v1.filters import CompanyBranchFilter
 from apps.companies.v1.serializers import (
+    BranchBalanceUpdateSerializer,
+    CarBalanceUpdateSerializer,
+    CarSerializer,
+    CompanyBranchAssignManagersSerializer,
+    CompanyBranchSerializer,
     CompanyCashRequestSerializer,
+    CompanySerializer,
+    DriverSerializer,
+    ListCarSerializer,
+    ListCompanyBranchSerializer,
     ListCompanyCashRequestSerializer,
+    ListCompanySerializer,
+    ListDriverSerializer,
+    RetrieveCompanyBranchSerializer,
 )
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import (
@@ -19,20 +31,6 @@ from apps.shared.mixins.inject_user_mixins import (
     InjectUserMixin,
 )
 from apps.users.models import CompanyBranchManager, User
-
-from .serializers import (
-    BranchBalanceUpdateSerializer,
-    CarSerializer,
-    CompanyBranchAssignManagersSerializer,
-    CompanyBranchSerializer,
-    CompanySerializer,
-    DriverSerializer,
-    ListCarSerializer,
-    ListCompanyBranchSerializer,
-    ListCompanySerializer,
-    ListDriverSerializer,
-    RetrieveCompanyBranchSerializer,
-)
 
 
 class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
@@ -200,6 +198,16 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 
 class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["branch", "fuel_type", "city", "is_with_odometer"]
+    search_fields = [
+        "code",
+        "plate",
+        "lincense_number",
+        "name",
+        "branch__name",
+        "branch__district__name",
+    ]
     queryset = Car.objects.select_related("branch__district").order_by("-id")
 
     def get_serializer_class(self):
@@ -211,6 +219,53 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.request.user.role == User.UserRoles.CompanyOwner:
             return self.queryset.filter(branch__company__owners=self.request.user)
         return self.queryset
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="update-balance",
+        url_name="update_balance",
+    )
+    def update_balance(self, request, *args, **kwargs):
+        car = self.get_object()
+        serializer = CarBalanceUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        with transaction.atomic():
+            if serializer.validated_data["type"] == "add":
+                car.refresh_from_db()
+                if car.balance >= serializer.validated_data["amount"]:
+                    car.balance -= serializer.validated_data["amount"]
+                    car.save()
+
+                    branch = car.branch.refresh_from_db()
+                    branch.balance += serializer.validated_data["amount"]
+                    branch.save()
+                else:
+                    raise CustomValidationError(
+                        message="الفرع لا تمتلك كافٍ من المال",
+                        code="not_enough_balance",
+                        errors=[],
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+            elif serializer.validated_data["type"] == "subtract":
+                car.refresh_from_db()
+                if car.balance >= serializer.validated_data["amount"]:
+                    car.balance -= serializer.validated_data["amount"]
+                    car.save()
+
+                    branch = car.branch.refresh_from_db()
+                    branch.balance += serializer.validated_data["amount"]
+                    branch.save()
+                else:
+                    raise CustomValidationError(
+                        message="السيارة لا تمتلك كافٍ من المال",
+                        code="not_enough_balance",
+                        errors=[],
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+
+        return Response({"balance": car.balance}, status=status.HTTP_200_OK)
 
 
 class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):

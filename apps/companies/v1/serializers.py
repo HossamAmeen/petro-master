@@ -133,11 +133,15 @@ class CompanyBranchAssignManagersSerializer(serializers.Serializer):
         return attrs
 
 
-class BranchBalanceUpdateSerializer(serializers.Serializer):
+class BalanceUpdateSerializer(serializers.ModelSerializer):
     amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
     type = serializers.ChoiceField(
         choices=[("add", "add"), ("subtract", "subtract")], required=True
     )
+
+
+class BranchBalanceUpdateSerializer(BalanceUpdateSerializer):
+    pass
 
 
 class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
@@ -194,3 +198,7 @@ class CarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
         fields = "__all__"
+
+
+class CarBalanceUpdateSerializer(BalanceUpdateSerializer):
+    pass
