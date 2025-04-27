@@ -265,12 +265,13 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     car.balance -= serializer.validated_data["amount"]
                     car.save()
 
-                    branch = car.branch.refresh_from_db()
+                    branch = car.branch
+                    branch.refresh_from_db()
                     branch.balance += serializer.validated_data["amount"]
                     branch.save()
                 else:
                     raise CustomValidationError(
-                        message="الفرع لا تمتلك كافٍ من المال",
+                        message="السيارة لا تمتلك كافٍ من المال",
                         code="not_enough_balance",
                         errors=[],
                         status_code=status.HTTP_400_BAD_REQUEST,
@@ -281,7 +282,8 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     car.balance -= serializer.validated_data["amount"]
                     car.save()
 
-                    branch = car.branch.refresh_from_db()
+                    branch = car.branch
+                    branch.refresh_from_db()
                     branch.balance += serializer.validated_data["amount"]
                     branch.save()
                 else:
