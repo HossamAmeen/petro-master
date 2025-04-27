@@ -262,7 +262,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
             if serializer.validated_data["type"] == "add":
                 car.refresh_from_db()
                 if car.balance >= serializer.validated_data["amount"]:
-                    car.balance -= serializer.validated_data["amount"]
+                    car.balance += serializer.validated_data["amount"]
                     car.save()
 
                     branch = car.branch
