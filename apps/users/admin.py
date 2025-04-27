@@ -62,7 +62,7 @@ class CustomUserAdmin(UserAdmin):
             "User Info",
             {"fields": ("name", "email", "phone_number", "password1", "password2")},
         ),
-        ("Permissions", {"fields": ("role", "is_active")}),
+        ("Permissions", {"fields": ("role", "is_active", "is_staff", "is_superuser")}),
     )
 
     add_fieldsets = (
