@@ -133,7 +133,7 @@ class CompanyBranchAssignManagersSerializer(serializers.Serializer):
         return attrs
 
 
-class BalanceUpdateSerializer(serializers.ModelSerializer):
+class BalanceUpdateSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
     type = serializers.ChoiceField(
         choices=[("add", "add"), ("subtract", "subtract")], required=True
