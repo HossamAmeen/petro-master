@@ -59,9 +59,17 @@ class Car(AbstractBaseModel):
         SAT = "Saturday"
         SUN = "Sunday"
 
+    class PlateColor(models.TextChoices):
+        RED = "Red"
+        BLUE = "Blue"
+        ORANGE = "Orange"
+        YELLOW = "Yellow"
+        GREEN = "Green"
+        GOLD = "Gold"
+
     code = models.CharField(max_length=10, unique=True, verbose_name="car code")
     plate = models.CharField(max_length=10, verbose_name="car number plate")
-    plate_color = models.CharField(max_length=10)
+    plate_color = models.CharField(max_length=10, choices=PlateColor.choices)
     color = models.CharField(max_length=10)
     license_expiration_date = models.DateField()
     model_year = models.IntegerField()
