@@ -220,6 +220,33 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return self.queryset.filter(branch__company__owners=self.request.user)
         return self.queryset
 
+    @extend_schema(
+        request=CarBalanceUpdateSerializer,
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {
+                        "balance": {"type": "number", "format": "decimal"},
+                    },
+                    "required": ["balance"],
+                },
+                description="Current car balance after the update.",
+            )
+        },
+        examples=[
+            OpenApiExample(
+                "Add Balance Example",
+                value={"amount": "100.00", "type": "add"},
+                request_only=True,
+            ),
+            OpenApiExample(
+                "Pull Balance Example",
+                value={"amount": "50.00", "type": "subtract"},
+                request_only=True,
+            ),
+        ],
+    )
     @action(
         detail=True,
         methods=["post"],

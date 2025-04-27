@@ -127,6 +127,7 @@ class CarAdmin(admin.ModelAdmin):
         "branch",
     )
     readonly_fields = ("balance",)
+    list_per_page = 10
 
 
 class DriverAdmin(admin.ModelAdmin):
