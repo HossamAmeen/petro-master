@@ -7,4 +7,5 @@ class Notification(TimeStampedModel):
     is_read = models.BooleanField(default=False)
     title = models.CharField(max_length=255)
     type = models.CharField(max_length=20)
-    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    is_success = models.BooleanField(default=False)
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
