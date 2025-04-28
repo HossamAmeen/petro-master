@@ -67,15 +67,6 @@ class Car(AbstractBaseModel):
         GREEN = "Green"
         GOLD = "Gold"
 
-    COLOR_CHOICES_HEX = {
-        PlateColor.RED: "#FF0000",
-        PlateColor.BLUE: "#0000FF",
-        PlateColor.ORANGE: "#FFA500",
-        PlateColor.YELLOW: "#FFFF00",
-        PlateColor.GREEN: "#008000",
-        PlateColor.GOLD: "#FFD700",
-    }
-
     code = models.CharField(max_length=10, unique=True, verbose_name="car code")
     plate = models.CharField(max_length=10, verbose_name="car number plate")
     plate_color = models.CharField(max_length=10, choices=PlateColor.choices)
@@ -108,7 +99,6 @@ class Car(AbstractBaseModel):
             )
 
     def save(self, *args, **kwargs):
-        self.plate_color = self.COLOR_CHOICES_HEX[self.plate_color]
         self.full_clean()
         super().save(*args, **kwargs)
 
