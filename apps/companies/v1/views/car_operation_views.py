@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 
 from apps.companies.models.operation_model import CarOperation
+from apps.companies.v1.filters import CarOperationFilter
 from apps.companies.v1.serializers.car_operation_serializer import (
     listCarOperationSerializer,
 )
@@ -11,15 +12,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         "car", "driver", "station_branch", "worker", "service"
     ).order_by("-id")
     serializer_class = listCarOperationSerializer
-    filterset_fields = [
-        "car",
-        "driver",
-        "station_branch",
-        "worker",
-        "service",
-        "created__gte",
-        "created__lte",
-    ]
+    filterset_class = CarOperationFilter
     search_fields = [
         "code",
         "car__code",
