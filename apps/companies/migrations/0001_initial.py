@@ -9,100 +9,242 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Car',
+            name="Car",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('code', models.CharField(max_length=10, unique=True, verbose_name='car code')),
-                ('plate', models.CharField(max_length=10, verbose_name='car number plate')),
-                ('plate_color', models.CharField(max_length=10)),
-                ('color', models.CharField(max_length=10)),
-                ('license_expiration_date', models.DateField()),
-                ('model_year', models.IntegerField()),
-                ('brand', models.CharField(max_length=25)),
-                ('is_with_odometer', models.BooleanField()),
-                ('tank_capacity', models.IntegerField()),
-                ('permitted_fuel_amount', models.IntegerField()),
-                ('fuel_type', models.CharField(choices=[('Diesel', 'Diesel'), ('Gasoline', 'Gasoline'), ('Electric', 'Electric'), ('Hydrogen', 'Hydrogen')], max_length=20)),
-                ('number_of_fuelings_per_day', models.IntegerField()),
-                ('number_of_washes_per_month', models.IntegerField()),
-                ('fuel_allowed_days', models.JSONField(blank=True, default=list)),
-                ('balance', models.DecimalField(decimal_places=2, max_digits=10)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "created",
+                    django_extensions.db.fields.CreationDateTimeField(
+                        auto_now_add=True, verbose_name="created"
+                    ),
+                ),
+                (
+                    "modified",
+                    django_extensions.db.fields.ModificationDateTimeField(
+                        auto_now=True, verbose_name="modified"
+                    ),
+                ),
+                (
+                    "code",
+                    models.CharField(
+                        max_length=10, unique=True, verbose_name="car code"
+                    ),
+                ),
+                (
+                    "plate",
+                    models.CharField(max_length=10, verbose_name="car number plate"),
+                ),
+                ("plate_color", models.CharField(max_length=10)),
+                ("color", models.CharField(max_length=10)),
+                ("license_expiration_date", models.DateField()),
+                ("model_year", models.IntegerField()),
+                ("brand", models.CharField(max_length=25)),
+                ("is_with_odometer", models.BooleanField()),
+                ("tank_capacity", models.IntegerField()),
+                ("permitted_fuel_amount", models.IntegerField()),
+                (
+                    "fuel_type",
+                    models.CharField(
+                        choices=[
+                            ("Diesel", "Diesel"),
+                            ("Gasoline", "Gasoline"),
+                            ("Electric", "Electric"),
+                            ("Hydrogen", "Hydrogen"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("number_of_fuelings_per_day", models.IntegerField()),
+                ("number_of_washes_per_month", models.IntegerField()),
+                ("fuel_allowed_days", models.JSONField(blank=True, default=list)),
+                ("balance", models.DecimalField(decimal_places=2, max_digits=10)),
             ],
             options={
-                'verbose_name': 'Car',
-                'verbose_name_plural': 'Cars',
+                "verbose_name": "Car",
+                "verbose_name_plural": "Cars",
             },
         ),
         migrations.CreateModel(
-            name='Company',
+            name="Company",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('name', models.CharField(max_length=255)),
-                ('address', models.CharField(max_length=255)),
-                ('balance', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('email', models.EmailField(blank=True, max_length=255, null=True)),
-                ('phone_number', models.CharField(blank=True, max_length=11, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "created",
+                    django_extensions.db.fields.CreationDateTimeField(
+                        auto_now_add=True, verbose_name="created"
+                    ),
+                ),
+                (
+                    "modified",
+                    django_extensions.db.fields.ModificationDateTimeField(
+                        auto_now=True, verbose_name="modified"
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("address", models.CharField(max_length=255)),
+                ("balance", models.DecimalField(decimal_places=2, max_digits=10)),
+                ("email", models.EmailField(blank=True, max_length=255, null=True)),
+                (
+                    "phone_number",
+                    models.CharField(blank=True, max_length=11, null=True),
+                ),
             ],
             options={
-                'verbose_name': 'Company',
-                'verbose_name_plural': 'Companies',
+                "verbose_name": "Company",
+                "verbose_name_plural": "Companies",
             },
         ),
         migrations.CreateModel(
-            name='CompanyBranch',
+            name="CompanyBranch",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('name', models.CharField(max_length=255)),
-                ('email', models.EmailField(blank=True, max_length=255, null=True)),
-                ('phone_number', models.CharField(blank=True, max_length=11, null=True)),
-                ('address', models.CharField(blank=True, max_length=255, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "created",
+                    django_extensions.db.fields.CreationDateTimeField(
+                        auto_now_add=True, verbose_name="created"
+                    ),
+                ),
+                (
+                    "modified",
+                    django_extensions.db.fields.ModificationDateTimeField(
+                        auto_now=True, verbose_name="modified"
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("email", models.EmailField(blank=True, max_length=255, null=True)),
+                (
+                    "phone_number",
+                    models.CharField(blank=True, max_length=11, null=True),
+                ),
+                ("address", models.CharField(blank=True, max_length=255, null=True)),
             ],
             options={
-                'verbose_name': 'Company Branch',
-                'verbose_name_plural': 'Company Branches',
+                "verbose_name": "Company Branch",
+                "verbose_name_plural": "Company Branches",
             },
         ),
         migrations.CreateModel(
-            name='CompanyCashRequest',
+            name="CompanyCashRequest",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('status', models.CharField(choices=[('Pending', 'Pending'), ('In_Progress', 'In Progress'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], max_length=20)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "created",
+                    django_extensions.db.fields.CreationDateTimeField(
+                        auto_now_add=True, verbose_name="created"
+                    ),
+                ),
+                (
+                    "modified",
+                    django_extensions.db.fields.ModificationDateTimeField(
+                        auto_now=True, verbose_name="modified"
+                    ),
+                ),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=10)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("Pending", "Pending"),
+                            ("In_Progress", "In Progress"),
+                            ("Approved", "Approved"),
+                            ("Rejected", "Rejected"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Company Cash Request',
-                'verbose_name_plural': 'Company Cash Requests',
+                "verbose_name": "Company Cash Request",
+                "verbose_name_plural": "Company Cash Requests",
             },
         ),
         migrations.CreateModel(
-            name='Driver',
+            name="Driver",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
-                ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('name', models.CharField(max_length=100)),
-                ('phone_number', models.CharField(max_length=11)),
-                ('code', models.CharField(max_length=10, unique=True, verbose_name='driver code')),
-                ('lincense_number', models.CharField(max_length=20, unique=True, verbose_name='driver license number')),
-                ('lincense_expiration_date', models.DateField()),
-                ('branch', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='drivers', to='companies.companybranch')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "created",
+                    django_extensions.db.fields.CreationDateTimeField(
+                        auto_now_add=True, verbose_name="created"
+                    ),
+                ),
+                (
+                    "modified",
+                    django_extensions.db.fields.ModificationDateTimeField(
+                        auto_now=True, verbose_name="modified"
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("phone_number", models.CharField(max_length=11)),
+                (
+                    "code",
+                    models.CharField(
+                        max_length=10, unique=True, verbose_name="driver code"
+                    ),
+                ),
+                (
+                    "lincense_number",
+                    models.CharField(
+                        max_length=20, unique=True, verbose_name="driver license number"
+                    ),
+                ),
+                ("lincense_expiration_date", models.DateField()),
+                (
+                    "branch",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="drivers",
+                        to="companies.companybranch",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Driver',
-                'verbose_name_plural': 'Drivers',
+                "verbose_name": "Driver",
+                "verbose_name_plural": "Drivers",
             },
         ),
     ]

@@ -9,8 +9,8 @@ class Country(models.Model):
         return self.name
 
     class Meta:
-        verbose_name = 'Country'
-        verbose_name_plural = 'Countries'
+        verbose_name = "Country"
+        verbose_name_plural = "Countries"
 
 
 class City(models.Model):
@@ -21,8 +21,8 @@ class City(models.Model):
         return self.name
 
     class Meta:
-        verbose_name = 'City'
-        verbose_name_plural = 'Cities'
+        verbose_name = "City"
+        verbose_name_plural = "Cities"
 
 
 class District(models.Model):
@@ -33,5 +33,5 @@ class District(models.Model):
         return self.name
 
     class Meta:
-        verbose_name = 'District'
-        verbose_name_plural = 'Districts'
+        verbose_name = "District"
+        verbose_name_plural = "Districts"

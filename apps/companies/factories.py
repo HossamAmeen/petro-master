@@ -21,8 +21,11 @@ class UserFactory(factory.django.DjangoModelFactory):
     name = factory.Faker("name")
     email = factory.Faker("company_email")
     phone_number = factory.Faker("phone_number")
-    role = factory.LazyFunction(lambda: ["admin", "station_manager", "station_employee", "station_worker"]
-                                        [random.randint(0, 3)])
+    role = factory.LazyFunction(
+        lambda: ["admin", "station_manager", "station_employee", "station_worker"][
+            random.randint(0, 3)
+        ]
+    )
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 
@@ -49,7 +52,9 @@ class CompanyFactory(factory.django.DjangoModelFactory):
 
     name = factory.Faker("company")
     address = factory.Faker("address")
-    balance = factory.LazyFunction(lambda: Decimal(random.uniform(1000, 100000)).quantize(Decimal("0.01")))
+    balance = factory.LazyFunction(
+        lambda: Decimal(random.uniform(1000, 100000)).quantize(Decimal("0.01"))
+    )
     email = factory.Faker("company_email")
     phone_number = factory.Faker("phone_number")
     district = factory.LazyFunction(lambda: District.objects.order_by("?").first())
@@ -83,12 +88,20 @@ class CarFactory(factory.django.DjangoModelFactory):
     model_year = factory.Faker("year")
     brand = factory.LazyAttribute(lambda _: fake.company()[:24])
     is_with_odometer = factory.Faker("boolean")
-    tank_capacity = factory.LazyAttribute(lambda _: fake.random_int(min=50, max=100))  # Tank capacity between 50-100 liters
-    permitted_fuel_amount = factory.LazyAttribute(lambda obj: fake.random_int(min=10, max=obj.tank_capacity - 10))  # Always less than tank_capacity
+    tank_capacity = factory.LazyAttribute(
+        lambda _: fake.random_int(min=50, max=100)
+    )  # Tank capacity between 50-100 liters
+    permitted_fuel_amount = factory.LazyAttribute(
+        lambda obj: fake.random_int(min=10, max=obj.tank_capacity - 10)
+    )  # Always less than tank_capacity
     fuel_type = factory.LazyFunction(lambda: random.choice(Car.FuelType.values))
     number_of_fuelings_per_day = factory.LazyFunction(lambda: random.randint(1, 5))
-    fuel_allowed_days = factory.LazyFunction(lambda: random.sample(Car.FuelAllowedDay.values, k=3))
-    balance = factory.LazyFunction(lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01")))
+    fuel_allowed_days = factory.LazyFunction(
+        lambda: random.sample(Car.FuelAllowedDay.values, k=3)
+    )
+    balance = factory.LazyFunction(
+        lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01"))
+    )
     city = factory.LazyFunction(lambda: City.objects.order_by("?").first())
     branch = factory.SubFactory(CompanyBranchFactory)
     number_of_washes_per_month = factory.LazyFunction(lambda: random.randint(1, 10))
@@ -114,10 +127,10 @@ class NotificationFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Notification
 
-    description = factory.Faker('text')
-    is_read = factory.Faker('boolean')
-    title = factory.Faker('sentence', nb_words=3)
-    type = factory.Faker('word')
+    description = factory.Faker("text")
+    is_read = factory.Faker("boolean")
+    title = factory.Faker("sentence", nb_words=3)
+    type = factory.Faker("word")
     user = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 
 
@@ -140,7 +153,9 @@ class ServiceFactory(factory.django.DjangoModelFactory):
 
     name = factory.Faker("company")
     type = factory.LazyFunction(lambda: random.choice(Service.ServiceType.values))
-    cost = factory.LazyFunction(lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01")))
+    cost = factory.LazyFunction(
+        lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01"))
+    )
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 
@@ -148,6 +163,7 @@ class ServiceFactory(factory.django.DjangoModelFactory):
 class StationServiceFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = StationService
+
     service = factory.LazyFunction(lambda: Service.objects.order_by("?").first())
     station = factory.LazyFunction(lambda: Station.objects.order_by("?").first())
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())

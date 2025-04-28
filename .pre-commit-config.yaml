@@ -24,13 +24,6 @@ repos:
     hooks:
     -   id: flake8
 
--   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.285
-    hooks:
-    -   id: ruff
-        alias: autoformat
-        args: [--fix]
-
 -   repo: https://github.com/dhruvmanila/remove-print-statements
     rev: ''  # Replace with latest tag on GitHub
     hooks:

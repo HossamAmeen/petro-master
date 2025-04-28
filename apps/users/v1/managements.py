@@ -2,7 +2,9 @@ from django.contrib.auth.models import UserManager
 
 
 class CustomUserManager(UserManager):
-    def create_superuser(self, phone_number, name, password=None, email=None, **extra_fields):
+    def create_superuser(
+        self, phone_number, name, password=None, email=None, **extra_fields
+    ):
         extra_fields["is_staff"] = True
         extra_fields["is_superuser"] = True
         return self._create_user(phone_number, name, password, **extra_fields)
