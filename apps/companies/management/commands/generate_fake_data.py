@@ -4,6 +4,7 @@ from faker import Faker
 
 from apps.companies.factories import (
     CarFactory,
+    CarOperationFactory,
     CityFactory,
     CompanyBranchFactory,
     CompanyFactory,
@@ -11,9 +12,12 @@ from apps.companies.factories import (
     DriverFactory,
     NotificationFactory,
     ServiceFactory,
+    StationBranchFactory,
+    StationBranchServiceFactory,
     StationFactory,
     StationServiceFactory,
     UserFactory,
+    WorkerFactory,
 )
 from apps.companies.models.company_models import Company, CompanyBranch
 from apps.geo.models import City, District
@@ -84,7 +88,11 @@ class Command(BaseCommand):
         DriverFactory.create_batch(90)
         NotificationFactory.create_batch(50)
         StationFactory.create_batch(25)
+        StationBranchFactory.create_batch(25)
+        StationBranchServiceFactory.create_batch(50)
+        WorkerFactory.create_batch(50)
         ServiceFactory.create_batch(10)
+        CarOperationFactory.create_batch(100)
         StationServiceFactory.create_batch(50)
         CompanyBranchManager.objects.create(
             user=company_branch_manager,

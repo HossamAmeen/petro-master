@@ -37,5 +37,11 @@ class CarSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class CarWithPlateInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Car
+        fields = ["id", "code", "plate", "plate_color"]
+
+
 class CarBalanceUpdateSerializer(BalanceUpdateSerializer):
     pass

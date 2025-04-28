@@ -19,3 +19,6 @@ gunicorn==23.0.0
 
 # firebase
 firebase-admin==6.7.0
+
+# image processing
+Pillow==10.1.0

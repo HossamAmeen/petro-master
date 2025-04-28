@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib import admin
 
+from apps.companies.models.operation_model import CarOperation
+
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, Company, CompanyBranch, Driver
 
@@ -196,3 +198,4 @@ admin.site.register(CompanyBranch, CompanyBranchAdmin)
 admin.site.register(Car, CarAdmin)
 admin.site.register(Driver, DriverAdmin)
 admin.site.register(CompanyCashRequest, CompanyCashRequestAdmin)
+admin.site.register(CarOperation)

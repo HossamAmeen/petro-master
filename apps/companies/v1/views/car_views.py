@@ -1,5 +1,4 @@
 from django.db import transaction
-from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -35,7 +34,6 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 
 class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    filter_backends = [DjangoFilterBackend]
     filterset_fields = ["branch", "fuel_type", "city", "is_with_odometer"]
     search_fields = [
         "code",
