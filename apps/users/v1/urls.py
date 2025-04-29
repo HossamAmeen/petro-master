@@ -1,6 +1,7 @@
 from rest_framework.routers import DefaultRouter
 
-from .views import CompanyBranchManagerViewSet, FirebaseTokenViewSet, UserViewSet
+from .views.company_users_view import CompanyBranchManagerViewSet
+from .views.users_view import FirebaseTokenViewSet, UserViewSet
 
 router = DefaultRouter()
 router.register("users", UserViewSet)
