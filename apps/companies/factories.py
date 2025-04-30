@@ -90,7 +90,8 @@ class CarFactory(factory.django.DjangoModelFactory):
         model = Car
 
     code = factory.LazyFunction(lambda: str(uuid.uuid4())[:10].upper())
-    plate = factory.Faker("license_plate")
+    plate_number = factory.Faker("license_plate")[:4]
+    plate_character = factory.Faker("license_plate_character")[:4]
     plate_color = factory.LazyAttribute(lambda _: random.choice(Car.PlateColor.values))
     color = factory.LazyAttribute(lambda _: random.choice(Car.PlateColor.values))
     license_expiration_date = factory.Faker("future_date")

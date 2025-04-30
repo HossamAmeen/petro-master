@@ -79,7 +79,9 @@ class CarAdmin(admin.ModelAdmin):
     form = CarForm
     list_display = (
         "code",
-        "plate",
+        "plate_number",
+        "plate_character",
+        "plate_color",
         "color",
         "license_expiration_date",
         "model_year",
@@ -96,7 +98,8 @@ class CarAdmin(admin.ModelAdmin):
     )
     search_fields = (
         "code",
-        "plate",
+        "plate_number",
+        "plate_character",
         "color",
         "license_expiration_date",
         "model_year",
@@ -113,7 +116,6 @@ class CarAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "code",
-        "plate",
         "color",
         "license_expiration_date",
         "model_year",

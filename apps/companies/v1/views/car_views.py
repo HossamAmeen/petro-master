@@ -37,7 +37,8 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
     filterset_fields = ["branch", "fuel_type", "city", "is_with_odometer"]
     search_fields = [
         "code",
-        "plate",
+        "plate_number",
+        "plate_character",
         "lincense_number",
         "name",
         "branch__name",
