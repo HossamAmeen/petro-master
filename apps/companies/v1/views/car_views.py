@@ -34,6 +34,7 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 
 class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
+    queryset = Car.objects.select_related("branch__district").order_by("-id")
     filterset_fields = ["branch", "fuel_type", "city", "is_with_odometer"]
     search_fields = [
         "code",
@@ -44,7 +45,6 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
         "branch__name",
         "branch__district__name",
     ]
-    queryset = Car.objects.select_related("branch__district").order_by("-id")
 
     def get_serializer_class(self):
         if self.request.method == "GET":
