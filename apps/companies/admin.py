@@ -1,10 +1,36 @@
 from django import forms
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
 
 from apps.companies.models.operation_model import CarOperation
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, Company, CompanyBranch, Driver
+
+
+class BranchInline(admin.TabularInline):
+    model = CompanyBranch
+    extra = 0
+    # Jazzmin will automatically style this
+
+
+@admin.register(Company)
+class CompanyAdmin(admin.ModelAdmin):  # Use standard ModelAdmin
+    list_display = ("name", "address", "phone_number", "balance", "branches_link")
+    search_fields = ("name", "address", "phone_number")
+    list_per_page = 20
+    inlines = [BranchInline]
+
+    def branches_link(self, obj):
+        count = obj.companybranch_set.count()
+        url = (
+            reverse("admin:companies_companybranch_changelist")
+            + f"?company__id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Branches ({})</a>', url, count)
+
+    branches_link.short_description = "Branches"
 
 
 class CompanyCashRequestAdmin(admin.ModelAdmin):
@@ -28,12 +54,6 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
     )
     list_filter = ("company", "status", "driver", "station")
     readonly_fields = ("created_by", "updated_by")
-
-
-class CompanyAdmin(admin.ModelAdmin):
-    list_display = ("name", "address", "phone_number", "balance")
-    search_fields = ("name", "address", "phone_number")
-    list_per_page = 20
 
 
 class CompanyBranchAdmin(admin.ModelAdmin):
@@ -196,7 +216,6 @@ class DriverAdmin(admin.ModelAdmin):
         obj.save()
 
 
-admin.site.register(Company, CompanyAdmin)
 admin.site.register(CompanyBranch, CompanyBranchAdmin)
 admin.site.register(Car, CarAdmin)
 admin.site.register(Driver, DriverAdmin)
