@@ -268,3 +268,7 @@ if encoded_credentials:
         pass
 else:
     pass
+
+
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = "hosamameen948@gmail.com"

@@ -31,15 +31,16 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
 
 
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ("name", "address", "phone_number")
+    list_display = ("name", "address", "phone_number", "balance")
     search_fields = ("name", "address", "phone_number")
-    list_filter = ("name", "address", "phone_number")
+    list_per_page = 20
 
 
 class CompanyBranchAdmin(admin.ModelAdmin):
-    list_display = ("name", "email", "phone_number")
+    list_display = ("name", "email", "phone_number", "company", "balance")
     search_fields = ("name", "email", "phone_number")
-    list_filter = ("name", "email", "phone_number")
+    list_filter = ("company",)
+    list_per_page = 20
 
 
 class CarForm(forms.ModelForm):
