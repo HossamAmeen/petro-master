@@ -68,3 +68,23 @@ class TestUserAPI:
     def test_delete_station_owner(self):
         response = self.client.delete(self.url_detail)
         assert response.status_code == 204
+
+    def test_filter_station_owner_by_station(self):
+        response = self.client.get(self.url_list, {'station': self.station.id})
+        assert response.status_code == 200
+        assert all(owner['station']['id'] == self.station.id for owner in response.data['results'])
+
+    def test_search_station_owner_by_name(self):
+        response = self.client.get(self.url_list, {'search': 'owner1'})
+        assert response.status_code == 200
+        assert any(owner['name'] == 'owner1' for owner in response.data['results'])
+
+    def test_search_station_owner_by_phone_number(self):
+        response = self.client.get(self.url_list, {'search': '01000005693'})
+        assert response.status_code == 200
+        assert any(owner['phone_number'] == '01000005693' for owner in response.data['results'])
+
+    def test_search_station_owner_by_email(self):
+        response = self.client.get(self.url_list, {'search': 'owner1@gmail.com'})
+        assert response.status_code == 200
+        assert any(owner['email'] == 'owner1@gmail.com' for owner in response.data['results'])
