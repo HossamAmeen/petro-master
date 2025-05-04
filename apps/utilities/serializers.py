@@ -9,7 +9,7 @@ class BalanceUpdateSerializer(serializers.Serializer):
 
 
 class ErrorDetailSerializer(serializers.ListSerializer):
-    child = serializers.CharField
+    child = serializers.CharField()
 
 
 class MessageErrorsSerializer(serializers.Serializer):
