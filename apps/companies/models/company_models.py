@@ -95,7 +95,7 @@ class Car(AbstractBaseModel):
     )
 
     def __str__(self):
-        return self.code + " - " + self.plate
+        return self.code + " - " + self.plate_number + " - " + self.plate_character
 
     def clean(self):
         if self.permitted_fuel_amount > self.tank_capacity:
