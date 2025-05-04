@@ -20,3 +20,6 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         "station_branch__name",
         "worker__name",
     ]
+
+    def export(self, request, *args, **kwargs):
+        pass

@@ -4,7 +4,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.views import Response, status
+from rest_framework.views import APIView, Response, status
 
 from apps.companies.models.company_models import Company, CompanyBranch
 from apps.companies.v1.filters import CompanyBranchFilter
@@ -172,3 +172,9 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     )
 
         return Response({"balance": company_branch.balance}, status=status.HTTP_200_OK)
+
+
+class CompanyHomeView(APIView):
+
+    def get(self, request, *args, **kwargs):
+        return Response({"message": "Welcome to the home page"})

@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.views import Response, status
 
 from apps.companies.models.company_models import Car, Driver
+from apps.companies.v1.filters import CarFilter
 from apps.companies.v1.serializers.car_serializer import (
     CarBalanceUpdateSerializer,
     CarSerializer,
@@ -42,7 +43,7 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = Car.objects.select_related("branch__district").order_by("-id")
-    filterset_fields = ["branch", "fuel_type", "city", "is_with_odometer"]
+    filterset_class = CarFilter
     search_fields = [
         "code",
         "plate_number",

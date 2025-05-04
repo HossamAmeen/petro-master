@@ -76,13 +76,18 @@ class Car(AbstractBaseModel):
     )
     plate_color = models.CharField(max_length=10, choices=PlateColor.choices)
     color = models.CharField(max_length=10)
-    license_expiration_date = models.DateField()
+
+    license_expiration_date = models.DateField(null=True, blank=True)
+    examination_date = models.DateField(null=True, blank=True)
+
     model_year = models.IntegerField()
     brand = models.CharField(max_length=25)
+
     is_with_odometer = models.BooleanField()
     tank_capacity = models.IntegerField()
     permitted_fuel_amount = models.IntegerField()
     fuel_type = models.CharField(max_length=20, choices=FuelType.choices)
+    fuel_consumption_rate = models.IntegerField(default=0)
     number_of_fuelings_per_day = models.IntegerField()
     number_of_washes_per_month = models.IntegerField()
     fuel_allowed_days = models.JSONField(default=list, blank=True)
