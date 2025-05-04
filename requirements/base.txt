@@ -18,6 +18,7 @@ django-cors-headers==4.7.0
 gunicorn==23.0.0
 
 django-polymorphic==3.1.0
+setuptools==80.3.1
 
 # firebase
 firebase-admin==6.7.0

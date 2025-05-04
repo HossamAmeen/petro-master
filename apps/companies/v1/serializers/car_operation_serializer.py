@@ -10,7 +10,7 @@ from apps.stations.v1.serializers import SingleStationServiceSerializer
 from apps.users.v1.serializers.station_serializer import SingleWorkerSerializer
 
 
-class listCarOperationSerializer(serializers.ModelSerializer):
+class ListCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
     driver = SingleDriverSerializer()
     station_branch = SingleBranchWithDistrictSerializer()
@@ -39,3 +39,11 @@ class listCarOperationSerializer(serializers.ModelSerializer):
             "motor_image",
             "fuel_image",
         ]
+
+
+class ListHomeCarOperationSerializer(serializers.ModelSerializer):
+    car = CarWithPlateInfoSerializer()
+
+    class Meta:
+        model = CarOperation
+        fields = ["id", "car", "start_time", "cost", "amount", "unit"]

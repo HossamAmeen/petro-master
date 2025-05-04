@@ -1,12 +1,14 @@
+from datetime import datetime, timedelta
+
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.views import APIView, Response, status
 
-from apps.companies.models.company_models import Company, CompanyBranch
+from apps.companies.models.company_models import Car, Company, CompanyBranch
 from apps.companies.v1.filters import CompanyBranchFilter
 from apps.companies.v1.serializers.branch_serializers import (
     BranchBalanceUpdateSerializer,
@@ -16,6 +18,7 @@ from apps.companies.v1.serializers.branch_serializers import (
     RetrieveCompanyBranchSerializer,
 )
 from apps.companies.v1.serializers.company_serializer import (
+    CompanyHomeSerializer,
     CompanySerializer,
     ListCompanySerializer,
 )
@@ -177,4 +180,37 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 class CompanyHomeView(APIView):
 
     def get(self, request, *args, **kwargs):
-        return Response({"message": "Welcome to the home page"})
+        diesel_car_filter = Q(branches__cars__fuel_type=Car.FuelType.DIESEL)
+        gasoline_car_filter = Q(branches__cars__fuel_type=Car.FuelType.GASOLINE)
+        drivers_lincense_expiration_date_filter = Q(
+            branches__drivers__lincense_expiration_date__lt=datetime.now()
+        )
+        drivers_lincense_expiration_date_filter_30_days = Q(
+            branches__drivers__lincense_expiration_date__lt=datetime.now()
+            - timedelta(days=30)
+        )
+        company = (
+            Company.objects.filter(id=request.company_id)
+            .annotate(
+                total_cars_count=Count("branches__cars"),
+                diesel_cars_count=Count("branches__cars", filter=diesel_car_filter),
+                gasoline_cars_count=Count("branches__cars", filter=gasoline_car_filter),
+                total_drivers_count=Count("branches__drivers"),
+                total_drivers_with_lincense_expiration_date=Count(
+                    "branches__drivers", filter=drivers_lincense_expiration_date_filter
+                ),
+                total_drivers_with_lincense_expiration_date_30_days=Count(
+                    "branches__drivers",
+                    filter=drivers_lincense_expiration_date_filter_30_days,
+                ),
+                total_branches_count=Count("branches"),
+                cars_balance=Sum("branches__cars__balance"),
+                branches_balance=Sum("branches__balance"),
+                total_balance=Sum("balance")
+                + Sum("branches__balance")
+                + Sum("branches__cars__balance"),
+            )
+            .first()
+        )
+        serializer = CompanyHomeSerializer(company)
+        return Response(serializer.data)
