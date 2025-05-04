@@ -59,6 +59,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_extensions",
     "rest_framework_simplejwt",
+    'polymorphic',
     "gunicorn",
 ]
 
@@ -69,6 +70,7 @@ LOCAL_APPS = [
     "apps.stations",
     "apps.notifications",
     "apps.auth",
+    'apps.accounting',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
