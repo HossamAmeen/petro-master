@@ -20,7 +20,14 @@ from apps.users.models import User
 
 
 class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
+
     queryset = Driver.objects.select_related("branch__district").order_by("-id")
+    filterset_fields = ["branch"]
+    search_fields = [
+        "name",
+        "branch__name",
+        "branch__district__name",
+    ]
 
     def get_serializer_class(self):
         if self.request.method == "GET":

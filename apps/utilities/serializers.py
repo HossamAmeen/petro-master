@@ -6,3 +6,17 @@ class BalanceUpdateSerializer(serializers.Serializer):
     type = serializers.ChoiceField(
         choices=[("add", "add"), ("subtract", "subtract")], required=True
     )
+
+
+class ErrorDetailSerializer(serializers.ListSerializer):
+    child = serializers.CharField
+
+
+class MessageErrorsSerializer(serializers.Serializer):
+    message = serializers.CharField(read_only=True)
+    validation_errors = serializers.DictField(
+        child=ErrorDetailSerializer(), read_only=True
+    )
+
+    class Meta:
+        ref_name = "MessageErrors"
