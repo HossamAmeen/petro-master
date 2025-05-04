@@ -33,4 +33,5 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
+    path("swagger/", SpectacularSwaggerView.as_view(url_name="schema")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

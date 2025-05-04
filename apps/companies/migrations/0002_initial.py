@@ -10,101 +10,171 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('stations', '0001_initial'),
-        ('geo', '0001_initial'),
-        ('companies', '0001_initial'),
+        ("stations", "0001_initial"),
+        ("geo", "0001_initial"),
+        ("companies", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='driver',
-            name='created_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='created_%(class)ss', to=settings.AUTH_USER_MODEL),
+            model_name="driver",
+            name="created_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="created_%(class)ss",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='driver',
-            name='updated_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='updated_%(class)ss', to=settings.AUTH_USER_MODEL),
+            model_name="driver",
+            name="updated_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="updated_%(class)ss",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='companycashrequest',
-            name='company',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='companies.company'),
+            model_name="companycashrequest",
+            name="company",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="companies.company"
+            ),
         ),
         migrations.AddField(
-            model_name='companycashrequest',
-            name='created_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='created_%(class)ss', to=settings.AUTH_USER_MODEL),
+            model_name="companycashrequest",
+            name="created_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="created_%(class)ss",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='companycashrequest',
-            name='driver',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='companies.driver'),
+            model_name="companycashrequest",
+            name="driver",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="companies.driver"
+            ),
         ),
         migrations.AddField(
-            model_name='companycashrequest',
-            name='station',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='stations.station'),
+            model_name="companycashrequest",
+            name="station",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="stations.station",
+            ),
         ),
         migrations.AddField(
-            model_name='companycashrequest',
-            name='updated_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='updated_%(class)ss', to=settings.AUTH_USER_MODEL),
+            model_name="companycashrequest",
+            name="updated_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="updated_%(class)ss",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='companybranch',
-            name='company',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='companies.company'),
+            model_name="companybranch",
+            name="company",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="companies.company"
+            ),
         ),
         migrations.AddField(
-            model_name='companybranch',
-            name='created_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='created_%(class)ss', to=settings.AUTH_USER_MODEL),
+            model_name="companybranch",
+            name="created_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="created_%(class)ss",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='companybranch',
-            name='district',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='geo.district'),
+            model_name="companybranch",
+            name="district",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="geo.district",
+            ),
         ),
         migrations.AddField(
-            model_name='companybranch',
-            name='updated_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='updated_%(class)ss', to=settings.AUTH_USER_MODEL),
+            model_name="companybranch",
+            name="updated_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="updated_%(class)ss",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='company',
-            name='created_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='created_%(class)ss', to=settings.AUTH_USER_MODEL),
+            model_name="company",
+            name="created_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="created_%(class)ss",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='company',
-            name='district',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='geo.district'),
+            model_name="company",
+            name="district",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="geo.district",
+            ),
         ),
         migrations.AddField(
-            model_name='company',
-            name='updated_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='updated_%(class)ss', to=settings.AUTH_USER_MODEL),
+            model_name="company",
+            name="updated_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="updated_%(class)ss",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='car',
-            name='branch',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='cars', to='companies.companybranch'),
+            model_name="car",
+            name="branch",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="cars",
+                to="companies.companybranch",
+            ),
         ),
         migrations.AddField(
-            model_name='car',
-            name='city',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='geo.city'),
+            model_name="car",
+            name="city",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="geo.city",
+            ),
         ),
         migrations.AddField(
-            model_name='car',
-            name='created_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='created_%(class)ss', to=settings.AUTH_USER_MODEL),
+            model_name="car",
+            name="created_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="created_%(class)ss",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='car',
-            name='updated_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='updated_%(class)ss', to=settings.AUTH_USER_MODEL),
+            model_name="car",
+            name="updated_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="updated_%(class)ss",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

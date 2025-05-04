@@ -13,7 +13,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 # flake8: noqa
 from datetime import timedelta
 from pathlib import Path
-
+import os
+import json
+import base64
+import firebase_admin
+from firebase_admin import credentials
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -34,7 +38,6 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
-
 
 # Application definition
 
@@ -247,3 +250,26 @@ EMAIL_USE_SSL = True
 EMAIL_HOST_USER = "learn@baronlearning.com"
 EMAIL_HOST_PASSWORD = "KMPjHt%b!U7j"  # Replace with your actual email password
 DEFAULT_FROM_EMAIL = "learn@baronlearning.com"
+
+
+import os
+import json
+import base64
+import firebase_admin
+from firebase_admin import credentials
+
+encoded_credentials = env("FIREBASE_CREDENTIALS", default=None)
+if encoded_credentials:
+    decoded_credentials = base64.b64decode(encoded_credentials)
+    try:
+        cred_dict = json.loads(decoded_credentials)
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+    except Exception as e:  # Catch potential file not found errors during decoding
+        pass
+else:
+    pass
+
+
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = "hosamameen948@gmail.com"

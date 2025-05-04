@@ -6,18 +6,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('stations', '0001_initial'),
+        ("stations", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='service',
-            name='unit',
-            field=models.CharField(choices=[('litre', 'Litre'), ('unit', 'Unit'), ('other', 'Other')], default='other', max_length=20),
+            model_name="service",
+            name="unit",
+            field=models.CharField(
+                choices=[("litre", "Litre"), ("unit", "Unit"), ("other", "Other")],
+                default="other",
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='service',
-            name='name',
+            model_name="service",
+            name="name",
             field=models.CharField(max_length=25),
         ),
     ]

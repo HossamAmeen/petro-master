@@ -59,17 +59,35 @@ class Car(AbstractBaseModel):
         SAT = "Saturday"
         SUN = "Sunday"
 
+    class PlateColor(models.TextChoices):
+        RED = "Red"
+        BLUE = "Blue"
+        ORANGE = "Orange"
+        YELLOW = "Yellow"
+        GREEN = "Green"
+        GOLD = "Gold"
+
     code = models.CharField(max_length=10, unique=True, verbose_name="car code")
-    plate = models.CharField(max_length=10, verbose_name="car number plate")
-    plate_color = models.CharField(max_length=10)
+    plate_number = models.CharField(
+        max_length=10, null=True, blank=True, verbose_name="car number plate"
+    )
+    plate_character = models.CharField(
+        max_length=10, null=True, blank=True, verbose_name="car plate character"
+    )
+    plate_color = models.CharField(max_length=10, choices=PlateColor.choices)
     color = models.CharField(max_length=10)
-    license_expiration_date = models.DateField()
+
+    license_expiration_date = models.DateField(null=True, blank=True)
+    examination_date = models.DateField(null=True, blank=True)
+
     model_year = models.IntegerField()
     brand = models.CharField(max_length=25)
+
     is_with_odometer = models.BooleanField()
     tank_capacity = models.IntegerField()
     permitted_fuel_amount = models.IntegerField()
     fuel_type = models.CharField(max_length=20, choices=FuelType.choices)
+    fuel_consumption_rate = models.IntegerField(default=0)
     number_of_fuelings_per_day = models.IntegerField()
     number_of_washes_per_month = models.IntegerField()
     fuel_allowed_days = models.JSONField(default=list, blank=True)
@@ -82,7 +100,7 @@ class Car(AbstractBaseModel):
     )
 
     def __str__(self):
-        return self.code + " - " + self.plate
+        return self.code + " - " + self.plate_number if self.plate_number else self.code
 
     def clean(self):
         if self.permitted_fuel_amount > self.tank_capacity:

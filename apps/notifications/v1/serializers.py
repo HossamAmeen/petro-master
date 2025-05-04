@@ -7,11 +7,11 @@ class ListNotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        fields = '__all__'
+        fields = "__all__"
 
 
 class NotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        fields = ['is_read']
+        fields = ["is_read"]

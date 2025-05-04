@@ -105,3 +105,40 @@ class CompanyBranchManager(AbstractBaseModel):
     class Meta:
         verbose_name = "Company Branch Manager"
         verbose_name_plural = "Company Branch Managers"
+
+
+class StationOwner(User):
+    station = models.ForeignKey(
+        "stations.Station", on_delete=models.CASCADE, related_name="owners"
+    )
+
+    class Meta:
+        verbose_name = "Station Owner"
+        verbose_name_plural = "Station Owners"
+
+
+class StationBranchManager(User):
+    station_branch = models.ForeignKey(
+        "stations.StationBranch", on_delete=models.CASCADE, related_name="managers"
+    )
+    user = models.ForeignKey(
+        StationOwner,
+        on_delete=models.SET_NULL,
+        related_name="station_branch_managers",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Station Branch Manager"
+        verbose_name_plural = "Station Branch Managers"
+
+
+class Worker(User):
+    station_branch = models.ForeignKey(
+        "stations.StationBranch", on_delete=models.CASCADE, related_name="workers"
+    )
+
+    class Meta:
+        verbose_name = "Worker"
+        verbose_name_plural = "Workers"

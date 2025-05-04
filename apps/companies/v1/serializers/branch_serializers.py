@@ -1,31 +1,11 @@
 from rest_framework import serializers
 
-from apps.companies.models.company_cash_models import CompanyCashRequest
-from apps.companies.models.company_models import Company, CompanyBranch, Driver
+from apps.companies.models.company_models import CompanyBranch
+from apps.companies.v1.serializers.company_serializer import CompanyNameSerializer
 from apps.geo.v1.serializers import ListDistrictSerializer
-from apps.stations.v1.serializers import ListStationSerializer
 from apps.users.models import CompanyBranchManager, CompanyUser, User
 from apps.users.v1.serializers.company_user_serializer import SingleUserSerializer
-
-
-class ListCompanySerializer(serializers.ModelSerializer):
-    district = ListDistrictSerializer()
-
-    class Meta:
-        model = Company
-        fields = "__all__"
-
-
-class CompanySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Company
-        fields = "__all__"
-
-
-class CompanyNameSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Company
-        fields = ["name"]
+from apps.utilities.serializers import BalanceUpdateSerializer
 
 
 class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):
@@ -33,28 +13,7 @@ class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CompanyBranch
-        fields = ["id", "name", "email", "phone_number", "district"]
-
-
-class ListDriverSerializer(serializers.ModelSerializer):
-    branch = SingleBranchWithDistrictSerializer()
-
-    class Meta:
-        model = Driver
-        exclude = ("created_by", "updated_by")
-
-
-class DriverSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Driver
-        exclude = ("created_by", "updated_by")
-        read_only_fields = ("code",)
-
-
-class SingleDriverSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Driver
-        fields = ["id", "name", "phone_number", "branch", "code"]
+        fields = ["id", "name", "email", "phone_number", "district", "company"]
 
 
 class ListCompanyBranchSerializer(serializers.ModelSerializer):
@@ -133,25 +92,5 @@ class CompanyBranchAssignManagersSerializer(serializers.Serializer):
         return attrs
 
 
-class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
-    driver = SingleDriverSerializer()
-    station = ListStationSerializer()
-
-    class Meta:
-        model = CompanyCashRequest
-        fields = [
-            "id",
-            "driver",
-            "amount",
-            "status",
-            "company",
-            "station",
-            "created",
-            "modified",
-        ]
-
-
-class CompanyCashRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CompanyCashRequest
-        fields = ["driver", "amount"]
+class BranchBalanceUpdateSerializer(BalanceUpdateSerializer):
+    pass

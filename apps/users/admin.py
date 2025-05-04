@@ -1,9 +1,17 @@
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
 
-from .models import CompanyUser, User
+from .models import (
+    CompanyUser,
+    FirebaseToken,
+    StationBranchManager,
+    StationOwner,
+    User,
+    Worker,
+)
 
 
 class CustomUserChangeForm(forms.ModelForm):
@@ -19,7 +27,7 @@ class CustomUserChangeForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ("name", "email", "phone_number", "role", "is_active")
+        fields = ("name", "email", "phone_number", "is_active")
 
     def clean(self):
         cleaned_data = super().clean()
@@ -34,10 +42,14 @@ class CustomUserChangeForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.role = User.UserRoles.Admin
+        user.is_staff = True
+        user.is_superuser = True
         if self.cleaned_data["password1"]:
             user.set_password(self.cleaned_data["password1"])
         if commit:
             user.save()
+
         return user
 
 
@@ -55,14 +67,13 @@ class CustomUserAdmin(UserAdmin):
         "created",
     )
     search_fields = ("name", "email", "phone_number")
-    list_filter = ("role", "created", "is_active", "is_staff", "is_superuser")
+    list_filter = ("is_active",)
 
     fieldsets = (
         (
             "User Info",
             {"fields": ("name", "email", "phone_number", "password1", "password2")},
         ),
-        ("Permissions", {"fields": ("role", "is_active")}),
     )
 
     add_fieldsets = (
@@ -84,6 +95,9 @@ class CustomUserAdmin(UserAdmin):
 
     created.admin_order_field = "created"
     created.short_description = _("Created")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(role=User.UserRoles.Admin)
 
 
 class CompanyUserForm(forms.ModelForm):
@@ -131,6 +145,7 @@ class CompanyUserForm(forms.ModelForm):
 
 
 class CompanyUserInterface(admin.ModelAdmin):
+    list_per_page = 10
     form = CompanyUserForm
     list_display = (
         "id",
@@ -144,7 +159,7 @@ class CompanyUserInterface(admin.ModelAdmin):
         "created",
     )
     search_fields = ("name", "email", "phone_number", "company__name")
-    list_filter = ("role", "created", "is_active", "is_staff", "company")
+    list_filter = ("company",)
 
     fieldsets = (
         (
@@ -195,3 +210,12 @@ class CompanyUserInterface(admin.ModelAdmin):
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(CompanyUser, CompanyUserInterface)
+admin.site.register(StationOwner)
+admin.site.register(StationBranchManager)
+admin.site.register(Worker)
+admin.site.register(
+    FirebaseToken,
+)
+
+
+admin.site.unregister(Group)

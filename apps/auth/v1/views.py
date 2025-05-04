@@ -3,7 +3,8 @@ from django.core.mail import send_mail
 from django.db.models import Q
 from django.shortcuts import render
 from django.urls import reverse
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
@@ -12,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.shared.base_exception_class import CustomValidationError
 from apps.users.models import User
+from apps.utilities.serializers import MessageErrorsSerializer
 
 from .serializers import (
     LoginSerializer,
@@ -28,8 +30,23 @@ class CompanyLoginAPIView(APIView):
     @extend_schema(
         request=LoginSerializer,
         responses={
-            200: OpenApiResponse(description="Successful login"),
-            401: OpenApiResponse(description="Invalid credentials"),
+            200: OpenApiResponse(
+                description="login successfully",
+                response=OpenApiTypes.OBJECT,
+                examples=[
+                    OpenApiExample(
+                        "Success Response",
+                        value={
+                            "message": "login successfully",
+                            "refresh": "<refresh_token>",
+                            "access": "<access_token>",
+                            "user_name": "<user_name>",
+                            "role": "<role>",
+                        },
+                    )
+                ],
+            ),
+            400: MessageErrorsSerializer,
         },
     )
     def post(self, request):
