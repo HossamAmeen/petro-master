@@ -1,5 +1,9 @@
 from rest_framework import serializers
 
+from apps.accounting.models import CompanyKhaznaTransaction
+from apps.accounting.v1.serializers.company_transaction_serializer import (
+    CompanyKhaznaTransactionSerializer,
+)
 from apps.companies.models.company_models import Company
 from apps.companies.models.operation_model import CarOperation
 from apps.geo.v1.serializers import ListDistrictSerializer
@@ -62,6 +66,12 @@ class CompanyHomeSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         data["car_operations"] = ListHomeCarOperationSerializer(
             CarOperation.objects.filter(car__branch__company=instance).order_by("-id")[
+                :3
+            ],
+            many=True,
+        ).data
+        data["company_transactions"] = CompanyKhaznaTransactionSerializer(
+            CompanyKhaznaTransaction.objects.filter(company=instance).order_by("-id")[
                 :3
             ],
             many=True,

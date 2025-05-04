@@ -8,6 +8,7 @@ from apps.companies.factories import (
     CityFactory,
     CompanyBranchFactory,
     CompanyFactory,
+    CompanyKhaznaTransactionFactory,
     DistrictFactory,
     DriverFactory,
     NotificationFactory,
@@ -93,6 +94,7 @@ class Command(BaseCommand):
         WorkerFactory.create_batch(50)
         ServiceFactory.create_batch(10)
         CarOperationFactory.create_batch(100)
+        CompanyKhaznaTransactionFactory.create_batch(100)
         StationServiceFactory.create_batch(50)
         CompanyBranchManager.objects.create(
             user=company_branch_manager,
