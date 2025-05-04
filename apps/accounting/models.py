@@ -13,8 +13,10 @@ class KhaznaTransaction(TimeStampedModel, PolymorphicModel):
         BANK = 'bank', ('Bank')
         INSTAPAY = 'instapay', ('Instapay')
         CASH = 'cash', ('Cash')
+        WALLET = 'wallet', ('Wallet')
 
-    is_incoming = models.BooleanField(help_text="True if money came into the khazna; False if it went out.")
+    is_incoming = models.BooleanField(help_text="True if money came into the khazna;"
+                                      "False if it went out.")
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(
         max_length=20,
@@ -31,9 +33,9 @@ class KhaznaTransaction(TimeStampedModel, PolymorphicModel):
         default=TransactionMethod.CASH
     )
     approved_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        abstract = True
+    photo = models.ImageField(upload_to='kazna_transaction_photos/', null=True, blank=True)
+    is_unpaid = models.BooleanField(default=False,
+                                    help_text="True if the transaction hasn't been paid yet.")
 
     def __str__(self):
-        return f"{'IN' if self.is_incoming else 'OUT'} | {self.amount} | {self.reference_code}"
+        return f"{'IN' if self.is_incoming else 'OUT'} | {self.amount} | {self.reference_code}" # noqa
