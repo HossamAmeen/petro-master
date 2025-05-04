@@ -15,3 +15,4 @@ class Notification(TimeStampedModel):
     type = models.CharField(max_length=20, choices=NotificationType.choices)
     is_success = models.BooleanField(default=False)
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
+    url = models.URLField(null=True, blank=True)

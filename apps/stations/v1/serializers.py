@@ -45,6 +45,12 @@ class StationNameSerializer(serializers.ModelSerializer):
         fields = ["id", "name"]
 
 
+class SingleStationBranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StationBranch
+        fields = ["id", "name", "address", "district", "station"]
+
+
 class ListStationBranchSerializer(serializers.ModelSerializer):
     services = serializers.SerializerMethodField()
     district = DistrictWithcitynameSerializer()

@@ -59,7 +59,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_extensions",
     "rest_framework_simplejwt",
-    'polymorphic',
+    "polymorphic",
     "gunicorn",
 ]
 
@@ -70,7 +70,7 @@ LOCAL_APPS = [
     "apps.stations",
     "apps.notifications",
     "apps.auth",
-    'apps.accounting',
+    "apps.accounting",
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
@@ -273,3 +273,7 @@ else:
 
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 DEFAULT_FROM_EMAIL = "hosamameen948@gmail.com"
+
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
