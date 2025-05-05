@@ -22,7 +22,7 @@ class CompanyAdmin(admin.ModelAdmin):  # Use standard ModelAdmin
     inlines = [BranchInline]
 
     def branches_link(self, obj):
-        count = obj.companybranch_set.count()
+        count = obj.branches.count()
         url = (
             reverse("admin:companies_companybranch_changelist")
             + f"?company__id__exact={obj.id}"
@@ -232,6 +232,7 @@ class CarOperationAdmin(admin.ModelAdmin):
         "station_branch",
         "worker",
         "service",
+        "branch_company",
     )
     search_fields = (
         "code",
@@ -244,6 +245,7 @@ class CarOperationAdmin(admin.ModelAdmin):
         "end_time",
         "fuel_type",
         "car",
+        "car__branch__company",
         "driver",
         "station_branch",
         "worker",
@@ -251,6 +253,11 @@ class CarOperationAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("code", "created_by", "updated_by")
     list_per_page = 100
+
+    def branch_company(self, obj):
+        return obj.car.branch.company.name
+
+    branch_company.short_description = "Company"
 
 
 admin.site.register(CompanyBranch, CompanyBranchAdmin)
