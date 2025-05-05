@@ -253,6 +253,7 @@ class CarOperationFactory(factory.django.DjangoModelFactory):
     unit = factory.LazyFunction(lambda: random.choice(Service.ServiceUnit.values))
     car_meter = factory.LazyFunction(lambda: random.randint(10000, 100000))
     cost = factory.LazyFunction(lambda: random.uniform(100, 5000))
+    fuel_consumption_rate = factory.LazyFunction(lambda: random.randint(9, 99))
     fuel_type = factory.LazyFunction(lambda: random.choice(Car.FuelType.values))
     status = factory.LazyFunction(
         lambda: random.choice(CarOperation.OperationStatus.values)
