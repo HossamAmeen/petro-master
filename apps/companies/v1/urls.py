@@ -22,6 +22,4 @@ router.register("companies", CompanyViewSet, basename="companies")
 
 urlpatterns = router.urls
 
-urlpatterns += [
-    path("home/", CompanyHomeView.as_view(), name="company-home"),
-]
+urlpatterns += [path("home/", CompanyHomeView.as_view(), name="company-home")]

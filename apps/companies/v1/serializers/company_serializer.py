@@ -30,6 +30,7 @@ class CompanyNameSerializer(serializers.ModelSerializer):
 
 
 class CompanyHomeSerializer(serializers.ModelSerializer):
+    total_branch_count = serializers.IntegerField()
     total_cars_count = serializers.IntegerField()
     diesel_cars_count = serializers.IntegerField()
     gasoline_cars_count = serializers.IntegerField()
@@ -56,6 +57,7 @@ class CompanyHomeSerializer(serializers.ModelSerializer):
             "cars_balance",
             "branches_balance",
             "total_balance",
+            "total_branch_count",
         ]
 
     def to_representation(self, instance):
@@ -70,6 +72,38 @@ class CompanyHomeSerializer(serializers.ModelSerializer):
             ],
             many=True,
         ).data
+        data["company_transactions"] = CompanyKhaznaTransactionSerializer(
+            CompanyKhaznaTransaction.objects.filter(company=instance).order_by("-id")[
+                :3
+            ],
+            many=True,
+        ).data
+        return data
+
+
+class CompanyWalletSerializer(serializers.ModelSerializer):
+    balance = serializers.DecimalField(max_digits=10, decimal_places=2)
+    cars_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
+    branches_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_cars_count = serializers.IntegerField()
+    total_drivers_count = serializers.IntegerField()
+    total_branches_count = serializers.IntegerField()
+
+    class Meta:
+        model = Company
+        fields = [
+            "balance",
+            "cars_balance",
+            "branches_balance",
+            "total_balance",
+            "total_cars_count",
+            "total_drivers_count",
+            "total_branches_count",
+        ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
         data["company_transactions"] = CompanyKhaznaTransactionSerializer(
             CompanyKhaznaTransaction.objects.filter(company=instance).order_by("-id")[
                 :3

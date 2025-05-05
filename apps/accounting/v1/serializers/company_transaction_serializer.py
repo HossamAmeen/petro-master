@@ -1,6 +1,10 @@
 from rest_framework import serializers
 
-from apps.accounting.models import CompanyKhaznaTransaction, StationKhaznaTransaction
+from apps.accounting.models import (
+    CompanyKhaznaTransaction,
+    KhaznaTransaction,
+    StationKhaznaTransaction,
+)
 
 
 class CompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
@@ -14,4 +18,10 @@ class CompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
 class StationKhaznaTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = StationKhaznaTransaction
+        fields = "__all__"
+
+
+class KhaznaTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KhaznaTransaction
         fields = "__all__"

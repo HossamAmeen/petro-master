@@ -192,6 +192,7 @@ class CompanyHomeView(APIView):
         company = (
             Company.objects.filter(id=request.company_id)
             .annotate(
+                total_branch_count=Count("branches"),
                 total_cars_count=Count("branches__cars"),
                 diesel_cars_count=Count("branches__cars", filter=diesel_car_filter),
                 gasoline_cars_count=Count("branches__cars", filter=gasoline_car_filter),
