@@ -38,6 +38,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             "car_meter",
             "motor_image",
             "fuel_image",
+            "fuel_consumption_rate",
         ]
 
 
