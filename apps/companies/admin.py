@@ -12,7 +12,6 @@ from .models.company_models import Car, Company, CompanyBranch, Driver
 class BranchInline(admin.TabularInline):
     model = CompanyBranch
     extra = 0
-    # Jazzmin will automatically style this
 
 
 @admin.register(Company)
@@ -216,8 +215,45 @@ class DriverAdmin(admin.ModelAdmin):
         obj.save()
 
 
+@admin.register(CarOperation)
+class CarOperationAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "status",
+        "start_time",
+        "end_time",
+        "duration",
+        "cost",
+        "amount",
+        "unit",
+        "fuel_type",
+        "car",
+        "driver",
+        "station_branch",
+        "worker",
+        "service",
+    )
+    search_fields = (
+        "code",
+        "worker",
+        "service",
+    )
+    list_filter = (
+        "status",
+        "start_time",
+        "end_time",
+        "fuel_type",
+        "car",
+        "driver",
+        "station_branch",
+        "worker",
+        "service",
+    )
+    readonly_fields = ("code", "created_by", "updated_by")
+    list_per_page = 100
+
+
 admin.site.register(CompanyBranch, CompanyBranchAdmin)
 admin.site.register(Car, CarAdmin)
 admin.site.register(Driver, DriverAdmin)
 admin.site.register(CompanyCashRequest, CompanyCashRequestAdmin)
-admin.site.register(CarOperation)
