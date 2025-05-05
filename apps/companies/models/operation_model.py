@@ -34,6 +34,7 @@ class CarOperation(AbstractBaseModel):
         default=Service.ServiceUnit.OTHER,
     )
     car_meter = models.IntegerField()
+    fuel_consumption_rate = models.IntegerField(null=True, blank=True)
     motor_image = models.ImageField(upload_to="motor_images/", null=True, blank=True)
     fuel_image = models.ImageField(upload_to="fuel_images/", null=True, blank=True)
 
