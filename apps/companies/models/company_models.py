@@ -89,6 +89,7 @@ class Car(AbstractBaseModel):
     tank_capacity = models.IntegerField()
     permitted_fuel_amount = models.IntegerField()
     fuel_type = models.CharField(max_length=20, choices=FuelType.choices)
+    oil_type = models.CharField(max_length=20, null=True, blank=True)
     fuel_consumption_rate = models.IntegerField(default=0)
     number_of_fuelings_per_day = models.IntegerField()
     number_of_washes_per_month = models.IntegerField()

@@ -72,7 +72,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         if date_from:
             try:
                 date_from = datetime.strptime(date_from, "%Y-%m-%d").date()
-                queryset = queryset.filter(start_time__gte=date_from)
+                queryset = queryset.filter(start_time__date__gte=date_from)
             except ValueError:
                 raise CustomValidationError(
                     message="Invalid date from format",
@@ -81,7 +81,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         if date_to:
             try:
                 date_to = datetime.strptime(date_to, "%Y-%m-%d").date()
-                queryset = queryset.filter(start_time__lte=date_to)
+                queryset = queryset.filter(start_time__date__lte=date_to)
             except ValueError:
                 raise CustomValidationError(
                     message="Invalid date to format",
