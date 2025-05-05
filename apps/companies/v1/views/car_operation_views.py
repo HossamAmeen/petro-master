@@ -33,9 +33,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     ]
 
     def get_queryset(self):
-        return (
-            super().get_queryset().filter(car__branch__company=self.request.company_id)
-        )
+        return self.queryset.filter(car__branch__company=self.request.company_id)
 
     @extend_schema(
         parameters=[
@@ -59,7 +57,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
             ),
         ],
     )
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], url_path="export")
     def export(self, request, *args, **kwargs):
         car = request.query_params.get("car")
         queryset = (
@@ -135,7 +133,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
 
         # Create download URL
         base_url = request.build_absolute_uri("/")[:-1]
-        download_url = f"{base_url}/car-operations/download-excel/?file={filename}"
+        download_url = f"{base_url}/api/v1/companies/car-operations/download-excel/?file={filename}"
 
         Notification.objects.create(
             user=request.user,
@@ -153,7 +151,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
             }
         )
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], url_path="download-excel")
     def download_excel(self, request):
         filename = request.GET.get("file")
         if not filename:
