@@ -3,8 +3,9 @@ from datetime import datetime
 
 from django.conf import settings
 from django.http import FileResponse, Http404
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from openpyxl import Workbook
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -14,6 +15,7 @@ from apps.companies.v1.serializers.car_operation_serializer import (
     ListCarOperationSerializer,
 )
 from apps.notifications.models import Notification
+from apps.shared.base_exception_class import CustomValidationError
 
 
 class CarOperationViewSet(viewsets.ModelViewSet):
@@ -30,14 +32,72 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         "worker__name",
     ]
 
+    def get_queryset(self):
+        return (
+            super().get_queryset().filter(car__branch__company=self.request.company_id)
+        )
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="date_from",
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                description="Filter operations from this date (YYYY-MM-DD)",
+            ),
+            OpenApiParameter(
+                name="date_to",
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                description="Filter operations to this date (YYYY-MM-DD)",
+            ),
+            OpenApiParameter(
+                name="car",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description="Filter by car code",
+            ),
+        ],
+    )
     @action(detail=False, methods=["get"])
     def export(self, request, *args, **kwargs):
-        # Get your data
-        queryset = CarOperation.objects.select_related(
-            "car", "driver", "station_branch", "worker", "service"
-        ).order_by("-id")[:100]
+        car = request.query_params.get("car")
+        queryset = (
+            CarOperation.objects.filter(car__branch__company=request.company_id)
+            .select_related("car", "driver", "station_branch", "worker", "service")
+            .order_by("-id")
+        )
+        if car:
+            queryset = queryset.filter(car_id=car)
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+        if date_from:
+            try:
+                date_from = datetime.strptime(date_from, "%Y-%m-%d").date()
+                queryset = queryset.filter(start_time__gte=date_from)
+            except ValueError:
+                raise CustomValidationError(
+                    message="Invalid date from format",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+        if date_to:
+            try:
+                date_to = datetime.strptime(date_to, "%Y-%m-%d").date()
+                queryset = queryset.filter(start_time__lte=date_to)
+            except ValueError:
+                raise CustomValidationError(
+                    message="Invalid date to format",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+        queryset = queryset[:100]
         serializer = ListCarOperationSerializer(queryset, many=True)
         data = serializer.data
+
+        if not data:
+            raise CustomValidationError(
+                message="No data to export", status_code=status.HTTP_400_BAD_REQUEST
+            )
 
         # Create the Excel workbook and sheet
         wb = Workbook()
