@@ -1,6 +1,6 @@
 from django_filters import rest_framework as django_filters
 
-from apps.companies.models.company_models import Car, CompanyBranch
+from apps.companies.models.company_models import Car, CompanyBranch, Driver
 from apps.companies.models.operation_model import CarOperation
 from apps.geo.models import City
 
@@ -45,3 +45,11 @@ class CarFilter(django_filters.FilterSet):
             "city",
             "is_with_odometer",
         ]
+
+
+class DriverFilter(django_filters.FilterSet):
+    city = django_filters.NumberFilter(field_name="branch__district__city")
+
+    class Meta:
+        model = Driver
+        fields = ["branch", "city"]
