@@ -41,8 +41,8 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         CompanyBranch.objects.select_related("district__city", "company")
         .prefetch_related("managers")
         .annotate(
-            cars_count=Count("cars"),
-            drivers_count=Count("drivers"),
+            cars_count=Count("cars", distinct=True),
+            drivers_count=Count("drivers", distinct=True),
             managers_count=Count("managers", distinct=True),
         )
         .order_by("-id")
@@ -52,10 +52,10 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
-            return self.queryset.filter(company__owners=self.request.user)
+            self.queryset = self.queryset.filter(company__owners=self.request.user)
         if self.request.user.role == User.UserRoles.CompanyBranchManager:
-            return self.queryset.filter(managers__user=self.request.user)
-        return self.queryset
+            self.queryset = self.queryset.filter(managers__user=self.request.user)
+        return self.queryset.distinct()
 
     def get_serializer_class(self):
         if self.action == "list":
