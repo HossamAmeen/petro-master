@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 
+from apps.stations.filters import StationBranchFilter
 from apps.stations.models.stations_models import Station, StationBranch
 from apps.stations.v1.serializers import (
     ListStationBranchSerializer,
@@ -18,6 +19,7 @@ class StationBranchViewSet(viewsets.ModelViewSet):
         "station_branch_services"
     ).order_by("-id")
     serializer_class = ListStationBranchSerializer
+    filterset_class = StationBranchFilter
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
