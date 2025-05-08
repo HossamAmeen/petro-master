@@ -264,7 +264,7 @@ else:
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-if not DEBUG:
+if not env("ENVIRONMENT", default="local") == "local":
     sentry_sdk.init(
         dsn=env("SENTRY_DNS"),
         # Add data like request headers and IP for users,

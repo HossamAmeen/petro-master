@@ -189,13 +189,14 @@ class PasswordResetRequestAPIView(APIView):
             from_email = settings.DEFAULT_FROM_EMAIL
             recipient_list = [user.email]
             html_message = render_to_string(
-                "email/password_reset_email.html", {"reset_link": reset_link}
+                "reset_password_email_template.html", {"reset_password_url": reset_link}
             )
             try:
                 send_mail(
-                    subject,
-                    from_email,
-                    recipient_list,
+                    subject=subject,
+                    message="",
+                    from_email=from_email,
+                    recipient_list=recipient_list,
                     fail_silently=False,
                     html_message=html_message,
                 )
