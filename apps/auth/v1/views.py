@@ -88,6 +88,68 @@ class CompanyLoginAPIView(APIView):
             )
 
 
+class StationLoginAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(
+        request=LoginSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="login successfully",
+                response=OpenApiTypes.OBJECT,
+                examples=[
+                    OpenApiExample(
+                        "Success Response",
+                        value={
+                            "message": "login successfully",
+                            "refresh": "<refresh_token>",
+                            "access": "<access_token>",
+                            "user_name": "<user_name>",
+                            "role": "<role>",
+                        },
+                    )
+                ],
+            ),
+            400: MessageErrorsSerializer,
+        },
+    )
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = User.objects.filter(
+            Q(phone_number=serializer.validated_data["identifier"])
+            | Q(email=serializer.validated_data["identifier"]),
+            is_active=True,
+        ).first()
+        station_roles = [User.UserRoles.StationManager, User.UserRoles.StationEmployee]
+        if (
+            user
+            and user.check_password(serializer.validated_data["password"])
+            and user.role in station_roles
+        ):
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
+            access_token["user_name"] = user.name
+            access_token["role"] = user.role
+            access_token["station_id"] = user.stationuser.station.id
+            data = {
+                "refresh": str(refresh),
+                "access": str(access_token),
+                "user_name": user.name,
+                "role": user.role,
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        else:
+            raise CustomValidationError(
+                message="Invalid credentials",
+                code="invalid_credentials",
+                errors=[],
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            )
+
+
 class ProfileAPIView(RetrieveUpdateAPIView):
     serializer_class = ProfileSerializer
 
