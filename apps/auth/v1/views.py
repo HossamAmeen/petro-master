@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Q
 from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
@@ -185,12 +186,11 @@ class PasswordResetRequestAPIView(APIView):
             reset_link = request.build_absolute_uri(reset_url)
 
             subject = "Password Reset Request"
-            # message = (
-            #     f"Please click the following link to reset your password: {reset_link}"
-            # )
             from_email = settings.DEFAULT_FROM_EMAIL
             recipient_list = [user.email]
-            html_message = f"""<html><body><p>Please click the following link to reset your password:</p> <p><a href='{reset_link}'>Reset Password</a></p> <p>If the link doesn't work, copy and paste this URL into your browser:</p> <p>{reset_link}</p></body></html>"""  # noqa
+            html_message = render_to_string(
+                "email/password_reset_email.html", {"reset_link": reset_link}
+            )
             try:
                 send_mail(
                     subject,
