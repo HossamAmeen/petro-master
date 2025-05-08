@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.shared.permissions import CompanyOwnerPermission
 from apps.users.models import CompanyUser, User
 from apps.users.v1.filters import CompanyBranchManagerFilter
 from apps.users.v1.serializers.company_user_serializer import (
@@ -10,6 +11,7 @@ from apps.users.v1.serializers.company_user_serializer import (
 
 
 class CompanyBranchManagerViewSet(InjectUserMixin, viewsets.ModelViewSet):
+    permission_classes = [CompanyOwnerPermission]
     filterset_class = CompanyBranchManagerFilter
     queryset = (
         CompanyUser.objects.filter(role=User.UserRoles.CompanyBranchManager)

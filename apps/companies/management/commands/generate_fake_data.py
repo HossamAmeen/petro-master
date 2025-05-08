@@ -39,6 +39,7 @@ class Command(BaseCommand):
         call_command("loaddata", "fixtures/countries.json")
         city = City.objects.create(name="Cairo", country_id=1)
         district = District.objects.create(name="New Cairo", city=city)
+
         company = Company.objects.create(
             name="Petro company",
             address="343 Zachary Alley\nEdwardbury, RI 32596",
@@ -63,6 +64,7 @@ class Command(BaseCommand):
             )
             company_user.set_password("admin")
             company_user.save()
+
         company_branch_manager = CompanyUser.objects.filter(
             phone_number="01010079792", email="petro_company_manager@petro.com"
         ).first()

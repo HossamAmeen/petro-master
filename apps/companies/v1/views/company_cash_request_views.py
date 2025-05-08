@@ -27,6 +27,9 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         return CompanyCashRequestSerializer
 
     def get_queryset(self):
-        if self.request.user.role == User.UserRoles.CompanyOwner:
-            return self.queryset.filter(company__owners=self.request.user)
+        if (
+            self.request.user.role == User.UserRoles.CompanyOwner
+            or self.request.user.role == User.UserRoles.CompanyBranchManager
+        ):
+            return self.queryset.filter(company=self.request.company_id)
         return self.queryset

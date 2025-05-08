@@ -36,7 +36,9 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
-            return self.queryset.filter(branch__company__owners=self.request.user)
+            return self.queryset.filter(branch__company=self.request.company_id)
+        if self.request.user.role == User.UserRoles.CompanyBranchManager:
+            return self.queryset.filter(branch__managers__user=self.request.user)
         return self.queryset
 
 
@@ -60,7 +62,9 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
-            return self.queryset.filter(branch__company__owners=self.request.user)
+            return self.queryset.filter(branch__company=self.request.company_id)
+        if self.request.user.role == User.UserRoles.CompanyBranchManager:
+            return self.queryset.filter(branch__managers__user=self.request.user)
         return self.queryset
 
     @extend_schema(

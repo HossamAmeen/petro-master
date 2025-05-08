@@ -52,7 +52,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
-            self.queryset = self.queryset.filter(company__owners=self.request.user)
+            self.queryset = self.queryset.filter(company=self.request.company_id)
         if self.request.user.role == User.UserRoles.CompanyBranchManager:
             self.queryset = self.queryset.filter(managers__user=self.request.user)
         return self.queryset.distinct()
