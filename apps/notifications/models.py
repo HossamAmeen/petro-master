@@ -8,6 +8,8 @@ class Notification(TimeStampedModel):
         FUEL = "fuel"
         MONEY = "money"
         GENERAL = "general"
+        STATION_WORKER = "station_worker"
+        STATION_SERVICE = "station_service"
 
     description = models.TextField()
     is_read = models.BooleanField(default=False)

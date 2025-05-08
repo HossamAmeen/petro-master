@@ -20,8 +20,8 @@ class User(AbstractUser, TimeStampedModel):
         CompanyOwner = "company_owner"
         CompanyBranchManager = "company_branch_manager"
         Driver = "driver"
-        StationManager = "station_owner"
-        StationEmployee = "station_branch_manager"
+        StationOwner = "station_owner"
+        StationBranchManager = "station_branch_manager"
         StationWorker = "station_worker"
 
     name = models.CharField(max_length=255)
