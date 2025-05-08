@@ -10,15 +10,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import base64
+import json
+import os
+
 # flake8: noqa
 from datetime import timedelta
 from pathlib import Path
-import os
-import json
-import base64
+
+import environ
 import firebase_admin
 from firebase_admin import credentials
-import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -236,28 +238,16 @@ SPECTACULAR_SETTINGS = {
     ],
 }
 
-
-# EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
-# EMAIL_HOST_USER = '403c618db534ff'
-# EMAIL_HOST_PASSWORD = "2af349497cece3"
-# EMAIL_PORT = 2525
-# DEFAULT_FROM_EMAIL="hosamameen948@gmail.com"
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "baronlearning.com"  # Incoming/Outgoing Server
-EMAIL_PORT = 465  # SMTP Port for SSL/TLS
-EMAIL_USE_TLS = False  # We are using SSL, not STARTTLS
-EMAIL_USE_SSL = True
-EMAIL_HOST_USER = "learn@baronlearning.com"
-EMAIL_HOST_PASSWORD = "KMPjHt%b!U7j"  # Replace with your actual email password
-DEFAULT_FROM_EMAIL = "learn@baronlearning.com"
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_PORT = env("EMAIL_PORT", default=587)
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "apikey"
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
 
-
-import os
-import json
-import base64
-import firebase_admin
-from firebase_admin import credentials
 
 encoded_credentials = env("FIREBASE_CREDENTIALS", default=None)
 if encoded_credentials:
@@ -270,11 +260,6 @@ if encoded_credentials:
         pass
 else:
     pass
-
-
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-DEFAULT_FROM_EMAIL = "hosamameen948@gmail.com"
-
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")

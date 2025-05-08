@@ -185,9 +185,7 @@ class PasswordResetRequestAPIView(APIView):
             reset_link = request.build_absolute_uri(reset_url)
 
             subject = "Password Reset Request"
-            message = (
-                f"Please click the following link to reset your password: {reset_link}"
-            )
+            message = f"Please click the following link to reset your password: <a href='{reset_link}'>Reset Password</a>"
             from_email = settings.DEFAULT_FROM_EMAIL
             recipient_list = [user.email]
 
