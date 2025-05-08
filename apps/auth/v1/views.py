@@ -185,13 +185,19 @@ class PasswordResetRequestAPIView(APIView):
             reset_link = request.build_absolute_uri(reset_url)
 
             subject = "Password Reset Request"
-            message = f"Please click the following link to reset your password: <a href='{reset_link}'>Reset Password</a>"
+            # message = (
+            #     f"Please click the following link to reset your password: {reset_link}"
+            # )
             from_email = settings.DEFAULT_FROM_EMAIL
             recipient_list = [user.email]
-
+            html_message = f"""<html><body><p>Please click the following link to reset your password:</p> <p><a href='{reset_link}'>Reset Password</a></p> <p>If the link doesn't work, copy and paste this URL into your browser:</p> <p>{reset_link}</p></body></html>"""  # noqa
             try:
                 send_mail(
-                    subject, message, from_email, recipient_list, fail_silently=False
+                    subject,
+                    from_email,
+                    recipient_list,
+                    fail_silently=False,
+                    html_message=html_message,
                 )
                 return Response(
                     {"message": "Password reset request sent successfully"},
