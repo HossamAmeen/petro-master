@@ -27,4 +27,4 @@ class CompanyCashRequest(AbstractBaseModel):
 
     class Meta:
         verbose_name = "Company Cash Request"
-        verbose_name_plural = "Company Cash Requests"
+        verbose_name_plural = "6. Company Cash Requests"

@@ -54,7 +54,7 @@ class CarOperation(AbstractBaseModel):
 
     class Meta:
         verbose_name = "Car Operation"
-        verbose_name_plural = "Car Operations"
+        verbose_name_plural = "5. Car Operations"
 
     def __str__(self):
         return f"{self.car} - {self.service} - {self.code}"

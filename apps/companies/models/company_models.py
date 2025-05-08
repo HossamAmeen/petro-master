@@ -21,7 +21,7 @@ class Company(AbstractBaseModel):
 
     class Meta:
         verbose_name = "Company"
-        verbose_name_plural = "Companies"
+        verbose_name_plural = "1. Companies"
 
 
 class CompanyBranch(AbstractBaseModel):
@@ -42,7 +42,7 @@ class CompanyBranch(AbstractBaseModel):
 
     class Meta:
         verbose_name = "Company Branch"
-        verbose_name_plural = "Company Branches"
+        verbose_name_plural = "2. Company Branches"
 
 
 class Car(AbstractBaseModel):
@@ -117,7 +117,7 @@ class Car(AbstractBaseModel):
 
     class Meta:
         verbose_name = "Car"
-        verbose_name_plural = "Cars"
+        verbose_name_plural = "3. Cars"
 
 
 class Driver(AbstractBaseModel):
@@ -149,4 +149,4 @@ class Driver(AbstractBaseModel):
 
     class Meta:
         verbose_name = "Driver"
-        verbose_name_plural = "Drivers"
+        verbose_name_plural = "4. Drivers"

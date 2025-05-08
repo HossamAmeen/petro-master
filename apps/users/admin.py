@@ -4,6 +4,8 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
 
+from config.admin import custom_admin_site
+
 from .models import (
     CompanyUser,
     FirebaseToken,
@@ -53,6 +55,7 @@ class CustomUserChangeForm(forms.ModelForm):
         return user
 
 
+@admin.register(User, site=custom_admin_site)
 class CustomUserAdmin(UserAdmin):
     form = CustomUserChangeForm
     list_display = (
@@ -144,6 +147,7 @@ class CompanyUserForm(forms.ModelForm):
         return user
 
 
+@admin.register(CompanyUser, site=custom_admin_site)
 class CompanyUserInterface(admin.ModelAdmin):
     list_per_page = 10
     form = CompanyUserForm
@@ -208,8 +212,6 @@ class CompanyUserInterface(admin.ModelAdmin):
     created.short_description = _("Created")
 
 
-admin.site.register(User, CustomUserAdmin)
-admin.site.register(CompanyUser, CompanyUserInterface)
 admin.site.register(StationOwner)
 admin.site.register(StationBranchManager)
 admin.site.register(Worker)

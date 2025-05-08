@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from apps.companies.models.operation_model import CarOperation
+from config.admin import custom_admin_site
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, Company, CompanyBranch, Driver
@@ -14,8 +15,8 @@ class BranchInline(admin.TabularInline):
     extra = 0
 
 
-@admin.register(Company)
-class CompanyAdmin(admin.ModelAdmin):  # Use standard ModelAdmin
+@admin.register(Company, site=custom_admin_site)
+class CompanyAdmin(admin.ModelAdmin):
     list_display = ("name", "address", "phone_number", "balance", "branches_link")
     search_fields = ("name", "address", "phone_number")
     list_per_page = 20
@@ -32,34 +33,37 @@ class CompanyAdmin(admin.ModelAdmin):  # Use standard ModelAdmin
     branches_link.short_description = "Branches"
 
 
-class CompanyCashRequestAdmin(admin.ModelAdmin):
-    list_display = (
-        "company",
-        "amount",
-        "status",
-        "driver",
-        "station",
-        "created_by",
-        "updated_by",
-        "created",
-        "modified",
-    )
-    search_fields = (
-        "company__name",
-        "amount",
-        "status",
-        "driver__name",
-        "station__name",
-    )
-    list_filter = ("company", "status", "driver", "station")
-    readonly_fields = ("created_by", "updated_by")
-
-
+@admin.register(CompanyBranch, site=custom_admin_site)
 class CompanyBranchAdmin(admin.ModelAdmin):
-    list_display = ("name", "email", "phone_number", "company", "balance")
+    list_display = (
+        "name",
+        "email",
+        "phone_number",
+        "company",
+        "balance",
+        "car_link",
+        "driver_link",
+    )
     search_fields = ("name", "email", "phone_number")
     list_filter = ("company",)
     list_per_page = 20
+
+    def car_link(self, obj):
+        count = obj.cars.count()
+        url = reverse("admin:companies_car_changelist") + f"?branch__id__exact={obj.id}"
+        return format_html('<a class="button" href="{}">Cars ({})</a>', url, count)
+
+    car_link.short_description = "Cars"
+
+    def driver_link(self, obj):
+        count = obj.drivers.count()
+        url = (
+            reverse("admin:companies_driver_changelist")
+            + f"?branch__id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Drivers ({})</a>', url, count)
+
+    driver_link.short_description = "Drivers"
 
 
 class CarForm(forms.ModelForm):
@@ -95,6 +99,7 @@ class CarForm(forms.ModelForm):
         return fuel_allowed_days
 
 
+@admin.register(Car, site=custom_admin_site)
 class CarAdmin(admin.ModelAdmin):
     form = CarForm
     list_display = (
@@ -120,19 +125,7 @@ class CarAdmin(admin.ModelAdmin):
         "code",
         "plate_number",
         "plate_character",
-        "color",
-        "license_expiration_date",
-        "model_year",
         "brand",
-        "is_with_odometer",
-        "tank_capacity",
-        "permitted_fuel_amount",
-        "fuel_type",
-        "number_of_fuelings_per_day",
-        "fuel_allowed_days",
-        "balance",
-        "city",
-        "branch",
     )
     list_filter = (
         "code",
@@ -142,11 +135,7 @@ class CarAdmin(admin.ModelAdmin):
         "brand",
         "is_with_odometer",
         "tank_capacity",
-        "permitted_fuel_amount",
         "fuel_type",
-        "number_of_fuelings_per_day",
-        "fuel_allowed_days",
-        "balance",
         "city",
         "branch",
     )
@@ -154,6 +143,7 @@ class CarAdmin(admin.ModelAdmin):
     list_per_page = 10
 
 
+@admin.register(Driver, site=custom_admin_site)
 class DriverAdmin(admin.ModelAdmin):
     list_display = (
         "name",
@@ -215,7 +205,31 @@ class DriverAdmin(admin.ModelAdmin):
         obj.save()
 
 
-@admin.register(CarOperation)
+@admin.register(CompanyCashRequest, site=custom_admin_site)
+class CompanyCashRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "company",
+        "amount",
+        "status",
+        "driver",
+        "station",
+        "created_by",
+        "updated_by",
+        "created",
+        "modified",
+    )
+    search_fields = (
+        "company__name",
+        "amount",
+        "status",
+        "driver__name",
+        "station__name",
+    )
+    list_filter = ("company", "status", "driver", "station")
+    readonly_fields = ("created_by", "updated_by")
+
+
+@admin.register(CarOperation, site=custom_admin_site)
 class CarOperationAdmin(admin.ModelAdmin):
     list_display = (
         "code",
@@ -258,9 +272,3 @@ class CarOperationAdmin(admin.ModelAdmin):
         return obj.car.branch.company.name
 
     branch_company.short_description = "Company"
-
-
-admin.site.register(CompanyBranch, CompanyBranchAdmin)
-admin.site.register(Car, CarAdmin)
-admin.site.register(Driver, DriverAdmin)
-admin.site.register(CompanyCashRequest, CompanyCashRequestAdmin)
