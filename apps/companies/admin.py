@@ -4,7 +4,6 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from apps.companies.models.operation_model import CarOperation
-from config.admin import custom_admin_site
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, Company, CompanyBranch, Driver
@@ -15,7 +14,7 @@ class BranchInline(admin.TabularInline):
     extra = 0
 
 
-@admin.register(Company, site=custom_admin_site)
+@admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
     list_display = ("name", "address", "phone_number", "balance", "branches_link")
     search_fields = ("name", "address", "phone_number")
@@ -33,7 +32,7 @@ class CompanyAdmin(admin.ModelAdmin):
     branches_link.short_description = "Branches"
 
 
-@admin.register(CompanyBranch, site=custom_admin_site)
+@admin.register(CompanyBranch)
 class CompanyBranchAdmin(admin.ModelAdmin):
     list_display = (
         "name",
@@ -99,7 +98,7 @@ class CarForm(forms.ModelForm):
         return fuel_allowed_days
 
 
-@admin.register(Car, site=custom_admin_site)
+@admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
     form = CarForm
     list_display = (
@@ -143,7 +142,7 @@ class CarAdmin(admin.ModelAdmin):
     list_per_page = 10
 
 
-@admin.register(Driver, site=custom_admin_site)
+@admin.register(Driver)
 class DriverAdmin(admin.ModelAdmin):
     list_display = (
         "name",
@@ -205,7 +204,7 @@ class DriverAdmin(admin.ModelAdmin):
         obj.save()
 
 
-@admin.register(CompanyCashRequest, site=custom_admin_site)
+@admin.register(CompanyCashRequest)
 class CompanyCashRequestAdmin(admin.ModelAdmin):
     list_display = (
         "company",
@@ -229,7 +228,7 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
     readonly_fields = ("created_by", "updated_by")
 
 
-@admin.register(CarOperation, site=custom_admin_site)
+@admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
     list_display = (
         "code",
