@@ -1,3 +1,4 @@
+from django.db.models import Count
 from rest_framework import viewsets
 
 from apps.stations.filters import StationBranchFilter
@@ -15,15 +16,19 @@ class StationViewSet(viewsets.ModelViewSet):
 
 
 class StationBranchViewSet(viewsets.ModelViewSet):
-    queryset = StationBranch.objects.prefetch_related(
-        "station_branch_services"
-    ).order_by("-id")
+    queryset = (
+        StationBranch.objects.prefetch_related("station_branch_services")
+        .annotate(
+            managers_count=Count("managers", distinct=True),
+        )
+        .order_by("-id")
+    )
     serializer_class = ListStationBranchSerializer
     filterset_class = StationBranchFilter
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
             return self.queryset.filter(station__owners=self.request.user)
-        if self.request.user.role == User.UserRoles.CompanyBranchManager:
-            return self.queryset.filter(station__company=self.request.company_id)
+        if self.request.user.role == User.UserRoles.StationBranchManager:
+            return self.queryset.filter(station__managers__user=self.request.user)
         return self.queryset.distinct()

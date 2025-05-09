@@ -129,6 +129,9 @@ class StationBranchManager(User):
         blank=True,
     )
 
+    def __str__(self):
+        return f"{self.user.name} - {self.station_branch.name}"
+
     class Meta:
         verbose_name = "Station Branch Manager"
         verbose_name_plural = "Station Branch Managers"
