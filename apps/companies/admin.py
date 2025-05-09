@@ -27,8 +27,9 @@ class CompanyAdmin(admin.ModelAdmin):
         "updated_by",
     )
     search_fields = ("name", "address", "phone_number")
+    readonly_fields = ["created_by", "updated_by"]
     list_per_page = 20
-    inlines = [BranchInline]
+    # inlines = [BranchInline]
 
     def branches_link(self, obj):
         count = obj.branches.count()
@@ -57,6 +58,7 @@ class CompanyBranchAdmin(admin.ModelAdmin):
     )
     search_fields = ("name", "email", "phone_number")
     list_filter = ("company",)
+    readonly_fields = ["created_by", "updated_by"]
     list_per_page = 20
 
     def car_link(self, obj):
