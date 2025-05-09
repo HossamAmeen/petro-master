@@ -5,11 +5,9 @@ from faker import Faker
 from apps.companies.factories import (
     CarFactory,
     CarOperationFactory,
-    CityFactory,
     CompanyBranchFactory,
     CompanyFactory,
     CompanyKhaznaTransactionFactory,
-    DistrictFactory,
     DriverFactory,
     NotificationFactory,
     ServiceFactory,
@@ -37,8 +35,15 @@ class Command(BaseCommand):
         )
         call_command("loaddata", "fixtures/users.json")
         call_command("loaddata", "fixtures/countries.json")
-        city = City.objects.create(name="Cairo", country_id=1)
-        district = District.objects.create(name="New Cairo", city=city)
+        cairo_city, _ = City.objects.get_or_create(name="القاهرة", country_id=1)
+        alexandria_city, _ = City.objects.get_or_create(name="اسكندرية", country_id=1)
+        asyut_city, _ = City.objects.get_or_create(name="أسيوط", country_id=1)
+
+        district, _ = District.objects.get_or_create(name="وسط البلد", city=cairo_city)
+        district, _ = District.objects.get_or_create(
+            name="العجمي", city=alexandria_city
+        )
+        district, _ = District.objects.get_or_create(name="الاربعين", city=asyut_city)
 
         company = Company.objects.create(
             name="Petro company",
@@ -83,8 +88,6 @@ class Command(BaseCommand):
 
         # Generate data
         UserFactory.create_batch(10)
-        CityFactory.create_batch(5)
-        DistrictFactory.create_batch(5)
         CompanyFactory.create_batch(5)
         CompanyBranchFactory.create_batch(25)
         CarFactory.create_batch(20)

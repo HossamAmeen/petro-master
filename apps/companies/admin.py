@@ -16,7 +16,16 @@ class BranchInline(admin.TabularInline):
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ("name", "address", "phone_number", "balance", "branches_link")
+    list_display = (
+        "name",
+        "address",
+        "phone_number",
+        "balance",
+        "branches_link",
+        "district",
+        "created_by",
+        "updated_by",
+    )
     search_fields = ("name", "address", "phone_number")
     list_per_page = 20
     inlines = [BranchInline]
@@ -42,6 +51,9 @@ class CompanyBranchAdmin(admin.ModelAdmin):
         "balance",
         "car_link",
         "driver_link",
+        "district",
+        "created_by",
+        "updated_by",
     )
     search_fields = ("name", "email", "phone_number")
     list_filter = ("company",)
