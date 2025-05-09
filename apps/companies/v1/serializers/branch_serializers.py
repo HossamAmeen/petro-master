@@ -10,10 +10,11 @@ from apps.utilities.serializers import BalanceUpdateSerializer
 
 class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):
     district = serializers.CharField(source="district.name")
+    city = serializers.CharField(source="district.city.name")
 
     class Meta:
         model = CompanyBranch
-        fields = ["id", "name", "email", "phone_number", "district", "company"]
+        fields = ["id", "name", "email", "phone_number", "district", "city", "company"]
 
 
 class ListCompanyBranchSerializer(serializers.ModelSerializer):

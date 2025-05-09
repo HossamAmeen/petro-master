@@ -223,7 +223,7 @@ class PasswordResetRequestAPIView(APIView):
 
         else:
             raise CustomValidationError(
-                message="User not found",
+                message="لاي يوجد مستخدم, الرجاء التواصل مع المسؤول.",
                 code="user_not_found",
                 errors=[],
                 status_code=status.HTTP_404_NOT_FOUND,

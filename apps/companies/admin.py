@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from django.db.models import Count
 from django.urls import reverse
 from django.utils.html import format_html
 
@@ -22,6 +23,8 @@ class CompanyAdmin(admin.ModelAdmin):
         "phone_number",
         "balance",
         "branches_link",
+        "cars_link",
+        "drivers_link",
         "district",
         "created_by",
         "updated_by",
@@ -31,6 +34,24 @@ class CompanyAdmin(admin.ModelAdmin):
     list_per_page = 20
     # inlines = [BranchInline]
 
+    def cars_link(self, obj):
+        count = obj.branches.aggregate(total_cars=Count("cars"))["total_cars"] or 0
+        url = (
+            reverse("admin:companies_car_changelist")
+            + f"?branch__company__id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Cars ({})</a>', url, count)
+
+    def drivers_link(self, obj):
+        count = (
+            obj.branches.aggregate(total_drivers=Count("drivers"))["total_drivers"] or 0
+        )
+        url = (
+            reverse("admin:companies_driver_changelist")
+            + f"?branch__company__id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Drivers ({})</a>', url, count)
+
     def branches_link(self, obj):
         count = obj.branches.count()
         url = (
@@ -39,6 +60,8 @@ class CompanyAdmin(admin.ModelAdmin):
         )
         return format_html('<a class="button" href="{}">Branches ({})</a>', url, count)
 
+    drivers_link.short_description = "Drivers"
+    cars_link.short_description = "Cars"
     branches_link.short_description = "Branches"
 
 
@@ -122,17 +145,12 @@ class CarAdmin(admin.ModelAdmin):
         "plate_color",
         "color",
         "license_expiration_date",
-        "model_year",
         "brand",
-        "is_with_odometer",
-        "tank_capacity",
         "permitted_fuel_amount",
         "fuel_type",
-        "number_of_fuelings_per_day",
-        "fuel_allowed_days",
         "balance",
-        "city",
         "branch",
+        "company_name",
     )
     search_fields = (
         "code",
@@ -151,9 +169,15 @@ class CarAdmin(admin.ModelAdmin):
         "fuel_type",
         "city",
         "branch",
+        "branch__company",
     )
-    readonly_fields = ("balance",)
+    readonly_fields = ("balance", "created_by", "updated_by", "created", "modified")
     list_per_page = 10
+
+    def company_name(self, obj):
+        return obj.branch.company.name
+
+    company_name.short_description = "Company"
 
 
 @admin.register(Driver)
@@ -165,6 +189,7 @@ class DriverAdmin(admin.ModelAdmin):
         "lincense_number",
         "lincense_expiration_date",
         "branch",
+        "company_name",
         "created_by",
         "updated_by",
         "created",
@@ -185,8 +210,14 @@ class DriverAdmin(admin.ModelAdmin):
         "lincense_number",
         "lincense_expiration_date",
         "branch",
+        "branch__company",
     )
     readonly_fields = ("code", "created_by", "updated_by")
+
+    def company_name(self, obj):
+        return obj.branch.company.name
+
+    company_name.short_description = "Company"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "branch":

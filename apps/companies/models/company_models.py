@@ -42,7 +42,7 @@ class CompanyBranch(AbstractBaseModel):
 
     class Meta:
         verbose_name = "Company Branch"
-        verbose_name_plural = "Company Branches"
+        verbose_name_plural = "2. Company Branches"
 
 
 class Car(AbstractBaseModel):
