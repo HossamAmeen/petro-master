@@ -105,17 +105,21 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
         serializer = CarBalanceUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        if self.request.user.role == User.UserRoles.CompanyOwner:
+            parent_object = car.branch.company
+        elif self.request.user.role == User.UserRoles.CompanyBranchManager:
+            parent_object = car.branch
+
         with transaction.atomic():
             if serializer.validated_data["type"] == "add":
                 car.refresh_from_db()
-                if car.balance >= serializer.validated_data["amount"]:
+                if parent_object.balance >= serializer.validated_data["amount"]:
                     car.balance += serializer.validated_data["amount"]
                     car.save()
 
-                    branch = car.branch
-                    branch.refresh_from_db()
-                    branch.balance += serializer.validated_data["amount"]
-                    branch.save()
+                    parent_object.refresh_from_db()
+                    parent_object.balance -= serializer.validated_data["amount"]
+                    parent_object.save()
                 else:
                     raise CustomValidationError(
                         message="السيارة لا تمتلك كافٍ من المال",
@@ -125,14 +129,13 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     )
             elif serializer.validated_data["type"] == "subtract":
                 car.refresh_from_db()
-                if car.balance >= serializer.validated_data["amount"]:
+                if parent_object.balance >= serializer.validated_data["amount"]:
                     car.balance -= serializer.validated_data["amount"]
                     car.save()
 
-                    branch = car.branch
-                    branch.refresh_from_db()
-                    branch.balance += serializer.validated_data["amount"]
-                    branch.save()
+                    parent_object.refresh_from_db()
+                    parent_object.balance += serializer.validated_data["amount"]
+                    parent_object.save()
                 else:
                     raise CustomValidationError(
                         message="السيارة لا تمتلك كافٍ من المال",
