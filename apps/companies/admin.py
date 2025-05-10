@@ -171,13 +171,31 @@ class CarAdmin(admin.ModelAdmin):
         "branch",
         "branch__company",
     )
-    readonly_fields = ("balance", "created_by", "updated_by", "created", "modified")
+    readonly_fields = (
+        "balance",
+        "created_by",
+        "updated_by",
+        "created",
+        "modified",
+        "code",
+    )
     list_per_page = 10
 
     def company_name(self, obj):
         return obj.branch.company.name
 
     company_name.short_description = "Company"
+
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new Driver.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+            obj.balance = 0
+        obj.updated_by = request.user
+        obj.save()
 
 
 @admin.register(Driver)

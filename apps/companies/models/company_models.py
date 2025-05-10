@@ -3,6 +3,7 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from apps.shared.generate_code import generate_unique_code
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
 
 
@@ -94,7 +95,7 @@ class Car(AbstractBaseModel):
     number_of_fuelings_per_day = models.IntegerField()
     number_of_washes_per_month = models.IntegerField()
     fuel_allowed_days = models.JSONField(default=list, blank=True)
-    balance = models.DecimalField(max_digits=10, decimal_places=2)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     city = models.ForeignKey(
         "geo.City", on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -112,6 +113,8 @@ class Car(AbstractBaseModel):
             )
 
     def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = generate_unique_code(Car)
         self.full_clean()
         super().save(*args, **kwargs)
 

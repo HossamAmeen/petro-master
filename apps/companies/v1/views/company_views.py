@@ -196,13 +196,16 @@ class CompanyHomeView(APIView):
                 total_cars_count=Count("branches__cars"),
                 diesel_cars_count=Count("branches__cars", filter=diesel_car_filter),
                 gasoline_cars_count=Count("branches__cars", filter=gasoline_car_filter),
-                total_drivers_count=Count("branches__drivers"),
+                total_drivers_count=Count("branches__drivers", distinct=True),
                 total_drivers_with_lincense_expiration_date=Count(
-                    "branches__drivers", filter=drivers_lincense_expiration_date_filter
+                    "branches__drivers",
+                    filter=drivers_lincense_expiration_date_filter,
+                    distinct=True,
                 ),
                 total_drivers_with_lincense_expiration_date_30_days=Count(
                     "branches__drivers",
                     filter=drivers_lincense_expiration_date_filter_30_days,
+                    distinct=True,
                 ),
                 total_branches_count=Count("branches"),
                 cars_balance=Sum("branches__cars__balance"),

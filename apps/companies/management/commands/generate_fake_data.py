@@ -90,7 +90,7 @@ class Command(BaseCommand):
         UserFactory.create_batch(10)
         CompanyFactory.create_batch(5)
         CompanyBranchFactory.create_batch(25)
-        CarFactory.create_batch(20)
+        CarFactory.create_batch(6)
         DriverFactory.create_batch(90)
         NotificationFactory.create_batch(50)
         StationFactory.create_batch(25)
