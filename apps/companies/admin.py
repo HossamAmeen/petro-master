@@ -101,6 +101,17 @@ class CompanyBranchAdmin(admin.ModelAdmin):
 
     driver_link.short_description = "Drivers"
 
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new Driver.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+            obj.balance = 0
+        obj.updated_by = request.user
+        obj.save()
+
 
 class CarForm(forms.ModelForm):
     fuel_allowed_days = forms.MultipleChoiceField(
