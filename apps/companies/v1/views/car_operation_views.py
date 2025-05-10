@@ -32,7 +32,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         "worker__name",
     ]
 
-    def get_queryset(self):
+    def get_querysets(self):
 
         return self.queryset.filter(car__branch__company=self.request.company_id)
 

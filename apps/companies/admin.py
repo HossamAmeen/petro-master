@@ -71,8 +71,8 @@ class CompanyBranchAdmin(admin.ModelAdmin):
         "name",
         "email",
         "phone_number",
-        "company",
         "balance",
+        "company",
         "car_link",
         "driver_link",
         "district",
@@ -304,6 +304,16 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
 
 @admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new CarOperation.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        obj.save()
+
     list_display = (
         "code",
         "status",
@@ -321,11 +331,7 @@ class CarOperationAdmin(admin.ModelAdmin):
         "service",
         "branch_company",
     )
-    search_fields = (
-        "code",
-        "worker",
-        "service",
-    )
+    search_fields = ("code",)
     list_filter = (
         "status",
         "start_time",
@@ -345,3 +351,16 @@ class CarOperationAdmin(admin.ModelAdmin):
         return obj.car.branch.company.name
 
     branch_company.short_description = "Company"
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .select_related(
+                "car__branch__company",
+                "driver",
+                "station_branch",
+                "worker",
+                "service",
+            )
+        )
