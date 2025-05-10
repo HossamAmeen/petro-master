@@ -9,6 +9,12 @@ from apps.stations.models.stations_models import (
 )
 
 
+class ListServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Service
+        fields = ["id", "name", "unit", "type", "cost"]
+
+
 class ServiceNameSerializer(serializers.ModelSerializer):
 
     class Meta:

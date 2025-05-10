@@ -20,7 +20,8 @@ from apps.companies.factories import (
 )
 from apps.companies.models.company_models import Company, CompanyBranch
 from apps.geo.models import City, District
-from apps.users.models import CompanyBranchManager, CompanyUser, User
+from apps.stations.models.stations_models import Station, StationBranch
+from apps.users.models import CompanyBranchManager, CompanyUser, StationOwner, User
 
 fake = Faker()
 
@@ -85,6 +86,37 @@ class Command(BaseCommand):
             )
             company_branch_manager.set_password("admin")
             company_branch_manager.save()
+
+        station = Station.objects.get_or_create(
+            name="Petrol Station",
+            address="343 Zachary Alley\nEdwardbury, RI 32596",
+            lang=3.77,
+            lat=4.99,
+            district=district[0],
+            created_by_id=1,
+            updated_by_id=1,
+        )
+        StationBranch.objects.get_or_create(
+            name="Petrol Station Branch",
+            address="343 Zachary Alley\nEdwardbury, RI 32596",
+            lang=3.77,
+            lat=4.99,
+            district=district,
+            station=station[0],
+            created_by_id=1,
+            updated_by_id=1,
+        )
+        station_owner = StationOwner.objects.get_or_create(
+            name="petro station owner",
+            email="petro_station_owner@petro.com",
+            phone_number="01010079794",
+            role=User.UserRoles.StationOwner,
+            station=station,
+            created_by_id=1,
+            updated_by_id=1,
+        )
+        station_owner.set_password("admin")
+        station_owner.save()
 
         # Generate data
         UserFactory.create_batch(10)

@@ -114,7 +114,7 @@ class CarFactory(factory.django.DjangoModelFactory):
         lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01"))
     )
     city = factory.LazyFunction(lambda: City.objects.order_by("?").first())
-    branch = factory.SubFactory(CompanyBranchFactory)
+    branch = factory.LazyFunction(lambda: CompanyBranch.objects.order_by("?").first())
     number_of_washes_per_month = factory.LazyFunction(lambda: random.randint(1, 10))
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())

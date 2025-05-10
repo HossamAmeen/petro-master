@@ -39,7 +39,7 @@ class CompanyBranch(AbstractBaseModel):
     )
 
     def __str__(self):
-        return self.name
+        return self.name + " - " + self.company.name
 
     class Meta:
         verbose_name = "Company Branch"

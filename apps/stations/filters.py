@@ -1,6 +1,6 @@
 from django_filters import rest_framework as django_filters
 
-from apps.stations.models.stations_models import StationBranch
+from apps.stations.models.stations_models import Service, StationBranch
 
 
 class StationBranchFilter(django_filters.FilterSet):
@@ -9,3 +9,11 @@ class StationBranchFilter(django_filters.FilterSet):
     class Meta:
         model = StationBranch
         fields = ["station", "city"]
+
+
+class ServiceFilter(django_filters.FilterSet):
+    station = django_filters.NumberFilter(field_name="station_services__station")
+
+    class Meta:
+        model = Service
+        fields = ["type", "station"]
