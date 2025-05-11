@@ -16,6 +16,8 @@ from apps.companies.v1.serializers.car_operation_serializer import (
 )
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
+from apps.stations.models.stations_models import Service
+from apps.users.models import User
 
 
 class CarOperationViewSet(viewsets.ModelViewSet):
@@ -32,12 +34,33 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         "worker__name",
     ]
 
-    def get_querysets(self):
-
+    def get_queryset(self):
+        if self.request.user.role == User.UserRoles.CompanyOwner:
+            return self.queryset.filter(
+                car__branch__company=self.request.company_id,
+                service__type__in=[
+                    Service.ServiceType.PETROL,
+                    Service.ServiceType.DIESEL,
+                ],
+            )
+        if self.request.user.role == User.UserRoles.CompanyBranchManager:
+            return self.queryset.filter(
+                car__branch__managers__user=self.request.user,
+                service__type__in=[
+                    Service.ServiceType.PETROL,
+                    Service.ServiceType.DIESEL,
+                ],
+            )
         return self.queryset.filter(car__branch__company=self.request.company_id)
 
     @extend_schema(
         parameters=[
+            OpenApiParameter(
+                name="car",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description="Filter by car code",
+            ),
             OpenApiParameter(
                 name="date_from",
                 type=OpenApiTypes.DATE,
@@ -49,12 +72,6 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 type=OpenApiTypes.DATE,
                 location=OpenApiParameter.QUERY,
                 description="Filter operations to this date (YYYY-MM-DD)",
-            ),
-            OpenApiParameter(
-                name="car",
-                type=OpenApiTypes.INT,
-                location=OpenApiParameter.QUERY,
-                description="Filter by car code",
             ),
         ],
     )

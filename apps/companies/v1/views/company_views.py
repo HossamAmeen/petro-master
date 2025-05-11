@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta
 
 from django.db import transaction
@@ -8,6 +9,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.views import APIView, Response, status
 
+from apps.accounting.models import CompanyKhaznaTransaction
 from apps.companies.models.company_models import Car, Company, CompanyBranch
 from apps.companies.v1.filters import CompanyBranchFilter
 from apps.companies.v1.serializers.branch_serializers import (
@@ -151,6 +153,18 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     company_branch.refresh_from_db()
                     company_branch.balance += serializer.validated_data["amount"]
                     company_branch.save()
+
+                    CompanyKhaznaTransaction.objects.create(
+                        amount=serializer.validated_data["amount"],
+                        is_incoming=True,
+                        status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
+                        reference_code="int" + str(uuid.uuid4())[:8].upper(),
+                        description="تم اضافة شحن رصيد فرع " + str(company_branch.name),
+                        method=CompanyKhaznaTransaction.TransactionMethod.BANK,
+                        company=company,
+                        company_branch=company_branch,
+                        is_internal=True,
+                    )
                 else:
                     raise CustomValidationError(
                         message="الشركة لا تمتلك كافٍ من المال",

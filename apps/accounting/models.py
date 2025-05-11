@@ -39,6 +39,9 @@ class KhaznaTransaction(AbstractBaseModel):
     is_unpaid = models.BooleanField(
         default=False, help_text="True if the transaction hasn't been paid yet."
     )
+    is_internal = models.BooleanField(
+        default=False, help_text="True if the transaction is internal."
+    )
 
     def __str__(self):
         return f"{'IN' if self.is_incoming else 'OUT'} | {self.amount} | {self.reference_code}"  # noqa
