@@ -4,6 +4,7 @@ from apps.companies.models.company_models import Car
 from apps.companies.v1.serializers.branch_serializers import (
     SingleBranchWithDistrictSerializer,
 )
+from apps.shared.base_exception_class import CustomValidationError
 from apps.utilities.serializers import BalanceUpdateSerializer
 
 COLOR_CHOICES_HEX = {
@@ -46,8 +47,10 @@ class CarSerializer(serializers.ModelSerializer):
         )
         if permitted_fuel_amount is not None and tank_capacity is not None:
             if permitted_fuel_amount > tank_capacity:
-                raise serializers.ValidationError(
-                    "الكمية المسموح بها أكبر من حجم المخزون"
+                raise CustomValidationError(
+                    message="الكمية المسموح بها أكبر من حجم المخزون",
+                    code="invalid",
+                    errors=[],
                 )
 
         return attrs
