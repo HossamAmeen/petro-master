@@ -162,7 +162,6 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                         description="تم اضافة شحن رصيد فرع " + str(company_branch.name),
                         method=CompanyKhaznaTransaction.TransactionMethod.BANK,
                         company=company,
-                        company_branch=company_branch,
                         is_internal=True,
                     )
                 else:

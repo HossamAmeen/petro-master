@@ -108,9 +108,7 @@ class Car(AbstractBaseModel):
 
     def clean(self):
         if self.permitted_fuel_amount > self.tank_capacity:
-            raise ValidationError(
-                "Permitted fuel amount must be less than or equal to tank capacity."
-            )
+            raise ValidationError("الكمية المسموح بها أكبر من حجم المخزون")
 
     def save(self, *args, **kwargs):
         if not self.code:
