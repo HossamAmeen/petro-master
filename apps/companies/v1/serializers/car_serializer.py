@@ -37,12 +37,19 @@ class CarSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def validate(self, attrs):
-        if (
-            "permited_fuel_amount" in attrs
-            and "tank_capacity" in attrs
-            and attrs["permited_fuel_amount"] > attrs["tank_capacity"]
-        ):
-            raise serializers.ValidationError("الكمية المسموح بها أكبر من حجم المخزون")
+        permitted_fuel_amount = attrs.get(
+            "permitted_fuel_amount",
+            getattr(self.instance, "permitted_fuel_amount", None),
+        )
+        tank_capacity = attrs.get(
+            "tank_capacity", getattr(self.instance, "tank_capacity", None)
+        )
+        if permitted_fuel_amount is not None and tank_capacity is not None:
+            if permitted_fuel_amount > tank_capacity:
+                raise serializers.ValidationError(
+                    "الكمية المسموح بها أكبر من حجم المخزون"
+                )
+
         return attrs
 
 
