@@ -51,7 +51,11 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
 
     company = models.ForeignKey("companies.Company", on_delete=models.CASCADE)
     for_what = models.CharField(
-        max_length=20, choices=ForWhat.choices, default=ForWhat.BRANCH
+        max_length=20,
+        choices=ForWhat.choices,
+        default=ForWhat.BRANCH,
+        null=True,
+        blank=True,
     )
 
     def __str__(self):
