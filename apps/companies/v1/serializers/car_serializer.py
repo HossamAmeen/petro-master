@@ -1,3 +1,6 @@
+from datetime import timedelta
+
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.companies.models.company_models import Car
@@ -19,10 +22,19 @@ COLOR_CHOICES_HEX = {
 
 class ListCarSerializer(serializers.ModelSerializer):
     branch = SingleBranchWithDistrictSerializer()
+    is_license_expiring_soon = serializers.SerializerMethodField()
 
     class Meta:
         model = Car
         fields = "__all__"
+
+    def get_is_license_expiring_soon(self, obj):
+        if obj.license_expiration_date:
+            today = timezone.now().date()
+            expiry_date = obj.license_expiration_date
+            time_difference = expiry_date - today
+            return time_difference <= timedelta(days=30)
+        return False
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
