@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from apps.companies.models.operation_model import CarOperation
+from apps.stations.models.stations_models import Service
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, Company, CompanyBranch, Driver
@@ -114,6 +115,12 @@ class CompanyBranchAdmin(admin.ModelAdmin):
 
 
 class CarForm(forms.ModelForm):
+    service = forms.ModelChoiceField(
+        queryset=Service.objects.filter(
+            type__in=[Service.ServiceType.PETROL, Service.ServiceType.DIESEL]
+        ),
+        required=False,
+    )
     fuel_allowed_days = forms.MultipleChoiceField(
         choices=Car.FuelAllowedDay.choices,
         widget=forms.CheckboxSelectMultiple,
