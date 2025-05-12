@@ -8,6 +8,7 @@ from apps.companies.v1.serializers.branch_serializers import (
     SingleBranchWithDistrictSerializer,
 )
 from apps.shared.base_exception_class import CustomValidationError
+from apps.stations.v1.serializers import ServiceNameSerializer
 from apps.utilities.serializers import BalanceUpdateSerializer
 
 COLOR_CHOICES_HEX = {
@@ -21,6 +22,7 @@ COLOR_CHOICES_HEX = {
 
 
 class ListCarSerializer(serializers.ModelSerializer):
+    service = ServiceNameSerializer()
     branch = SingleBranchWithDistrictSerializer()
     is_license_expiring_soon = serializers.SerializerMethodField()
 
