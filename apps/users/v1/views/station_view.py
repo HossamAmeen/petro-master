@@ -1,10 +1,12 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
-from apps.users.models import StationBranchManager, StationOwner
+from apps.users.models import StationBranchManager, StationOwner, User, Worker
 from apps.users.v1.serializers.station_serializer import (
     ListStationBranchManagerSerializer,
     ListStationOwnerSerializer,
+    ListWorkerSerializer,
+    SingleWorkerSerializer,
     StationBranchManagerSerializer,
     StationOwnerSerializer,
 )
@@ -32,3 +34,20 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
         if self.request.method == "GET":
             return ListStationBranchManagerSerializer
         return StationBranchManagerSerializer
+
+
+class WorkerViewSet(viewsets.ModelViewSet):
+    queryset = Worker.objects.select_related("station_branch").order_by("-id")
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ["station_branch"]
+    search_fields = ["name", "phone_number", "email"]
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return ListWorkerSerializer
+        return SingleWorkerSerializer
+
+    def get_queryset(self):
+        if self.request.user.role == User.UserRoles.CompanyOwner:
+            return self.queryset.filter(station_branch__station__owners=self.request.user)
+        return self.queryset
