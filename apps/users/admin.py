@@ -210,7 +210,67 @@ class CompanyUserInterface(admin.ModelAdmin):
     created.short_description = _("Created")
 
 
-admin.site.register(StationOwner)
+class StationOwnerForm(forms.ModelForm):
+    password1 = forms.CharField(
+        label=_("Password"),
+        widget=forms.PasswordInput,
+        required=False,
+        help_text=_("Leave empty to keep the current password."),
+    )
+    password2 = forms.CharField(
+        label=_("Confirm Password"), widget=forms.PasswordInput, required=False
+    )
+
+    class Meta:
+        model = StationOwner
+        fields = (
+            "name",
+            "email",
+            "phone_number",
+            "password1",
+            "password2",
+            "is_active",
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 and password2:
+            if password1 != password2:
+                raise forms.ValidationError("Passwords don't match.")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = User.UserRoles.StationOwner
+        if self.cleaned_data["password1"]:
+            user.set_password(self.cleaned_data["password1"])
+        if commit:
+            user.save()
+        return user
+
+
+@admin.register(StationOwner)
+class StationOwnerInterface(admin.ModelAdmin):
+    form = StationOwnerForm
+    list_display = (
+        "id",
+        "name",
+        "email",
+        "phone_number",
+        "role",
+        "is_active",
+        "created",
+    )
+    search_fields = ("name", "email", "phone_number")
+    list_filter = ("is_active",)
+    ordering = ("-created",)
+    list_per_page = 10
+
+
 admin.site.register(StationBranchManager)
 admin.site.register(Worker)
 admin.site.register(
