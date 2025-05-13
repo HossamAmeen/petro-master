@@ -146,7 +146,7 @@ class StationLoginAPIView(APIView):
             access_token = refresh.access_token
             access_token["user_name"] = user.name
             access_token["role"] = user.role
-            access_token["station_id"] = user.stationuser.station.id
+            access_token["station_id"] = user.stationowner.station.id
             data = {
                 "refresh": str(refresh),
                 "access": str(access_token),
