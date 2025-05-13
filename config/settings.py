@@ -66,10 +66,10 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    "apps.stations",
     "apps.users",
     "apps.companies",
     "apps.geo",
-    "apps.stations",
     "apps.notifications",
     "apps.auth",
     "apps.accounting",

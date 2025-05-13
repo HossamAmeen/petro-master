@@ -227,6 +227,7 @@ class StationOwnerForm(forms.ModelForm):
             "name",
             "email",
             "phone_number",
+            "station",
             "password1",
             "password2",
             "is_active",
@@ -262,11 +263,12 @@ class StationOwnerInterface(admin.ModelAdmin):
         "email",
         "phone_number",
         "role",
+        "station",
         "is_active",
         "created",
     )
     search_fields = ("name", "email", "phone_number")
-    list_filter = ("is_active",)
+    list_filter = ("is_active", "station")
     ordering = ("-created",)
     list_per_page = 10
 
