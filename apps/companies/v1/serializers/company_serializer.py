@@ -30,7 +30,6 @@ class CompanyNameSerializer(serializers.ModelSerializer):
 
 
 class CompanyHomeSerializer(serializers.ModelSerializer):
-    total_branch_count = serializers.IntegerField()
     total_cars_count = serializers.IntegerField()
     diesel_cars_count = serializers.IntegerField()
     gasoline_cars_count = serializers.IntegerField()
@@ -57,7 +56,6 @@ class CompanyHomeSerializer(serializers.ModelSerializer):
             "cars_balance",
             "branches_balance",
             "total_balance",
-            "total_branch_count",
         ]
 
     def to_representation(self, instance):
