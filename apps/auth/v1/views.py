@@ -133,7 +133,10 @@ class StationLoginAPIView(APIView):
             | Q(email=serializer.validated_data["identifier"]),
             is_active=True,
         ).first()
-        station_roles = [User.UserRoles.StationManager, User.UserRoles.StationEmployee]
+        station_roles = [
+            User.UserRoles.StationOwner,
+            User.UserRoles.StationBranchManager,
+        ]
         if (
             user
             and user.check_password(serializer.validated_data["password"])
