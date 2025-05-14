@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
 
 from .models.stations_models import (
     Service,
@@ -75,12 +77,25 @@ class StationBranchAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "address",
+        "station",
         "district",
+        "managers_link",
         "created_by",
         "updated_by",
     )
     readonly_fields = ("created_by", "updated_by")
-    search_fields = ("name", "address", "district")
+    list_filter = ("station",)
+    search_fields = ("name", "address")
+
+    def managers_link(self, obj):
+        count = obj.managers.count()
+        url = (
+            reverse("admin:users_stationbranchmanager_changelist")
+            + f"?station_branch__id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Managers ({})</a>', url, count)
+
+    managers_link.short_description = "Managers"
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""

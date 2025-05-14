@@ -123,10 +123,8 @@ class StationBranchManager(User):
     )
     user = models.ForeignKey(
         StationOwner,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         related_name="station_branch_managers",
-        null=True,
-        blank=True,
     )
 
     def __str__(self):

@@ -220,6 +220,14 @@ class StationOwnerForm(forms.ModelForm):
     password2 = forms.CharField(
         label=_("Confirm Password"), widget=forms.PasswordInput, required=False
     )
+    role = forms.ChoiceField(
+        choices=[
+            (User.UserRoles.StationOwner, "Station Owner"),
+            (User.UserRoles.StationBranchManager, "Station Manager"),
+        ],
+        widget=forms.RadioSelect,
+        initial=User.UserRoles.StationOwner,
+    )
 
     class Meta:
         model = StationOwner
@@ -231,6 +239,7 @@ class StationOwnerForm(forms.ModelForm):
             "password1",
             "password2",
             "is_active",
+            "role",
         )
 
     def clean(self):
@@ -273,7 +282,29 @@ class StationOwnerInterface(admin.ModelAdmin):
     list_per_page = 10
 
 
-admin.site.register(StationBranchManager)
+class StationManagerForm(forms.ModelForm):
+    class Meta:
+        model = StationBranchManager
+        fields = (
+            "user",
+            "station_branch",
+        )
+
+
+@admin.register(StationBranchManager)
+class StationBranchManagerInterface(admin.ModelAdmin):
+    form = StationManagerForm
+    list_display = ("user", "station_branch")
+    search_fields = ("user", "station_branch")
+    list_filter = ("user", "station_branch")
+    hidden_fields = ("created",)
+    list_per_page = 10
+
+    class Meta:
+        model = StationBranchManager
+        fields = ("user", "station_branch")
+
+
 admin.site.register(Worker)
 admin.site.register(
     FirebaseToken,
