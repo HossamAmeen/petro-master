@@ -117,7 +117,7 @@ class StationOwner(User):
         verbose_name_plural = "Station Owners"
 
 
-class StationBranchManager(User):
+class StationBranchManager(AbstractBaseModel):
     station_branch = models.ForeignKey(
         "stations.StationBranch", on_delete=models.CASCADE, related_name="managers"
     )

@@ -2,8 +2,7 @@ from rest_framework import serializers
 
 from apps.stations.models.stations_models import StationBranch
 from apps.stations.v1.serializers import ListStationSerializer
-from apps.users.models import StationBranchManager, StationOwner, Worker
-from apps.users.v1.serializers.user_serializers import UserSerializer
+from apps.users.models import StationOwner, Worker
 
 
 class SingleWorkerSerializer(serializers.ModelSerializer):
@@ -26,12 +25,6 @@ class ListStationOwnerSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class StationBranchManagerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StationBranchManager
-        fields = "__all__"
-
-
 class StationBranchSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -40,9 +33,13 @@ class StationBranchSerializer(serializers.ModelSerializer):
 
 
 class ListStationBranchManagerSerializer(serializers.ModelSerializer):
-    station_branch = StationBranchSerializer()
-    user = UserSerializer()
+    station_branches = serializers.SerializerMethodField()
 
     class Meta:
-        model = StationBranchManager
-        fields = "__all__"
+        model = StationOwner
+        fields = ["id", "name", "phone_number", "email", "station", "station_branches"]
+
+    def get_station_branches(self, obj):
+        return StationBranchSerializer(
+            StationBranch.objects.filter(managers__user=obj), many=True
+        ).data

@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.views import Response
 
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.permissions import StationOwnerPermission
 from apps.stations.filters import ServiceFilter, StationBranchFilter
 from apps.stations.models.stations_models import Service, Station, StationBranch
 from apps.stations.v1.serializers import (
@@ -32,10 +33,10 @@ class StationBranchViewSet(viewsets.ModelViewSet):
     serializer_class = ListStationBranchSerializer
     filterset_class = StationBranchFilter
 
-    # def get_permissions(self):
-    #     if self.action == "update_balance":
-    #         return [StationOwnerPermission()]
-    #     return super().get_permissions()
+    def get_permissions(self):
+        if self.action == "update_balance":
+            return [StationOwnerPermission()]
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.action == "update_balance":

@@ -255,7 +255,6 @@ class StationOwnerForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.role = User.UserRoles.StationOwner
         if self.cleaned_data["password1"]:
             user.set_password(self.cleaned_data["password1"])
         if commit:
@@ -283,6 +282,10 @@ class StationOwnerInterface(admin.ModelAdmin):
 
 
 class StationManagerForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # self.fields['user'].queryset = User.objects.filter(role=User.UserRoles.StationBranchManager)
+
     class Meta:
         model = StationBranchManager
         fields = (
@@ -303,6 +306,16 @@ class StationBranchManagerInterface(admin.ModelAdmin):
     class Meta:
         model = StationBranchManager
         fields = ("user", "station_branch")
+
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new Driver.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        obj.save()
 
 
 admin.site.register(Worker)
