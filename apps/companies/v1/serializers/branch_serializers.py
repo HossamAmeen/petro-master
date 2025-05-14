@@ -14,7 +14,16 @@ class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CompanyBranch
-        fields = ["id", "name", "email", "phone_number", "district", "city", "company"]
+        fields = [
+            "id",
+            "name",
+            "email",
+            "phone_number",
+            "district",
+            "city",
+            "company",
+            "balance",
+        ]
 
 
 class ListCompanyBranchSerializer(serializers.ModelSerializer):
