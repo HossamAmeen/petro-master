@@ -29,7 +29,9 @@ class StationBranch(AbstractBaseModel):
     district = models.ForeignKey(
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
-    station = models.ForeignKey(Station, on_delete=models.CASCADE)
+    station = models.ForeignKey(
+        Station, on_delete=models.CASCADE, related_name="branches"
+    )
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
