@@ -11,6 +11,7 @@ class Station(AbstractBaseModel):
     district = models.ForeignKey(
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
         return self.name
@@ -29,6 +30,7 @@ class StationBranch(AbstractBaseModel):
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
     station = models.ForeignKey(Station, on_delete=models.CASCADE)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         verbose_name = "Station Branch"

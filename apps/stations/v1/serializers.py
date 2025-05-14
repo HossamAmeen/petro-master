@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from rest_framework import serializers
 
 from apps.geo.v1.serializers import DistrictWithcitynameSerializer
@@ -72,3 +73,10 @@ class ListStationBranchSerializer(serializers.ModelSerializer):
             stationbranchservice__station_branch=instance
         ).values("id", "name")
         return list(services)
+
+
+class UpdateStationBranchBalanceSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=[("add", "Add"), ("subtract", "Subtract")])
+    amount = serializers.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(10)]
+    )

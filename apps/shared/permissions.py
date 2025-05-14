@@ -27,8 +27,25 @@ class CompanyBranchManagerPermission(BasePermission):
         return False
 
 
-class StationPermission(BasePermission):
+class StationOwnerPermission(BasePermission):
     def has_permission(self, request, view):
         if request.user.role == User.UserRoles.StationOwner:
+            return True
+        return False
+
+
+class StationBranchManagerPermission(BasePermission):
+    def has_permission(self, request, view):
+        if request.user.role == User.UserRoles.StationBranchManager:
+            return True
+        return False
+
+
+class StationPermission(BasePermission):
+    def has_permission(self, request, view):
+        if (
+            request.user.role == User.UserRoles.StationOwner
+            or request.user.role == User.UserRoles.StationBranchManager
+        ):
             return True
         return False
