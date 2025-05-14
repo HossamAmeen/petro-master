@@ -38,6 +38,7 @@ class StationAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "address",
+        "balance",
         "district",
         "created_by",
         "updated_by",
@@ -78,6 +79,7 @@ class StationBranchAdmin(admin.ModelAdmin):
         "name",
         "address",
         "station",
+        "balance",
         "district",
         "managers_link",
         "created_by",
