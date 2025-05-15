@@ -1,5 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
+from rest_framework.views import Response, status
 
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.v1.serializers.company_cash_request_serializers import (
@@ -16,7 +17,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
     )
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["status"]
-    http_method_names = ["get", "post", "patch"]
+    http_method_names = ["get", "post", "patch", "delete"]
 
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
@@ -33,3 +34,11 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         ):
             return self.queryset.filter(company=self.request.company_id)
         return self.queryset
+
+    def destroy(self, request, *args, **kwargs):
+        item = self.get_object()
+        if item.status == CompanyCashRequest.Status.PENDING:
+            item.status = CompanyCashRequest.Status.CANCELLED
+            item.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
