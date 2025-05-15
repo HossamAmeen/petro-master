@@ -1,8 +1,14 @@
+from django.core.validators import MinValueValidator
 from rest_framework import serializers
 
 
 class BalanceUpdateSerializer(serializers.Serializer):
-    amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
+    amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=True,
+        validators=[MinValueValidator(1)],
+    )
     type = serializers.ChoiceField(
         choices=[("add", "add"), ("subtract", "subtract")], required=True
     )

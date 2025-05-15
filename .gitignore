@@ -175,3 +175,6 @@ staticfiles/*
 
 firebase_service_account.json
 firebase_encoded.txt
+server_db.sqlite3
+
+media/*

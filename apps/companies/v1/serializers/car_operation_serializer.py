@@ -1,21 +1,21 @@
 from rest_framework import serializers
 
 from apps.companies.models.operation_model import CarOperation
-from apps.companies.v1.serializers.branch_serializers import (
-    SingleBranchWithDistrictSerializer,
-)
 from apps.companies.v1.serializers.car_serializer import CarWithPlateInfoSerializer
 from apps.companies.v1.serializers.driver_serializer import SingleDriverSerializer
-from apps.stations.v1.serializers import SingleStationServiceSerializer
+from apps.stations.v1.serializers import (
+    ServiceNameSerializer,
+    SingleStationBranchSerializer,
+)
 from apps.users.v1.serializers.station_serializer import SingleWorkerSerializer
 
 
-class listCarOperationSerializer(serializers.ModelSerializer):
+class ListCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
     driver = SingleDriverSerializer()
-    station_branch = SingleBranchWithDistrictSerializer()
+    station_branch = SingleStationBranchSerializer()
     worker = SingleWorkerSerializer()
-    service = SingleStationServiceSerializer()
+    service = ServiceNameSerializer()
 
     class Meta:
         model = CarOperation
@@ -38,4 +38,13 @@ class listCarOperationSerializer(serializers.ModelSerializer):
             "car_meter",
             "motor_image",
             "fuel_image",
+            "fuel_consumption_rate",
         ]
+
+
+class ListHomeCarOperationSerializer(serializers.ModelSerializer):
+    car = CarWithPlateInfoSerializer()
+
+    class Meta:
+        model = CarOperation
+        fields = ["id", "car", "start_time", "cost", "amount", "unit"]

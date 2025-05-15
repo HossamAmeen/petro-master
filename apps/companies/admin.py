@@ -1,9 +1,11 @@
 from django import forms
 from django.contrib import admin
+from django.db.models import Count
 from django.urls import reverse
 from django.utils.html import format_html
 
 from apps.companies.models.operation_model import CarOperation
+from apps.stations.models.service_models import Service
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, Company, CompanyBranch, Driver
@@ -12,58 +14,113 @@ from .models.company_models import Car, Company, CompanyBranch, Driver
 class BranchInline(admin.TabularInline):
     model = CompanyBranch
     extra = 0
-    # Jazzmin will automatically style this
 
 
 @admin.register(Company)
-class CompanyAdmin(admin.ModelAdmin):  # Use standard ModelAdmin
-    list_display = ("name", "address", "phone_number", "balance", "branches_link")
+class CompanyAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "address",
+        "phone_number",
+        "balance",
+        "branches_link",
+        "cars_link",
+        "drivers_link",
+        "district",
+        "created_by",
+        "updated_by",
+    )
     search_fields = ("name", "address", "phone_number")
+    readonly_fields = ["created_by", "updated_by"]
     list_per_page = 20
-    inlines = [BranchInline]
+    # inlines = [BranchInline]
+
+    def cars_link(self, obj):
+        count = obj.branches.aggregate(total_cars=Count("cars"))["total_cars"] or 0
+        url = (
+            reverse("admin:companies_car_changelist")
+            + f"?branch__company__id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Cars ({})</a>', url, count)
+
+    def drivers_link(self, obj):
+        count = (
+            obj.branches.aggregate(total_drivers=Count("drivers"))["total_drivers"] or 0
+        )
+        url = (
+            reverse("admin:companies_driver_changelist")
+            + f"?branch__company__id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Drivers ({})</a>', url, count)
 
     def branches_link(self, obj):
-        count = obj.companybranch_set.count()
+        count = obj.branches.count()
         url = (
             reverse("admin:companies_companybranch_changelist")
             + f"?company__id__exact={obj.id}"
         )
         return format_html('<a class="button" href="{}">Branches ({})</a>', url, count)
 
+    drivers_link.short_description = "Drivers"
+    cars_link.short_description = "Cars"
     branches_link.short_description = "Branches"
 
 
-class CompanyCashRequestAdmin(admin.ModelAdmin):
+@admin.register(CompanyBranch)
+class CompanyBranchAdmin(admin.ModelAdmin):
     list_display = (
+        "name",
+        "email",
+        "phone_number",
+        "balance",
         "company",
-        "amount",
-        "status",
-        "driver",
-        "station",
+        "car_link",
+        "driver_link",
+        "district",
         "created_by",
         "updated_by",
-        "created",
-        "modified",
     )
-    search_fields = (
-        "company__name",
-        "amount",
-        "status",
-        "driver__name",
-        "station__name",
-    )
-    list_filter = ("company", "status", "driver", "station")
-    readonly_fields = ("created_by", "updated_by")
-
-
-class CompanyBranchAdmin(admin.ModelAdmin):
-    list_display = ("name", "email", "phone_number", "company", "balance")
     search_fields = ("name", "email", "phone_number")
     list_filter = ("company",)
+    readonly_fields = ["created_by", "updated_by"]
     list_per_page = 20
+
+    def car_link(self, obj):
+        count = obj.cars.count()
+        url = reverse("admin:companies_car_changelist") + f"?branch__id__exact={obj.id}"
+        return format_html('<a class="button" href="{}">Cars ({})</a>', url, count)
+
+    car_link.short_description = "Cars"
+
+    def driver_link(self, obj):
+        count = obj.drivers.count()
+        url = (
+            reverse("admin:companies_driver_changelist")
+            + f"?branch__id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Drivers ({})</a>', url, count)
+
+    driver_link.short_description = "Drivers"
+
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new Driver.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+            obj.balance = 0
+        obj.updated_by = request.user
+        obj.save()
 
 
 class CarForm(forms.ModelForm):
+    service = forms.ModelChoiceField(
+        queryset=Service.objects.filter(
+            type__in=[Service.ServiceType.PETROL, Service.ServiceType.DIESEL]
+        ),
+        required=False,
+    )
     fuel_allowed_days = forms.MultipleChoiceField(
         choices=Car.FuelAllowedDay.choices,
         widget=forms.CheckboxSelectMultiple,
@@ -96,6 +153,7 @@ class CarForm(forms.ModelForm):
         return fuel_allowed_days
 
 
+@admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
     form = CarForm
     list_display = (
@@ -105,35 +163,18 @@ class CarAdmin(admin.ModelAdmin):
         "plate_color",
         "color",
         "license_expiration_date",
-        "model_year",
         "brand",
-        "is_with_odometer",
-        "tank_capacity",
         "permitted_fuel_amount",
         "fuel_type",
-        "number_of_fuelings_per_day",
-        "fuel_allowed_days",
         "balance",
-        "city",
         "branch",
+        "company_name",
     )
     search_fields = (
         "code",
         "plate_number",
         "plate_character",
-        "color",
-        "license_expiration_date",
-        "model_year",
         "brand",
-        "is_with_odometer",
-        "tank_capacity",
-        "permitted_fuel_amount",
-        "fuel_type",
-        "number_of_fuelings_per_day",
-        "fuel_allowed_days",
-        "balance",
-        "city",
-        "branch",
     )
     list_filter = (
         "code",
@@ -143,18 +184,39 @@ class CarAdmin(admin.ModelAdmin):
         "brand",
         "is_with_odometer",
         "tank_capacity",
-        "permitted_fuel_amount",
         "fuel_type",
-        "number_of_fuelings_per_day",
-        "fuel_allowed_days",
-        "balance",
         "city",
         "branch",
+        "branch__company",
     )
-    readonly_fields = ("balance",)
+    readonly_fields = (
+        "balance",
+        "created_by",
+        "updated_by",
+        "created",
+        "modified",
+        "code",
+    )
     list_per_page = 10
 
+    def company_name(self, obj):
+        return obj.branch.company.name
 
+    company_name.short_description = "Company"
+
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new Driver.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+            obj.balance = 0
+        obj.updated_by = request.user
+        obj.save()
+
+
+@admin.register(Driver)
 class DriverAdmin(admin.ModelAdmin):
     list_display = (
         "name",
@@ -163,6 +225,7 @@ class DriverAdmin(admin.ModelAdmin):
         "lincense_number",
         "lincense_expiration_date",
         "branch",
+        "company_name",
         "created_by",
         "updated_by",
         "created",
@@ -183,8 +246,14 @@ class DriverAdmin(admin.ModelAdmin):
         "lincense_number",
         "lincense_expiration_date",
         "branch",
+        "branch__company",
     )
     readonly_fields = ("code", "created_by", "updated_by")
+
+    def company_name(self, obj):
+        return obj.branch.company.name
+
+    company_name.short_description = "Company"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "branch":
@@ -216,8 +285,89 @@ class DriverAdmin(admin.ModelAdmin):
         obj.save()
 
 
-admin.site.register(CompanyBranch, CompanyBranchAdmin)
-admin.site.register(Car, CarAdmin)
-admin.site.register(Driver, DriverAdmin)
-admin.site.register(CompanyCashRequest, CompanyCashRequestAdmin)
-admin.site.register(CarOperation)
+@admin.register(CompanyCashRequest)
+class CompanyCashRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "company",
+        "amount",
+        "status",
+        "driver",
+        "station",
+        "created_by",
+        "updated_by",
+        "created",
+        "modified",
+    )
+    search_fields = (
+        "company__name",
+        "amount",
+        "status",
+        "driver__name",
+        "station__name",
+    )
+    list_filter = ("company", "status", "driver", "station")
+    readonly_fields = ("created_by", "updated_by")
+
+
+@admin.register(CarOperation)
+class CarOperationAdmin(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new CarOperation.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        obj.save()
+
+    list_display = (
+        "code",
+        "status",
+        "start_time",
+        "end_time",
+        "duration",
+        "cost",
+        "amount",
+        "unit",
+        "fuel_type",
+        "car",
+        "driver",
+        "station_branch",
+        "worker",
+        "service",
+        "branch_company",
+    )
+    search_fields = ("code",)
+    list_filter = (
+        "status",
+        "start_time",
+        "end_time",
+        "fuel_type",
+        "car",
+        "car__branch__company",
+        "driver",
+        "station_branch",
+        "worker",
+        "service",
+    )
+    readonly_fields = ("code", "created_by", "updated_by")
+    list_per_page = 100
+
+    def branch_company(self, obj):
+        return obj.car.branch.company.name
+
+    branch_company.short_description = "Company"
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .select_related(
+                "car__branch__company",
+                "driver",
+                "station_branch",
+                "worker",
+                "service",
+            )
+        )

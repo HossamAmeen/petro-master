@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Q
 from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
@@ -77,6 +78,80 @@ class CompanyLoginAPIView(APIView):
                 "access": str(access_token),
                 "user_name": user.name,
                 "role": user.role,
+                "user": {
+                    "id": user.id,
+                    "name": user.name,
+                    "role": user.role,
+                },
+                "company_id": user.companyuser.company.id,
+                "branches": user.companyuser.company.branches.values_list(
+                    "id", flat=True
+                ),
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        else:
+            raise CustomValidationError(
+                message="Invalid credentials",
+                code="invalid_credentials",
+                errors=[],
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            )
+
+
+class StationLoginAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(
+        request=LoginSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="login successfully",
+                response=OpenApiTypes.OBJECT,
+                examples=[
+                    OpenApiExample(
+                        "Success Response",
+                        value={
+                            "message": "login successfully",
+                            "refresh": "<refresh_token>",
+                            "access": "<access_token>",
+                            "user_name": "<user_name>",
+                            "role": "<role>",
+                        },
+                    )
+                ],
+            ),
+            400: MessageErrorsSerializer,
+        },
+    )
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = User.objects.filter(
+            Q(phone_number=serializer.validated_data["identifier"])
+            | Q(email=serializer.validated_data["identifier"]),
+            is_active=True,
+        ).first()
+        station_roles = [
+            User.UserRoles.StationOwner,
+            User.UserRoles.StationBranchManager,
+        ]
+        if (
+            user
+            and user.check_password(serializer.validated_data["password"])
+            and user.role in station_roles
+        ):
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
+            access_token["user_name"] = user.name
+            access_token["role"] = user.role
+            access_token["station_id"] = user.stationowner.station.id
+            data = {
+                "refresh": str(refresh),
+                "access": str(access_token),
+                "user_name": user.name,
+                "role": user.role,
             }
             return Response(data, status=status.HTTP_200_OK)
         else:
@@ -123,15 +198,19 @@ class PasswordResetRequestAPIView(APIView):
             reset_link = request.build_absolute_uri(reset_url)
 
             subject = "Password Reset Request"
-            message = (
-                f"Please click the following link to reset your password: {reset_link}"
-            )
             from_email = settings.DEFAULT_FROM_EMAIL
             recipient_list = [user.email]
-
+            html_message = render_to_string(
+                "reset_password_email_template.html", {"reset_password_url": reset_link}
+            )
             try:
                 send_mail(
-                    subject, message, from_email, recipient_list, fail_silently=False
+                    subject=subject,
+                    message="",
+                    from_email=from_email,
+                    recipient_list=recipient_list,
+                    fail_silently=False,
+                    html_message=html_message,
                 )
                 return Response(
                     {"message": "Password reset request sent successfully"},
@@ -147,7 +226,7 @@ class PasswordResetRequestAPIView(APIView):
 
         else:
             raise CustomValidationError(
-                message="User not found",
+                message="لاي يوجد مستخدم, الرجاء التواصل مع المسؤول.",
                 code="user_not_found",
                 errors=[],
                 status_code=status.HTTP_404_NOT_FOUND,

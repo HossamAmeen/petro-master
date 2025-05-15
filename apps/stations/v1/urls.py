@@ -4,6 +4,6 @@ from apps.stations.v1.views import StationBranchViewSet, StationViewSet
 
 router = DefaultRouter()
 router.register("branches", StationBranchViewSet, basename="station-branches")
-router.register("", StationViewSet, basename="stations")
+router.register("stations", StationViewSet, basename="stations")
 
 urlpatterns = router.urls

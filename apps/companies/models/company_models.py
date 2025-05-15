@@ -3,6 +3,7 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from apps.shared.generate_code import generate_unique_code
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
 
 
@@ -21,7 +22,7 @@ class Company(AbstractBaseModel):
 
     class Meta:
         verbose_name = "Company"
-        verbose_name_plural = "Companies"
+        verbose_name_plural = "1. Companies"
 
 
 class CompanyBranch(AbstractBaseModel):
@@ -30,17 +31,19 @@ class CompanyBranch(AbstractBaseModel):
     phone_number = models.CharField(max_length=11, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    company = models.ForeignKey(
+        Company, on_delete=models.CASCADE, related_name="branches"
+    )
     district = models.ForeignKey(
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
 
     def __str__(self):
-        return self.name
+        return self.name + " - " + self.company.name
 
     class Meta:
         verbose_name = "Company Branch"
-        verbose_name_plural = "Company Branches"
+        verbose_name_plural = "2. Company Branches"
 
 
 class Car(AbstractBaseModel):
@@ -76,17 +79,26 @@ class Car(AbstractBaseModel):
     )
     plate_color = models.CharField(max_length=10, choices=PlateColor.choices)
     color = models.CharField(max_length=10)
-    license_expiration_date = models.DateField()
+
+    license_expiration_date = models.DateField(null=True, blank=True)
+    examination_date = models.DateField(null=True, blank=True)
+
     model_year = models.IntegerField()
     brand = models.CharField(max_length=25)
+
     is_with_odometer = models.BooleanField()
     tank_capacity = models.IntegerField()
     permitted_fuel_amount = models.IntegerField()
     fuel_type = models.CharField(max_length=20, choices=FuelType.choices)
+    service = models.ForeignKey(
+        "stations.Service", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    oil_type = models.CharField(max_length=20, null=True, blank=True)
+    fuel_consumption_rate = models.IntegerField(default=0)
     number_of_fuelings_per_day = models.IntegerField()
     number_of_washes_per_month = models.IntegerField()
     fuel_allowed_days = models.JSONField(default=list, blank=True)
-    balance = models.DecimalField(max_digits=10, decimal_places=2)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     city = models.ForeignKey(
         "geo.City", on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -95,21 +107,21 @@ class Car(AbstractBaseModel):
     )
 
     def __str__(self):
-        return self.code + " - " + self.plate
+        return self.code + " - " + self.plate_number if self.plate_number else self.code
 
     def clean(self):
         if self.permitted_fuel_amount > self.tank_capacity:
-            raise ValidationError(
-                "Permitted fuel amount must be less than or equal to tank capacity."
-            )
+            raise ValidationError("الكمية المسموح بها أكبر من حجم المخزون")
 
     def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = generate_unique_code(Car)
         self.full_clean()
         super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Car"
-        verbose_name_plural = "Cars"
+        verbose_name_plural = "3. Cars"
 
 
 class Driver(AbstractBaseModel):
@@ -141,4 +153,4 @@ class Driver(AbstractBaseModel):
 
     class Meta:
         verbose_name = "Driver"
-        verbose_name_plural = "Drivers"
+        verbose_name_plural = "4. Drivers"

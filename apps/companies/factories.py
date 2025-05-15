@@ -7,6 +7,7 @@ import factory
 from django.utils import timezone
 from faker import Faker
 
+from apps.accounting.models import CompanyKhaznaTransaction
 from apps.companies.models.company_models import Car, Company, CompanyBranch, Driver
 from apps.companies.models.operation_model import CarOperation
 from apps.geo.models import City, Country, District
@@ -90,8 +91,8 @@ class CarFactory(factory.django.DjangoModelFactory):
         model = Car
 
     code = factory.LazyFunction(lambda: str(uuid.uuid4())[:10].upper())
-    plate_number = factory.Faker("license_plate")[:4]
-    plate_character = factory.Faker("license_plate_character")[:4]
+    plate_number = str(factory.Faker("license_plate"))[:4]
+    plate_character = str(factory.Faker("license_plate_character"))[:4]
     plate_color = factory.LazyAttribute(lambda _: random.choice(Car.PlateColor.values))
     color = factory.LazyAttribute(lambda _: random.choice(Car.PlateColor.values))
     license_expiration_date = factory.Faker("future_date")
@@ -113,7 +114,7 @@ class CarFactory(factory.django.DjangoModelFactory):
         lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01"))
     )
     city = factory.LazyFunction(lambda: City.objects.order_by("?").first())
-    branch = factory.SubFactory(CompanyBranchFactory)
+    branch = factory.LazyFunction(lambda: CompanyBranch.objects.order_by("?").first())
     number_of_washes_per_month = factory.LazyFunction(lambda: random.randint(1, 10))
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
@@ -252,6 +253,7 @@ class CarOperationFactory(factory.django.DjangoModelFactory):
     unit = factory.LazyFunction(lambda: random.choice(Service.ServiceUnit.values))
     car_meter = factory.LazyFunction(lambda: random.randint(10000, 100000))
     cost = factory.LazyFunction(lambda: random.uniform(100, 5000))
+    fuel_consumption_rate = factory.LazyFunction(lambda: random.randint(9, 99))
     fuel_type = factory.LazyFunction(lambda: random.choice(Car.FuelType.values))
     status = factory.LazyFunction(
         lambda: random.choice(CarOperation.OperationStatus.values)
@@ -270,3 +272,31 @@ class CarOperationFactory(factory.django.DjangoModelFactory):
     service = factory.LazyFunction(lambda: Service.objects.order_by("?").first())
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+
+
+class CompanyKhaznaTransactionFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CompanyKhaznaTransaction
+
+    amount = factory.LazyFunction(lambda: random.uniform(100, 5000))
+    is_incoming = factory.LazyFunction(lambda: random.choice([True, False]))
+    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    company = factory.LazyFunction(lambda: Company.objects.order_by("?").first())
+    reference_code = factory.LazyFunction(lambda: str(uuid.uuid4())[:10].upper())
+    for_what = factory.LazyFunction(
+        lambda: random.choice(CompanyKhaznaTransaction.ForWhat.values)
+    )
+    status = factory.LazyFunction(
+        lambda: random.choice(CompanyKhaznaTransaction.TransactionStatus.values)
+    )
+    # reviewed_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    description = factory.Faker("text")
+    method = factory.LazyFunction(
+        lambda: random.choice(CompanyKhaznaTransaction.TransactionMethod.values)
+    )
+    approved_at = factory.LazyFunction(
+        lambda: timezone.now() if random.choice([True, False]) else None
+    )
+    photo = factory.LazyFunction(lambda: None)
+    is_unpaid = factory.LazyFunction(lambda: random.choice([True, False]))

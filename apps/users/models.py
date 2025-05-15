@@ -20,8 +20,8 @@ class User(AbstractUser, TimeStampedModel):
         CompanyOwner = "company_owner"
         CompanyBranchManager = "company_branch_manager"
         Driver = "driver"
-        StationManager = "station_manager"
-        StationEmployee = "station_employee"
+        StationOwner = "station_owner"
+        StationBranchManager = "station_branch_manager"
         StationWorker = "station_worker"
 
     name = models.CharField(max_length=255)
@@ -117,17 +117,18 @@ class StationOwner(User):
         verbose_name_plural = "Station Owners"
 
 
-class StationBranchManager(User):
+class StationBranchManager(AbstractBaseModel):
     station_branch = models.ForeignKey(
         "stations.StationBranch", on_delete=models.CASCADE, related_name="managers"
     )
     user = models.ForeignKey(
         StationOwner,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         related_name="station_branch_managers",
-        null=True,
-        blank=True,
     )
+
+    def __str__(self):
+        return f"{self.user.name} - {self.station_branch.name}"
 
     class Meta:
         verbose_name = "Station Branch Manager"

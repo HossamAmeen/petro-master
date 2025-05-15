@@ -1,12 +1,20 @@
+import uuid
+from datetime import datetime, timedelta
+
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.views import Response, status
+from rest_framework.views import APIView, Response, status
 
-from apps.companies.models.company_models import Company, CompanyBranch
+from apps.accounting.models import CompanyKhaznaTransaction
+from apps.accounting.v1.serializers.company_transaction_serializer import (
+    CompanyKhaznaTransactionSerializer,
+)
+from apps.companies.models.company_models import Car, Company, CompanyBranch
+from apps.companies.models.operation_model import CarOperation
 from apps.companies.v1.filters import CompanyBranchFilter
 from apps.companies.v1.serializers.branch_serializers import (
     BranchBalanceUpdateSerializer,
@@ -15,12 +23,16 @@ from apps.companies.v1.serializers.branch_serializers import (
     ListCompanyBranchSerializer,
     RetrieveCompanyBranchSerializer,
 )
+from apps.companies.v1.serializers.car_operation_serializer import (
+    ListHomeCarOperationSerializer,
+)
 from apps.companies.v1.serializers.company_serializer import (
     CompanySerializer,
     ListCompanySerializer,
 )
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.shared.permissions import CompanyOwnerPermission, CompanyPermission
 from apps.users.models import CompanyBranchManager, User
 
 
@@ -38,8 +50,8 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         CompanyBranch.objects.select_related("district__city", "company")
         .prefetch_related("managers")
         .annotate(
-            cars_count=Count("cars"),
-            drivers_count=Count("drivers"),
+            cars_count=Count("cars", distinct=True),
+            drivers_count=Count("drivers", distinct=True),
             managers_count=Count("managers", distinct=True),
         )
         .order_by("-id")
@@ -47,12 +59,21 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = CompanyBranchFilter
 
+    def get_permissions(self):
+        if self.action == "list":
+            return [CompanyPermission()]
+        if self.action == "assign_managers":
+            return [CompanyOwnerPermission()]
+        if self.action == "update_balance":
+            return [CompanyOwnerPermission()]
+        return super().get_permissions()
+
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
-            return self.queryset.filter(company__owners=self.request.user)
+            self.queryset = self.queryset.filter(company=self.request.company_id)
         if self.request.user.role == User.UserRoles.CompanyBranchManager:
-            return self.queryset.filter(managers__user=self.request.user)
-        return self.queryset
+            self.queryset = self.queryset.filter(managers__user=self.request.user)
+        return self.queryset.distinct()
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -148,6 +169,19 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     company_branch.refresh_from_db()
                     company_branch.balance += serializer.validated_data["amount"]
                     company_branch.save()
+
+                    CompanyKhaznaTransaction.objects.create(
+                        amount=serializer.validated_data["amount"],
+                        is_incoming=True,
+                        status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
+                        reference_code="int" + str(uuid.uuid4())[:8].upper(),
+                        description="تم اضافة شحن رصيد فرع " + str(company_branch.name),
+                        method=CompanyKhaznaTransaction.TransactionMethod.BANK,
+                        company=company,
+                        is_internal=True,
+                        created_by_id=request.user.id,
+                        updated_by_id=request.user.id,
+                    )
                 else:
                     raise CustomValidationError(
                         message="الشركة لا تمتلك كافٍ من المال",
@@ -163,6 +197,19 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     company.refresh_from_db()
                     company.balance += serializer.validated_data["amount"]
                     company.save()
+                    CompanyKhaznaTransaction.objects.create(
+                        amount=serializer.validated_data["amount"],
+                        is_incoming=True,
+                        status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
+                        reference_code="int" + str(uuid.uuid4())[:8].upper(),
+                        description="تم اضافة خصم رصيد من فرع "
+                        + str(company_branch.name),
+                        method=CompanyKhaznaTransaction.TransactionMethod.BANK,
+                        company=company,
+                        is_internal=True,
+                        created_by_id=request.user.id,
+                        updated_by_id=request.user.id,
+                    )
                 else:
                     raise CustomValidationError(
                         message="الفرع لا تمتلك كافٍ من المال",
@@ -172,3 +219,95 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     )
 
         return Response({"balance": company_branch.balance}, status=status.HTTP_200_OK)
+
+
+class CompanyHomeView(APIView):
+    permission_classes = [CompanyPermission]
+
+    def get(self, request, *args, **kwargs):
+        if self.request.user.role == User.UserRoles.CompanyOwner:
+            branches_id = CompanyBranch.objects.filter(
+                company_id=request.company_id
+            ).values_list("id", flat=True)
+        elif self.request.user.role == User.UserRoles.CompanyBranchManager:
+            branches_id = CompanyBranch.objects.filter(
+                managers__user_id=request.user.id
+            ).values_list("id", flat=True)
+
+        branches_filter = Q(branches__id__in=branches_id)
+        diesel_car_filter = Q(
+            branches__cars__fuel_type=Car.FuelType.DIESEL, branches__id__in=branches_id
+        )
+        gasoline_car_filter = Q(
+            branches__cars__fuel_type=Car.FuelType.GASOLINE,
+            branches__id__in=branches_id,
+        )
+        drivers_lincense_expiration_date_filter = Q(
+            branches__drivers__lincense_expiration_date__lt=datetime.now(),
+            branches__id__in=branches_id,
+        )
+        drivers_lincense_expiration_date_filter_30_days = Q(
+            branches__drivers__lincense_expiration_date__lt=datetime.now()
+            - timedelta(days=30),
+            branches__id__in=branches_id,
+        )
+        company = (
+            Company.objects.filter(id=request.company_id)
+            .annotate(
+                total_cars_count=Count(
+                    "branches__cars", distinct=True, filter=branches_filter
+                ),
+                diesel_cars_count=Count("branches__cars", filter=diesel_car_filter),
+                gasoline_cars_count=Count("branches__cars", filter=gasoline_car_filter),
+                total_drivers_count=Count(
+                    "branches__drivers", distinct=True, filter=branches_filter
+                ),
+                total_drivers_with_lincense_expiration_date=Count(
+                    "branches__drivers",
+                    filter=drivers_lincense_expiration_date_filter,
+                    distinct=True,
+                ),
+                total_drivers_with_lincense_expiration_date_30_days=Count(
+                    "branches__drivers",
+                    filter=drivers_lincense_expiration_date_filter_30_days,
+                    distinct=True,
+                ),
+                total_branches_count=Count(
+                    "branches", distinct=True, filter=branches_filter
+                ),
+                cars_balance=Sum("branches__cars__balance", filter=branches_filter),
+                branches_balance=Sum("branches__balance", filter=branches_filter),
+                total_balance=Sum("balance")
+                + Sum("branches__balance")
+                + Sum("branches__cars__balance"),
+            )
+            .first()
+        )
+        response_data = {
+            "name": company.name,
+            "total_cars_count": company.total_cars_count,
+            "diesel_cars_count": company.diesel_cars_count,
+            "gasoline_cars_count": company.gasoline_cars_count,
+            "total_drivers_count": company.total_drivers_count,
+            "total_drivers_with_lincense_expiration_date": company.total_drivers_with_lincense_expiration_date,
+            "total_drivers_with_lincense_expiration_date_30_days": company.total_drivers_with_lincense_expiration_date_30_days,
+            "total_branches_count": company.total_branches_count,
+            "total_branch_count": company.total_branches_count,
+            "balance": company.balance,
+            "cars_balance": company.cars_balance,
+            "branches_balance": company.branches_balance,
+            "total_balance": company.total_balance,
+        }
+        response_data["car_operations"] = ListHomeCarOperationSerializer(
+            CarOperation.objects.filter(car__branch__in=branches_id).order_by("-id")[
+                :3
+            ],
+            many=True,
+        ).data
+        response_data["company_transactions"] = CompanyKhaznaTransactionSerializer(
+            CompanyKhaznaTransaction.objects.filter(
+                company__branches__in=branches_id
+            ).order_by("-id")[:3],
+            many=True,
+        ).data
+        return Response(response_data)

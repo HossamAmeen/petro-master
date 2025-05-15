@@ -5,10 +5,9 @@ from faker import Faker
 from apps.companies.factories import (
     CarFactory,
     CarOperationFactory,
-    CityFactory,
     CompanyBranchFactory,
     CompanyFactory,
-    DistrictFactory,
+    CompanyKhaznaTransactionFactory,
     DriverFactory,
     NotificationFactory,
     ServiceFactory,
@@ -21,7 +20,8 @@ from apps.companies.factories import (
 )
 from apps.companies.models.company_models import Company, CompanyBranch
 from apps.geo.models import City, District
-from apps.users.models import CompanyBranchManager, CompanyUser, User
+from apps.stations.models.stations_models import Station, StationBranch
+from apps.users.models import CompanyBranchManager, CompanyUser, StationOwner, User
 
 fake = Faker()
 
@@ -36,8 +36,16 @@ class Command(BaseCommand):
         )
         call_command("loaddata", "fixtures/users.json")
         call_command("loaddata", "fixtures/countries.json")
-        city = City.objects.create(name="Cairo", country_id=1)
-        district = District.objects.create(name="New Cairo", city=city)
+        cairo_city, _ = City.objects.get_or_create(name="القاهرة", country_id=1)
+        alexandria_city, _ = City.objects.get_or_create(name="اسكندرية", country_id=1)
+        asyut_city, _ = City.objects.get_or_create(name="أسيوط", country_id=1)
+
+        district, _ = District.objects.get_or_create(name="وسط البلد", city=cairo_city)
+        district, _ = District.objects.get_or_create(
+            name="العجمي", city=alexandria_city
+        )
+        district, _ = District.objects.get_or_create(name="الاربعين", city=asyut_city)
+
         company = Company.objects.create(
             name="Petro company",
             address="343 Zachary Alley\nEdwardbury, RI 32596",
@@ -62,6 +70,7 @@ class Command(BaseCommand):
             )
             company_user.set_password("admin")
             company_user.save()
+
         company_branch_manager = CompanyUser.objects.filter(
             phone_number="01010079792", email="petro_company_manager@petro.com"
         ).first()
@@ -78,13 +87,42 @@ class Command(BaseCommand):
             company_branch_manager.set_password("admin")
             company_branch_manager.save()
 
+        station = Station.objects.get_or_create(
+            name="Petrol Station",
+            address="343 Zachary Alley\nEdwardbury, RI 32596",
+            lang=3.77,
+            lat=4.99,
+            district=district[0],
+            created_by_id=1,
+            updated_by_id=1,
+        )
+        StationBranch.objects.get_or_create(
+            name="Petrol Station Branch",
+            address="343 Zachary Alley\nEdwardbury, RI 32596",
+            lang=3.77,
+            lat=4.99,
+            district=district,
+            station=station[0],
+            created_by_id=1,
+            updated_by_id=1,
+        )
+        station_owner = StationOwner.objects.get_or_create(
+            name="petro station owner",
+            email="petro_station_owner@petro.com",
+            phone_number="01010079794",
+            role=User.UserRoles.StationOwner,
+            station=station,
+            created_by_id=1,
+            updated_by_id=1,
+        )
+        station_owner.set_password("admin")
+        station_owner.save()
+
         # Generate data
         UserFactory.create_batch(10)
-        CityFactory.create_batch(5)
-        DistrictFactory.create_batch(5)
         CompanyFactory.create_batch(5)
         CompanyBranchFactory.create_batch(25)
-        CarFactory.create_batch(20)
+        CarFactory.create_batch(6)
         DriverFactory.create_batch(90)
         NotificationFactory.create_batch(50)
         StationFactory.create_batch(25)
@@ -93,6 +131,7 @@ class Command(BaseCommand):
         WorkerFactory.create_batch(50)
         ServiceFactory.create_batch(10)
         CarOperationFactory.create_batch(100)
+        CompanyKhaznaTransactionFactory.create_batch(100)
         StationServiceFactory.create_batch(50)
         CompanyBranchManager.objects.create(
             user=company_branch_manager,
