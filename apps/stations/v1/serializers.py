@@ -9,7 +9,7 @@ from apps.stations.models.stations_models import Station, StationBranch, Station
 class ListServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
-        fields = ["id", "name", "unit", "type", "cost"]
+        fields = ["id", "name", "unit", "type", "cost", "image"]
 
 
 class ServiceNameSerializer(serializers.ModelSerializer):

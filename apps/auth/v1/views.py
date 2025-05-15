@@ -152,6 +152,7 @@ class StationLoginAPIView(APIView):
                 "access": str(access_token),
                 "user_name": user.name,
                 "role": user.role,
+                "station_id": user.stationowner.station.id,
             }
             return Response(data, status=status.HTTP_200_OK)
         else:

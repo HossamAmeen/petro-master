@@ -75,6 +75,7 @@ class StationServiceAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("created_by", "updated_by")
     search_fields = ("service__name", "station__name")
+    list_filter = ("station", "service")
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""
@@ -128,6 +129,7 @@ class StationBranchServiceAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("created_by", "updated_by")
     search_fields = ("service__name", "station_branch__name")
+    list_filter = ("station_branch", "service", "station_branch__station")
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""
