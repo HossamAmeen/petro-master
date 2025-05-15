@@ -2,9 +2,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
 from apps.users.models import StationOwner, User
+from apps.users.v1.filters import StationBranchManagerFilter
 from apps.users.v1.serializers.station_serializer import (
     ListStationBranchManagerSerializer,
     ListStationOwnerSerializer,
+    StationBranchManagerCreationSerializer,
+    StationBranchManagerUpdateSerializer,
     StationOwnerSerializer,
 )
 
@@ -26,6 +29,7 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
         role=User.UserRoles.StationBranchManager
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = StationBranchManagerFilter
     search_fields = ["name", "phone_number", "email"]
 
     def get_queryset(self):
@@ -36,3 +40,7 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "GET":
             return ListStationBranchManagerSerializer
+        if self.request.method == "POST":
+            return StationBranchManagerCreationSerializer
+        if self.request.method == "PATCH":
+            return StationBranchManagerUpdateSerializer
