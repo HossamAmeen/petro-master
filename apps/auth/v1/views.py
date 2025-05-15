@@ -147,13 +147,17 @@ class StationLoginAPIView(APIView):
             access_token = refresh.access_token
             access_token["user_name"] = user.name
             access_token["role"] = user.role
-            access_token["station_id"] = user.stationowner.station.id
+            if user.role == User.UserRoles.StationWorker:
+                station_id = user.worker.station_branch.station_id
+            else:
+                station_id = user.stationowner.station.id
+            access_token["station_id"] = station_id
             data = {
                 "refresh": str(refresh),
                 "access": str(access_token),
                 "user_name": user.name,
                 "role": user.role,
-                "station_id": user.stationowner.station.id,
+                "station_id": station_id,
             }
             return Response(data, status=status.HTTP_200_OK)
         else:

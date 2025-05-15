@@ -326,11 +326,12 @@ class WorkerForm(forms.ModelForm):
     )
 
     class Meta:
-        model = CompanyUser
+        model = Worker
         fields = (
             "name",
             "email",
             "phone_number",
+            "station_branch",
             "password1",
             "password2",
             "is_active",
