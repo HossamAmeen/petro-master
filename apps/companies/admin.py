@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from apps.companies.models.operation_model import CarOperation
-from apps.stations.models.stations_models import Service
+from apps.stations.models.service_models import Service
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, Company, CompanyBranch, Driver

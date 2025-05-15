@@ -2,12 +2,8 @@ from django.core.validators import MinValueValidator
 from rest_framework import serializers
 
 from apps.geo.v1.serializers import DistrictWithcitynameSerializer
-from apps.stations.models.stations_models import (
-    Service,
-    Station,
-    StationBranch,
-    StationService,
-)
+from apps.stations.models.service_models import Service
+from apps.stations.models.stations_models import Station, StationBranch, StationService
 
 
 class ListServiceSerializer(serializers.ModelSerializer):

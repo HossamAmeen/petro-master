@@ -1,7 +1,8 @@
 from django.db import models
 
 from apps.companies.models.company_models import Car, Driver
-from apps.stations.models.stations_models import Service, StationBranch
+from apps.stations.models.service_models import Service
+from apps.stations.models.stations_models import StationBranch
 from apps.users.models import Worker
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
 

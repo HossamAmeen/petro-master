@@ -1,6 +1,7 @@
 from django_filters import rest_framework as django_filters
 
-from apps.stations.models.stations_models import Service, StationBranch
+from apps.stations.models.service_models import Service
+from apps.stations.models.stations_models import StationBranch
 
 
 class StationBranchFilter(django_filters.FilterSet):

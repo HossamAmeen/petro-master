@@ -16,7 +16,7 @@ from apps.companies.v1.serializers.car_operation_serializer import (
 )
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
-from apps.stations.models.stations_models import Service
+from apps.stations.models.service_models import Service
 from apps.users.models import User
 
 
