@@ -73,6 +73,7 @@ LOCAL_APPS = [
     "apps.notifications",
     "apps.auth",
     "apps.accounting",
+    "configrations",
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
