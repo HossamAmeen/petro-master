@@ -40,7 +40,7 @@ class StationBranch(AbstractBaseModel):
         verbose_name_plural = "Station Branches"
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.station.name}"
 
 
 class StationService(AbstractBaseModel):
@@ -58,7 +58,9 @@ class StationService(AbstractBaseModel):
 
 
 class StationBranchService(AbstractBaseModel):
-    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    service = models.ForeignKey(
+        Service, on_delete=models.CASCADE, related_name="station_branch_services"
+    )
     station_branch = models.ForeignKey(
         StationBranch, on_delete=models.CASCADE, related_name="station_branch_services"
     )
