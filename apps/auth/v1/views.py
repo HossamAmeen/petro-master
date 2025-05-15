@@ -136,6 +136,7 @@ class StationLoginAPIView(APIView):
         station_roles = [
             User.UserRoles.StationOwner,
             User.UserRoles.StationBranchManager,
+            User.UserRoles.StationWorker,
         ]
         if (
             user
