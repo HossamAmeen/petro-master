@@ -27,46 +27,46 @@ class TestUserAPI:
         self.url_list = reverse("station-owners-list")
         self.url_detail = reverse("station-owners-detail", args=[self.station_owner.id])
 
-    # def test_list_station_owner(self):
-    #     response = self.client.get(self.url_list)
-    #     assert response.status_code == 200
+    def test_list_station_owner(self):
+        response = self.client.get(self.url_list)
+        assert response.status_code == 200
 
-    # def test_create_station_owner(self):
-    #     data = {'name': "owner2", 'phone_number': "0100055", 'email': "owner2@gmail.com",
-    #             'password': "owner1", 'created_by': self.user.id,
-    #             'updated_by': self.user.id, 'station': self.station.id}
-    #     response = self.client.post(
-    #         self.url_list,
-    #         data=data,
-    #         content_type='application/json'
-    #     )
-    #     assert response.status_code == 201
+    def test_create_station_owner(self):
+        data = {'name': "owner2", 'phone_number': "0100055", 'email': "owner2@gmail.com",
+                'password': "owner1", 'created_by': self.user.id,
+                'updated_by': self.user.id, 'station': self.station.id}
+        response = self.client.post(
+            self.url_list,
+            data=data,
+            content_type='application/json'
+        )
+        assert response.status_code == 201
 
-    # def test_update_station_owner(self):
-    #     update_data = {'name': "owner3", 'phone_number': "0100055",
-    #                    'email': "owner3@gmail.com", 'password': "owner1",
-    #                    'created_by': self.user.id, 'updated_by': self.user.id,
-    #                    'station': self.station.id}
-    #     response = self.client.put(
-    #         self.url_detail,
-    #         data=update_data,
-    #         content_type='application/json'
-    #     )
-    #     assert response.status_code == 200
+    def test_update_station_owner(self):
+        update_data = {'name': "owner3", 'phone_number': "0100055",
+                       'email': "owner3@gmail.com", 'password': "owner1",
+                       'created_by': self.user.id, 'updated_by': self.user.id,
+                       'station': self.station.id}
+        response = self.client.put(
+            self.url_detail,
+            data=update_data,
+            content_type='application/json'
+        )
+        assert response.status_code == 200
 
-    # def test_retrieve_station_owner(self):
-    #     update_data = {'name': "owner2", 'phone_number': "0100055",
-    #                    'email': "owner2@gmail.com", 'password': "owner1",
-    #                    'created_by': self.user.id, 'updated_by': self.user.id,
-    #                    'station': self.station.id}
-    #     response = self.client.get(
-    #         self.url_detail,
-    #         data=update_data,
-    #         content_type='application/json'
-    #     )
-    #     assert response.status_code == 200
+    def test_retrieve_station_owner(self):
+        update_data = {'name': "owner2", 'phone_number': "0100055",
+                       'email': "owner2@gmail.com", 'password': "owner1",
+                       'created_by': self.user.id, 'updated_by': self.user.id,
+                       'station': self.station.id}
+        response = self.client.get(
+            self.url_detail,
+            data=update_data,
+            content_type='application/json'
+        )
+        assert response.status_code == 200
 
-    # def test_delete_station_owner(self):
+    def test_delete_station_owner(self):
         response = self.client.delete(self.url_detail)
         assert response.status_code == 204
 
