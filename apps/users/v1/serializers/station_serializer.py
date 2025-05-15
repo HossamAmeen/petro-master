@@ -36,7 +36,7 @@ class StationBranchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StationBranch
-        fields = "_all_"
+        fields = "__all__"
 
 
 class ListStationBranchManagerSerializer(serializers.ModelSerializer):
