@@ -1,5 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import Response, status
 
 from apps.companies.models.company_cash_models import CompanyCashRequest
@@ -8,6 +9,7 @@ from apps.companies.v1.serializers.company_cash_request_serializers import (
     ListCompanyCashRequestSerializer,
 )
 from apps.shared.mixins.inject_user_mixins import InjectCompanyUserMixin
+from apps.shared.permissions import CompanyOwnerPermission
 from apps.users.models import User
 
 
@@ -17,7 +19,12 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
     )
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["status"]
-    http_method_names = ["get", "post", "patch", "delete"]
+    http_method_names = ["get", "post", "patch"]
+
+    def get_permissions(self):
+        if self.request.method == "DELETE":
+            return [CompanyOwnerPermission]
+        return [IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
