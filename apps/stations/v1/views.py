@@ -1,5 +1,6 @@
 from django.db.models import Count
 from django.db.models.base import transaction
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.views import Response
@@ -42,6 +43,8 @@ class StationBranchViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "update_balance":
             return UpdateStationBranchBalanceSerializer
+        elif self.action == "services":
+            return ListServiceSerializer
         return super().get_serializer_class()
 
     def get_queryset(self):
@@ -92,6 +95,35 @@ class StationBranchViewSet(viewsets.ModelViewSet):
                     )
         return Response({"balance": station_branch.balance})
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="types",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Filter by type exampe types=petrol,diesel,wash,other",
+            )
+        ]
+    )
+    @action(detail=True, methods=["GET"], url_path="services")
+    def services(self, request, *args, **kwargs):
+        services = Service.objects.all().order_by("-id")
+        if self.request.user.role == User.UserRoles.StationOwner:
+            services = services.filter(
+                station_branch_services__station_branch__station__owners=self.request.user
+            )
+        if self.request.user.role == User.UserRoles.StationBranchManager:
+            services = services.filter(
+                station_branch_services__station_branch__station__managers__user=self.request.user
+            )
+        if request.query_params.get("types"):
+            types = request.query_params.get("types").split(",")
+            services = services.filter(type__in=types)
+
+        page = self.paginate_queryset(services)
+        serializer = self.get_serializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
+
 
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all().order_by("-id")
@@ -100,11 +132,11 @@ class ServiceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
-            return self.queryset.filter(
+            return self.queryset.exclude(
                 station_branch_services__station_branch__station__owners=self.request.user
             )
         if self.request.user.role == User.UserRoles.StationBranchManager:
-            return self.queryset.filter(
+            return self.queryset.exclude(
                 station_branch_services__station_branch__station__managers__user=self.request.user
             )
         return self.queryset.distinct()
