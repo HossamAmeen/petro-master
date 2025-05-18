@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.views import Response, status
 
 from apps.companies.models.company_models import Car, Driver
+from apps.companies.v1.filters import CarFilter, DriverFilter
 from apps.companies.v1.serializers.car_serializer import (
     CarBalanceUpdateSerializer,
     CarSerializer,
@@ -20,9 +21,8 @@ from apps.users.models import User
 
 
 class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
-
+    filterset_class = DriverFilter
     queryset = Driver.objects.select_related("branch__district").order_by("-id")
-    filterset_fields = ["branch"]
     search_fields = [
         "name",
         "branch__name",
@@ -36,13 +36,15 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
-            return self.queryset.filter(branch__company__owners=self.request.user)
+            return self.queryset.filter(branch__company=self.request.company_id)
+        if self.request.user.role == User.UserRoles.CompanyBranchManager:
+            return self.queryset.filter(branch__managers__user=self.request.user)
         return self.queryset
 
 
 class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = Car.objects.select_related("branch__district").order_by("-id")
-    filterset_fields = ["branch", "fuel_type", "city", "is_with_odometer"]
+    filterset_class = CarFilter
     search_fields = [
         "code",
         "plate_number",
@@ -60,7 +62,9 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
-            return self.queryset.filter(branch__company__owners=self.request.user)
+            return self.queryset.filter(branch__company=self.request.company_id)
+        if self.request.user.role == User.UserRoles.CompanyBranchManager:
+            return self.queryset.filter(branch__managers__user=self.request.user)
         return self.queryset
 
     @extend_schema(
@@ -101,17 +105,21 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
         serializer = CarBalanceUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        if self.request.user.role == User.UserRoles.CompanyOwner:
+            parent_object = car.branch.company
+        elif self.request.user.role == User.UserRoles.CompanyBranchManager:
+            parent_object = car.branch
+
         with transaction.atomic():
             if serializer.validated_data["type"] == "add":
                 car.refresh_from_db()
-                if car.balance >= serializer.validated_data["amount"]:
+                if parent_object.balance >= serializer.validated_data["amount"]:
                     car.balance += serializer.validated_data["amount"]
                     car.save()
 
-                    branch = car.branch
-                    branch.refresh_from_db()
-                    branch.balance += serializer.validated_data["amount"]
-                    branch.save()
+                    parent_object.refresh_from_db()
+                    parent_object.balance -= serializer.validated_data["amount"]
+                    parent_object.save()
                 else:
                     raise CustomValidationError(
                         message="السيارة لا تمتلك كافٍ من المال",
@@ -121,14 +129,13 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     )
             elif serializer.validated_data["type"] == "subtract":
                 car.refresh_from_db()
-                if car.balance >= serializer.validated_data["amount"]:
+                if parent_object.balance >= serializer.validated_data["amount"]:
                     car.balance -= serializer.validated_data["amount"]
                     car.save()
 
-                    branch = car.branch
-                    branch.refresh_from_db()
-                    branch.balance += serializer.validated_data["amount"]
-                    branch.save()
+                    parent_object.refresh_from_db()
+                    parent_object.balance += serializer.validated_data["amount"]
+                    parent_object.save()
                 else:
                     raise CustomValidationError(
                         message="السيارة لا تمتلك كافٍ من المال",

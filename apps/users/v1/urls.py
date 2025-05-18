@@ -17,7 +17,11 @@ router.register(
 )
 router.register("firebase-tokens", FirebaseTokenViewSet, basename="firebase-tokens")
 router.register("station-owners", StationOwnerViewSet, basename="station-owners")
-router.register("station-branch-managers", StationBranchManagerViewSet, basename="station-branch-managers")
 router.register("workers", WorkerViewSet, basename="workers")
+router.register(
+    "station-branch-managers",
+    StationBranchManagerViewSet,
+    basename="station-branch-managers",
+)
 
 urlpatterns = router.urls

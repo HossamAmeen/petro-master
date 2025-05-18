@@ -11,14 +11,16 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 # flake8: noqa
+import base64
+import json
+import os
 from datetime import timedelta
 from pathlib import Path
-import os
-import json
-import base64
-import firebase_admin
-from firebase_admin import credentials
+
 import environ
+import firebase_admin
+import sentry_sdk
+from firebase_admin import credentials
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,7 +40,6 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
-
 
 # Application definition
 
@@ -60,16 +61,19 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_extensions",
     "rest_framework_simplejwt",
+    "polymorphic",
     "gunicorn",
 ]
 
 LOCAL_APPS = [
+    "apps.stations",
     "apps.users",
     "apps.companies",
     "apps.geo",
-    "apps.stations",
     "apps.notifications",
     "apps.auth",
+    "apps.accounting",
+    "configrations",
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
@@ -158,6 +162,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+CSRF_TRUSTED_ORIGINS = ["https://api.petro-master.org", "https://petro-master.org"]
 
 REST_FRAMEWORK = {
     # "EXCEPTION_HANDLER": "drf_standardized_errors.handler.exception_handler",
@@ -234,28 +239,16 @@ SPECTACULAR_SETTINGS = {
     ],
 }
 
-
-# EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
-# EMAIL_HOST_USER = '403c618db534ff'
-# EMAIL_HOST_PASSWORD = "2af349497cece3"
-# EMAIL_PORT = 2525
-# DEFAULT_FROM_EMAIL="hosamameen948@gmail.com"
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "baronlearning.com"  # Incoming/Outgoing Server
-EMAIL_PORT = 465  # SMTP Port for SSL/TLS
-EMAIL_USE_TLS = False  # We are using SSL, not STARTTLS
-EMAIL_USE_SSL = True
-EMAIL_HOST_USER = "learn@baronlearning.com"
-EMAIL_HOST_PASSWORD = "KMPjHt%b!U7j"  # Replace with your actual email password
-DEFAULT_FROM_EMAIL = "learn@baronlearning.com"
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_PORT = env("EMAIL_PORT", default=587)
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "apikey"
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
 
-
-import os
-import json
-import base64
-import firebase_admin
-from firebase_admin import credentials
 
 encoded_credentials = env("FIREBASE_CREDENTIALS", default=None)
 if encoded_credentials:
@@ -269,6 +262,22 @@ if encoded_credentials:
 else:
     pass
 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-DEFAULT_FROM_EMAIL = "hosamameen948@gmail.com"
+if not env("ENVIRONMENT", default="local") == "local":
+    sentry_sdk.init(
+        dsn=env("SENTRY_DNS"),
+        # Add data like request headers and IP for users,
+        # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+        send_default_pii=True,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for tracing.
+        traces_sample_rate=0.1,
+        # Set profile_session_sample_rate to 1.0 to profile 100%
+        # of profile sessions.
+        profile_session_sample_rate=1.0,
+        # Set profile_lifecycle to "trace" to automatically
+        # run the profiler on when there is an active transaction
+        profile_lifecycle="trace",
+    )

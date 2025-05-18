@@ -1,6 +1,6 @@
 from django_filters import rest_framework as django_filters
 
-from apps.companies.models.company_models import Car, CompanyBranch
+from apps.companies.models.company_models import Car, CompanyBranch, Driver
 from apps.companies.models.operation_model import CarOperation
 from apps.geo.models import City
 
@@ -16,8 +16,10 @@ class CompanyBranchFilter(django_filters.FilterSet):
 
 
 class CarOperationFilter(django_filters.FilterSet):
-    start_date = django_filters.DateFilter(field_name="start_time", lookup_expr="gte")
-    end_date = django_filters.DateFilter(field_name="end_time", lookup_expr="lte")
+    start_date = django_filters.DateFilter(
+        field_name="start_time__date", lookup_expr="gte"
+    )
+    end_date = django_filters.DateFilter(field_name="end_time__date", lookup_expr="lte")
 
     class Meta:
         model = CarOperation
@@ -45,3 +47,11 @@ class CarFilter(django_filters.FilterSet):
             "city",
             "is_with_odometer",
         ]
+
+
+class DriverFilter(django_filters.FilterSet):
+    city = django_filters.NumberFilter(field_name="branch__district__city")
+
+    class Meta:
+        model = Driver
+        fields = ["branch", "city"]

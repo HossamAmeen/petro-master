@@ -1,7 +1,8 @@
 from django.db import models
 
 from apps.companies.models.company_models import Car, Driver
-from apps.stations.models.stations_models import Service, StationBranch
+from apps.stations.models.service_models import Service
+from apps.stations.models.stations_models import StationBranch
 from apps.users.models import Worker
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
 
@@ -34,6 +35,7 @@ class CarOperation(AbstractBaseModel):
         default=Service.ServiceUnit.OTHER,
     )
     car_meter = models.IntegerField()
+    fuel_consumption_rate = models.IntegerField(null=True, blank=True)
     motor_image = models.ImageField(upload_to="motor_images/", null=True, blank=True)
     fuel_image = models.ImageField(upload_to="fuel_images/", null=True, blank=True)
 
@@ -53,7 +55,7 @@ class CarOperation(AbstractBaseModel):
 
     class Meta:
         verbose_name = "Car Operation"
-        verbose_name_plural = "Car Operations"
+        verbose_name_plural = "5. Car Operations"
 
     def __str__(self):
         return f"{self.car} - {self.service} - {self.code}"

@@ -1,12 +1,15 @@
+from django.core.validators import MinValueValidator
 from rest_framework import serializers
 
 from apps.geo.v1.serializers import DistrictWithcitynameSerializer
-from apps.stations.models.stations_models import (
-    Service,
-    Station,
-    StationBranch,
-    StationService,
-)
+from apps.stations.models.service_models import Service
+from apps.stations.models.stations_models import Station, StationBranch, StationService
+
+
+class ListServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Service
+        fields = ["id", "name", "unit", "type", "cost", "image"]
 
 
 class ServiceNameSerializer(serializers.ModelSerializer):
@@ -45,10 +48,17 @@ class StationNameSerializer(serializers.ModelSerializer):
         fields = ["id", "name"]
 
 
+class SingleStationBranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StationBranch
+        fields = ["id", "name", "address", "district", "station"]
+
+
 class ListStationBranchSerializer(serializers.ModelSerializer):
     services = serializers.SerializerMethodField()
     district = DistrictWithcitynameSerializer()
     station = StationNameSerializer()
+    managers_count = serializers.IntegerField()
 
     class Meta:
         model = StationBranch
@@ -56,6 +66,13 @@ class ListStationBranchSerializer(serializers.ModelSerializer):
 
     def get_services(self, instance):
         services = Service.objects.filter(
-            stationbranchservice__station_branch=instance
+            station_branch_services__station_branch=instance
         ).values("id", "name")
         return list(services)
+
+
+class UpdateStationBranchBalanceSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=[("add", "Add"), ("subtract", "Subtract")])
+    amount = serializers.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(10)]
+    )
