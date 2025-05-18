@@ -44,8 +44,8 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         item = self.get_object()
-        if item.status == CompanyCashRequest.Status.PENDING:
-            item.status = CompanyCashRequest.Status.CANCELLED
+        if item.status == CompanyCashRequest.Status.IN_PROGRESS:
+            item.status = CompanyCashRequest.Status.REJECTED
             item.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
