@@ -66,9 +66,9 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    "apps.companies",
     "apps.stations",
     "apps.users",
-    "apps.companies",
     "apps.geo",
     "apps.notifications",
     "apps.auth",
