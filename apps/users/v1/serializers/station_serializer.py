@@ -66,6 +66,29 @@ class CreateWorkerSerializer(serializers.ModelSerializer):
         return Worker.objects.create(**validated_data)
 
 
+class UpdateWorkerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Worker
+        fields = ["id", "name", "phone_number", "password", "confirm_password"]
+
+    password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        if "password" in attrs:
+            if "confirm_password" not in attrs:
+                raise serializers.ValidationError("Confirm password is required.")
+            if attrs["password"] != attrs["confirm_password"]:
+                raise serializers.ValidationError("Passwords do not match.")
+        return attrs
+
+    def update(self, instance, validated_data):
+        if "password" in validated_data:
+            validated_data["password"] = make_password(validated_data["password"])
+            validated_data.pop("confirm_password", None)
+        return super().update(instance, validated_data)
+
+
 class StationOwnerSerializer(serializers.ModelSerializer):
     class Meta:
         model = StationOwner

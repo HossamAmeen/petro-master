@@ -9,6 +9,7 @@ from apps.users.v1.serializers.station_serializer import (
     ListStationOwnerSerializer,
     ListWorkerSerializer,
     StationOwnerSerializer,
+    UpdateWorkerSerializer,
 )
 
 
@@ -51,7 +52,10 @@ class WorkerViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "GET":
             return ListWorkerSerializer
-        return CreateWorkerSerializer
+        if self.request.method == "POST":
+            return CreateWorkerSerializer
+        if self.request.method == "PATCH":
+            return UpdateWorkerSerializer
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
