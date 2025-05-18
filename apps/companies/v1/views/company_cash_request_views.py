@@ -19,7 +19,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
     )
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["status"]
-    http_method_names = ["get", "post", "patch"]
+    http_method_names = ["get", "post", "patch", "delete"]
 
     def get_permissions(self):
         if self.request.method == "DELETE":
