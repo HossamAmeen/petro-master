@@ -181,6 +181,7 @@ class CompanyUserInterface(admin.ModelAdmin):
                     "phone_number",
                     "password1",
                     "password2",
+                    "role",
                     "company",
                     "is_active",
                 )
@@ -198,6 +199,7 @@ class CompanyUserInterface(admin.ModelAdmin):
                     "phone_number",
                     "password1",
                     "password2",
+                    "role",
                     "company",
                     "is_active",
                 )
