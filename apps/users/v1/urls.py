@@ -9,7 +9,7 @@ from .views.station_view import (
 from .views.users_view import FirebaseTokenViewSet, UserViewSet
 
 router = DefaultRouter()
-router.register("users", UserViewSet)
+router.register("users", UserViewSet, basename="users")
 router.register(
     "company-branch-managers",
     CompanyBranchManagerViewSet,
