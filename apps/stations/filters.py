@@ -16,6 +16,9 @@ class ServiceFilter(django_filters.FilterSet):
     station = django_filters.NumberFilter(
         field_name="station_branch_services__station_branch__station"
     )
+    station_branch = django_filters.NumberFilter(
+        field_name="station_branch_services__station_branch"
+    )
     type = django_filters.MultipleChoiceFilter(
         choices=Service.ServiceType.choices, field_name="type"
     )
