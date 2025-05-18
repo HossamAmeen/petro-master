@@ -4,12 +4,10 @@ from rest_framework import filters, viewsets
 from apps.users.models import StationOwner, User, Worker
 from apps.users.v1.filters import StationBranchManagerFilter
 from apps.users.v1.serializers.station_serializer import (
+    CreateWorkerSerializer,
     ListStationBranchManagerSerializer,
     ListStationOwnerSerializer,
     ListWorkerSerializer,
-    SingleWorkerSerializer,
-    StationBranchManagerCreationSerializer,
-    StationBranchManagerUpdateSerializer,
     StationOwnerSerializer,
 )
 
@@ -53,7 +51,7 @@ class WorkerViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "GET":
             return ListWorkerSerializer
-        return SingleWorkerSerializer
+        return CreateWorkerSerializer
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
@@ -61,7 +59,3 @@ class WorkerViewSet(viewsets.ModelViewSet):
                 station_branch__station__owners=self.request.user
             )
         return self.queryset
-        if self.request.method == "POST":
-            return StationBranchManagerCreationSerializer
-        if self.request.method == "PATCH":
-            return StationBranchManagerUpdateSerializer
