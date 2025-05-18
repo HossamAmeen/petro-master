@@ -235,6 +235,7 @@ class CompanyHomeView(APIView):
             ).values_list("id", flat=True)
 
         branches_filter = Q(branches__id__in=branches_id)
+
         diesel_car_filter = Q(
             branches__cars__fuel_type=Car.FuelType.DIESEL, branches__id__in=branches_id
         )
@@ -251,6 +252,7 @@ class CompanyHomeView(APIView):
             - timedelta(days=30),
             branches__id__in=branches_id,
         )
+
         company = (
             Company.objects.filter(id=request.company_id)
             .annotate(
@@ -307,6 +309,7 @@ class CompanyHomeView(APIView):
             ),
             "total_balance": total_balance if total_balance else 0,
         }
+
         response_data["car_operations"] = ListHomeCarOperationSerializer(
             CarOperation.objects.filter(car__branch__in=branches_id).order_by("-id")[
                 :3
@@ -319,4 +322,5 @@ class CompanyHomeView(APIView):
             ).order_by("-id")[:3],
             many=True,
         ).data
+
         return Response(response_data)

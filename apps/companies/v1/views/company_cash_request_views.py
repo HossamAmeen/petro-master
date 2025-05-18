@@ -9,7 +9,7 @@ from apps.companies.v1.serializers.company_cash_request_serializers import (
     ListCompanyCashRequestSerializer,
 )
 from apps.shared.mixins.inject_user_mixins import InjectCompanyUserMixin
-from apps.shared.permissions import CompanyOwnerPermission
+from apps.shared.permissions import CompanyPermission
 from apps.users.models import User
 
 
@@ -23,7 +23,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.request.method == "DELETE":
-            return [CompanyOwnerPermission()]
+            return [CompanyPermission()]
         return [IsAuthenticated()]
 
     def list(self, request, *args, **kwargs):
@@ -35,11 +35,10 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         return CompanyCashRequestSerializer
 
     def get_queryset(self):
-        if (
-            self.request.user.role == User.UserRoles.CompanyOwner
-            or self.request.user.role == User.UserRoles.CompanyBranchManager
-        ):
+        if self.request.user.role == User.UserRoles.CompanyOwner:
             return self.queryset.filter(company=self.request.company_id)
+        if self.request.user.role == User.UserRoles.CompanyBranchManager:
+            return self.queryset.filter(branch__managers__user=self.request.user)
         return self.queryset
 
     def destroy(self, request, *args, **kwargs):
