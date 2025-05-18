@@ -282,7 +282,7 @@ class CompanyHomeView(APIView):
         )
 
         if self.request.user.role == User.UserRoles.CompanyOwner:
-            base_balance = company.balance
+            base_balance = company.balance if company.balance else 0
             total_balance = (
                 company.balance + company.cars_balance + company.branches_balance
             )
@@ -301,9 +301,11 @@ class CompanyHomeView(APIView):
             "total_branches_count": company.total_branches_count,
             "total_branch_count": company.total_branches_count,
             "balance": base_balance,
-            "cars_balance": company.cars_balance,
-            "branches_balance": company.branches_balance,
-            "total_balance": total_balance,
+            "cars_balance": company.cars_balance if company.cars_balance else 0,
+            "branches_balance": (
+                company.branches_balance if company.branches_balance else 0
+            ),
+            "total_balance": total_balance if total_balance else 0,
         }
         response_data["car_operations"] = ListHomeCarOperationSerializer(
             CarOperation.objects.filter(car__branch__in=branches_id).order_by("-id")[

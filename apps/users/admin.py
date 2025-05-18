@@ -5,6 +5,7 @@ from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
 
 from .models import (
+    CompanyBranchManager,
     CompanyUser,
     FirebaseToken,
     StationBranchManager,
@@ -218,6 +219,39 @@ class CompanyUserInterface(admin.ModelAdmin):
 
     created.admin_order_field = "created"
     created.short_description = _("Created")
+
+
+class CompanyBranchManagerForm(forms.ModelForm):
+    class Meta:
+        model = CompanyBranchManager
+        fields = (
+            "user",
+            "company_branch",
+        )
+
+
+@admin.register(CompanyBranchManager)
+class CompanyBranchManagerInterface(admin.ModelAdmin):
+    form = CompanyBranchManagerForm
+    list_display = ("user", "company_branch")
+    search_fields = ("user", "company_branch")
+    list_filter = ("user", "company_branch")
+    hidden_fields = ("created",)
+    list_per_page = 10
+
+    class Meta:
+        model = StationBranchManager
+        fields = ("user", "station_branch")
+
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new Driver.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        obj.save()
 
 
 class StationOwnerForm(forms.ModelForm):
