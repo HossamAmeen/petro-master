@@ -111,6 +111,14 @@ class CompanyUserForm(forms.ModelForm):
     password2 = forms.CharField(
         label=_("Confirm Password"), widget=forms.PasswordInput, required=False
     )
+    role = forms.ChoiceField(
+        choices=[
+            (User.UserRoles.CompanyOwner, "Company Owner"),
+            (User.UserRoles.CompanyBranchManager, "Company Branch Manager"),
+        ],
+        widget=forms.RadioSelect,
+        initial=User.UserRoles.CompanyOwner,
+    )
 
     class Meta:
         model = CompanyUser
@@ -122,6 +130,7 @@ class CompanyUserForm(forms.ModelForm):
             "password2",
             "is_active",
             "is_staff",
+            "role",
         )
 
     def clean(self):
@@ -137,7 +146,6 @@ class CompanyUserForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.role = User.UserRoles.CompanyOwner
         if self.cleaned_data["password1"]:
             user.set_password(self.cleaned_data["password1"])
         if commit:
