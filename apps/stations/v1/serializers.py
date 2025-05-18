@@ -76,3 +76,7 @@ class UpdateStationBranchBalanceSerializer(serializers.Serializer):
     amount = serializers.DecimalField(
         max_digits=10, decimal_places=2, validators=[MinValueValidator(10)]
     )
+
+
+class AssignServicesSerializer(serializers.Serializer):
+    services = serializers.ListField(child=serializers.IntegerField())
