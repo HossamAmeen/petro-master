@@ -277,12 +277,19 @@ class CompanyHomeView(APIView):
                 ),
                 cars_balance=Sum("branches__cars__balance", filter=branches_filter),
                 branches_balance=Sum("branches__balance", filter=branches_filter),
-                total_balance=Sum("balance")
-                + Sum("branches__balance")
-                + Sum("branches__cars__balance"),
             )
             .first()
         )
+
+        if self.request.user.role == User.UserRoles.CompanyOwner:
+            base_balance = company.balance
+            total_balance = (
+                company.balance + company.cars_balance + company.branches_balance
+            )
+        elif self.request.user.role == User.UserRoles.CompanyBranchManager:
+            base_balance = company.branches_balance
+            total_balance = company.cars_balance
+
         response_data = {
             "name": company.name,
             "total_cars_count": company.total_cars_count,
@@ -293,10 +300,10 @@ class CompanyHomeView(APIView):
             "total_drivers_with_lincense_expiration_date_30_days": company.total_drivers_with_lincense_expiration_date_30_days,
             "total_branches_count": company.total_branches_count,
             "total_branch_count": company.total_branches_count,
-            "balance": company.balance,
+            "balance": base_balance,
             "cars_balance": company.cars_balance,
             "branches_balance": company.branches_balance,
-            "total_balance": company.total_balance,
+            "total_balance": total_balance,
         }
         response_data["car_operations"] = ListHomeCarOperationSerializer(
             CarOperation.objects.filter(car__branch__in=branches_id).order_by("-id")[
