@@ -98,7 +98,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-
+        managers = set(serializer.validated_data.get("managers", []))
         # Atomic transaction for data consistency
         with transaction.atomic():
             # Clear existing managers
@@ -113,7 +113,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                         created_by=request.user,
                         updated_by=request.user,
                     )
-                    for user_id in serializer.validated_data["managers"]
+                    for user_id in managers
                 ]
             )
 

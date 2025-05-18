@@ -19,9 +19,10 @@ from apps.stations.v1.serializers import (
     ListServiceSerializer,
     ListStationBranchSerializer,
     ListStationSerializer,
+    StationBranchAssignManagersSerializer,
     UpdateStationBranchBalanceSerializer,
 )
-from apps.users.models import User
+from apps.users.models import StationBranchManager, User
 
 
 class StationViewSet(viewsets.ModelViewSet):
@@ -52,6 +53,8 @@ class StationBranchViewSet(viewsets.ModelViewSet):
             return ListServiceSerializer
         elif self.action == "assign_services":
             return AssignServicesSerializer
+        elif self.action == "assigned_managers":
+            return StationBranchAssignManagersSerializer
         return super().get_serializer_class()
 
     def get_queryset(self):
@@ -131,7 +134,7 @@ class StationBranchViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=True, methods=["POST"], url_path="assign_services")
+    @action(detail=True, methods=["POST"], url_path="assign-services")
     def assign_services(self, request, *args, **kwargs):
         station_branch = self.get_object()
         serializer = self.get_serializer(data=request.data)
@@ -147,6 +150,23 @@ class StationBranchViewSet(viewsets.ModelViewSet):
                 updated_by=self.request.user,
             )
         return Response({"message": "تم تعيين الخدمات بنجاح"})
+
+    @action(detail=True, methods=["POST"], url_path="assign-managers")
+    def assign_managers(self, request, *args, **kwargs):
+        station_branch = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        managers = serializer.validated_data.get("managers", [])
+        station_branch.managers.all().delete()
+        managers = set(managers)
+        for manager in managers:
+            StationBranchManager.objects.create(
+                station_branch=station_branch,
+                user_id=manager,
+                created_by=self.request.user,
+                updated_by=self.request.user,
+            )
+        return Response({"message": "تم تعيين المديرين بنجاح"})
 
 
 class ServiceViewSet(viewsets.ModelViewSet):

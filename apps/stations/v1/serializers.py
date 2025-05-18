@@ -4,6 +4,7 @@ from rest_framework import serializers
 from apps.geo.v1.serializers import DistrictWithcitynameSerializer
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import Station, StationBranch, StationService
+from apps.users.models import StationOwner
 
 
 class ListServiceSerializer(serializers.ModelSerializer):
@@ -80,3 +81,27 @@ class UpdateStationBranchBalanceSerializer(serializers.Serializer):
 
 class AssignServicesSerializer(serializers.Serializer):
     services = serializers.ListField(child=serializers.IntegerField())
+
+
+class StationBranchAssignManagersSerializer(serializers.Serializer):
+    managers = serializers.ListField(child=serializers.IntegerField())
+
+    def validate(self, attrs):
+        manager_ids = attrs["managers"]
+
+        # Get valid users from the same company
+        valid_managers = StationOwner.objects.filter(
+            station_id=self.context["request"].station_id,
+            id__in=manager_ids,
+        ).values_list("id", flat=True)
+
+        invalid_ids = set(manager_ids) - set(valid_managers)
+        if invalid_ids:
+            raise serializers.ValidationError(
+                {
+                    "message": f"بعض المديرين لا ينتمون لمحطتك (المديرين غير الصالحة: {invalid_ids})",  # noqa
+                    "errors": {"invalid_manager_ids": list(invalid_ids)},
+                }
+            )
+
+        return attrs
