@@ -23,8 +23,8 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.request.method == "DELETE":
-            return [CompanyOwnerPermission]
-        return [IsAuthenticated]
+            return [CompanyOwnerPermission()]
+        return [IsAuthenticated()]
 
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
