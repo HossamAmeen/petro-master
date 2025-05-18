@@ -9,8 +9,13 @@ from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.permissions import StationOwnerPermission
 from apps.stations.filters import ServiceFilter, StationBranchFilter
 from apps.stations.models.service_models import Service
-from apps.stations.models.stations_models import Station, StationBranch
+from apps.stations.models.stations_models import (
+    Station,
+    StationBranch,
+    StationBranchService,
+)
 from apps.stations.v1.serializers import (
+    AssignServicesSerializer,
     ListServiceSerializer,
     ListStationBranchSerializer,
     ListStationSerializer,
@@ -45,6 +50,8 @@ class StationBranchViewSet(viewsets.ModelViewSet):
             return UpdateStationBranchBalanceSerializer
         elif self.action == "services":
             return ListServiceSerializer
+        elif self.action == "assign_services":
+            return AssignServicesSerializer
         return super().get_serializer_class()
 
     def get_queryset(self):
@@ -123,6 +130,23 @@ class StationBranchViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(services)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
+
+    @action(detail=True, methods=["POST"], url_path="assign_services")
+    def assign_services(self, request, *args, **kwargs):
+        station_branch = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services = serializer.validated_data.get("services", [])
+        station_branch.station_branch_services.all().delete()
+        services = set(services)
+        for service in services:
+            StationBranchService.objects.create(
+                station_branch=station_branch,
+                service_id=service,
+                created_by=self.request.user,
+                updated_by=self.request.user,
+            )
+        return Response({"message": "تم تعيين الخدمات بنجاح"})
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
