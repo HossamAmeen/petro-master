@@ -30,13 +30,12 @@ class TestAdminUserAPI:
         assert response.status_code == 201
 
     def test_retrieve_user(self):
-        update_data = {'name': "user57", 'phone_number': "01102057", 'email': "user57@gmail.com", 'password': "user1", 'role': "admin"}
-        response = self.client.get(self.url_detail, data=update_data, content_type="application/json")
+        response = self.client.get(self.url_detail, content_type="application/json")
         assert response.status_code == 200
 
     def test_update_user(self):
         update_data = {'name': "user58", 'phone_number': "01102058", 'email': "user58@gmail.com", 'password': "user1", 'role': "admin"}
-        response = self.client.put(self.url_detail, data=update_data, content_type="application/json")
+        response = self.client.patch(self.url_detail, data=update_data, content_type="application/json")
         assert response.status_code == 200
 
     def test_delete_user(self):
