@@ -9,25 +9,15 @@ from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.permissions import StationOwnerPermission
 from apps.stations.filters import StationBranchFilter
 from apps.stations.models.service_models import Service
-from apps.stations.models.stations_models import (
-    Station,
-    StationBranch,
-    StationBranchService,
-)
+from apps.stations.models.stations_models import StationBranch, StationBranchService
 from apps.stations.v1.serializers import (
     AssignServicesSerializer,
     ListServiceSerializer,
     ListStationBranchSerializer,
-    ListStationSerializer,
     StationBranchAssignManagersSerializer,
     UpdateStationBranchBalanceSerializer,
 )
 from apps.users.models import StationBranchManager, User
-
-
-class StationViewSet(viewsets.ModelViewSet):
-    queryset = Station.objects.prefetch_related("station_services").order_by("-id")
-    serializer_class = ListStationSerializer
 
 
 class StationBranchViewSet(viewsets.ModelViewSet):

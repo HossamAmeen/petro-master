@@ -1,7 +1,9 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from apps.stations.v1.service_views import ServiceViewSet
-from apps.stations.v1.views import StationBranchViewSet, StationViewSet
+from apps.stations.v1.views.service_views import ServiceViewSet
+from apps.stations.v1.views.station_branch_views import StationBranchViewSet
+from apps.stations.v1.views.station_views import StationHomeAPIView, StationViewSet
 
 router = DefaultRouter()
 router.register("branches", StationBranchViewSet, basename="station-branches")
@@ -9,3 +11,7 @@ router.register("stations", StationViewSet, basename="stations")
 router.register("services", ServiceViewSet, basename="services")
 
 urlpatterns = router.urls
+
+urlpatterns += [
+    path("home/", StationHomeAPIView.as_view(), name="station-home"),
+]
