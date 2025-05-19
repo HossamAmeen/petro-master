@@ -7,7 +7,7 @@ from rest_framework.views import Response
 
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.permissions import StationOwnerPermission
-from apps.stations.filters import ServiceFilter, StationBranchFilter
+from apps.stations.filters import StationBranchFilter
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import (
     Station,
@@ -167,20 +167,3 @@ class StationBranchViewSet(viewsets.ModelViewSet):
                 updated_by=self.request.user,
             )
         return Response({"message": "تم تعيين المديرين بنجاح"})
-
-
-class ServiceViewSet(viewsets.ModelViewSet):
-    queryset = Service.objects.all().order_by("-id")
-    serializer_class = ListServiceSerializer
-    filterset_class = ServiceFilter
-
-    def get_queryset(self):
-        if self.request.user.role == User.UserRoles.StationOwner:
-            return self.queryset.exclude(
-                station_branch_services__station_branch__station__owners=self.request.user
-            )
-        if self.request.user.role == User.UserRoles.StationBranchManager:
-            return self.queryset.exclude(
-                station_branch_services__station_branch__station__managers__user=self.request.user
-            )
-        return self.queryset.distinct()
