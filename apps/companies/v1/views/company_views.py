@@ -290,7 +290,7 @@ class CompanyHomeView(APIView):
             )
         elif self.request.user.role == User.UserRoles.CompanyBranchManager:
             base_balance = company.branches_balance if company.branches_balance else 0
-            total_balance = company.cars_balance
+            total_balance = base_balance + company.cars_balance
 
         response_data = {
             "name": company.name,
