@@ -33,6 +33,10 @@ class StationHomeAPIView(APIView):
                 workers_count=Count(
                     "branches__workers", distinct=True, filter=branches_filter
                 ),
+                managers_count=Count(
+                    "branches__managers", distinct=True, filter=branches_filter
+                ),
+                branches_count=Count("branches", distinct=True, filter=branches_filter),
             )
             .first()
         )
@@ -48,5 +52,7 @@ class StationHomeAPIView(APIView):
             "address": station.address,
             "balance": base_balance,
             "workers_count": station.workers_count,
+            "managers_count": station.managers_count,
+            "branches_count": station.branches_count,
         }
         return Response(response_data)

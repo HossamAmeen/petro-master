@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 
+from apps.users.models import StationBranchManager
+
 from .models.service_models import Service
 from .models.stations_models import (
     Station,
@@ -40,6 +42,7 @@ class StationAdmin(admin.ModelAdmin):
         "address",
         "balance",
         "branches_link",
+        "managers_link",
         "district",
         "created_by",
         "updated_by",
@@ -56,6 +59,18 @@ class StationAdmin(admin.ModelAdmin):
         return format_html('<a class="button" href="{}">Branches ({})</a>', url, count)
 
     branches_link.short_description = "Branches"
+
+    def managers_link(self, obj):
+        count = StationBranchManager.objects.filter(
+            station_branch__station_id=obj.id
+        ).count()
+        url = (
+            reverse("admin:users_stationbranchmanager_changelist")
+            + f"?station_branch__station_id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Managers ({})</a>', url, count)
+
+    managers_link.short_description = "Managers"
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""
@@ -94,6 +109,7 @@ class StationBranchAdmin(admin.ModelAdmin):
         "balance",
         "district",
         "managers_link",
+        "workers_link",
         "created_by",
         "updated_by",
     )
@@ -110,6 +126,16 @@ class StationBranchAdmin(admin.ModelAdmin):
         return format_html('<a class="button" href="{}">Managers ({})</a>', url, count)
 
     managers_link.short_description = "Managers"
+
+    def workers_link(self, obj):
+        count = obj.workers.count()
+        url = (
+            reverse("admin:users_worker_changelist")
+            + f"?station_branch__id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Workers ({})</a>', url, count)
+
+    workers_link.short_description = "Workers"
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""
