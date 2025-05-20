@@ -32,5 +32,14 @@ class ConfigrationsView(APIView):
                 "privacy_policy": configrations.privacy_policy,
                 "about_us": configrations.about_us,
                 "faq": configrations.faq,
+                "app_version": configrations.app_version,
+                "company_support_email": configrations.company_support_email,
+                "company_support_phone": configrations.company_support_phone,
+                "company_support_address": configrations.company_support_address,
+                "company_support_name": configrations.company_support_name,
+                "station_support_email": configrations.station_support_email,
+                "station_support_phone": configrations.station_support_phone,
+                "station_support_address": configrations.station_support_address,
+                "station_support_name": configrations.station_support_name,
             }
         )
