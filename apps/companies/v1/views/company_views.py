@@ -13,6 +13,7 @@ from apps.accounting.models import CompanyKhaznaTransaction
 from apps.accounting.v1.serializers.company_transaction_serializer import (
     CompanyKhaznaTransactionSerializer,
 )
+from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Car, Company, CompanyBranch
 from apps.companies.models.operation_model import CarOperation
 from apps.companies.v1.filters import CompanyBranchFilter
@@ -234,7 +235,7 @@ class CompanyHomeView(APIView):
                 managers__user_id=request.user.id
             ).values_list("id", flat=True)
 
-        branches_filter = Q(branches__id__in=branches_id)
+        branches_filter = Q(branches__id__in=set(branches_id))
 
         diesel_car_filter = Q(
             branches__cars__fuel_type=Car.FuelType.DIESEL, branches__id__in=branches_id
@@ -282,18 +283,29 @@ class CompanyHomeView(APIView):
             )
             .first()
         )
+        cash_requests_balance = (
+            CompanyCashRequest.objects.filter(
+                driver__branch__in=branches_id,
+                status=CompanyCashRequest.Status.IN_PROGRESS,
+            ).aggregate(Sum("amount"))["amount__sum"]
+            or 0
+        )
         company.cars_balance = company.cars_balance if company.cars_balance else 0
         company.branches_balance = (
             company.branches_balance if company.branches_balance else 0
         )
+
         if self.request.user.role == User.UserRoles.CompanyOwner:
             base_balance = company.balance if company.balance else 0
             total_balance = (
-                company.balance + company.cars_balance + company.branches_balance
+                company.balance
+                + company.cars_balance
+                + company.branches_balance
+                + cash_requests_balance
             )
         elif self.request.user.role == User.UserRoles.CompanyBranchManager:
             base_balance = company.branches_balance if company.branches_balance else 0
-            total_balance = base_balance + company.cars_balance
+            total_balance = base_balance + company.cars_balance + cash_requests_balance
 
         response_data = {
             "name": company.name,
@@ -310,6 +322,7 @@ class CompanyHomeView(APIView):
             "branches_balance": (
                 company.branches_balance if company.branches_balance else 0
             ),
+            "cash_requests_balance": cash_requests_balance,
             "total_balance": total_balance if total_balance else 0,
         }
 

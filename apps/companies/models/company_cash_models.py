@@ -18,7 +18,9 @@ class CompanyCashRequest(AbstractBaseModel):
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.IN_PROGRESS
     )
-    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    company = models.ForeignKey(
+        Company, on_delete=models.CASCADE, related_name="cash_requests"
+    )
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     station = models.ForeignKey(
         Station, on_delete=models.SET_NULL, null=True, blank=True

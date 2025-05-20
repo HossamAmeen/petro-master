@@ -237,7 +237,7 @@ class DriverAdmin(admin.ModelAdmin):
         "code",
         "lincense_number",
         "lincense_expiration_date",
-        "branch",
+        "branch__name",
     )
     list_filter = (
         "name",
@@ -305,7 +305,7 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
         "driver__name",
         "station__name",
     )
-    list_filter = ("company", "status", "driver", "station")
+    list_filter = ("company", "status", "driver", "station", "driver__branch")
     readonly_fields = ("created_by", "updated_by")
 
 
