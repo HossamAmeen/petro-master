@@ -54,3 +54,8 @@ class ListHomeCarOperationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CarOperation
         fields = ["id", "car", "start_time", "cost", "amount", "unit"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
+        return data
