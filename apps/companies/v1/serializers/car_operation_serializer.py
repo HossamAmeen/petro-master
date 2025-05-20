@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.companies.models.operation_model import CarOperation
 from apps.companies.v1.serializers.car_serializer import CarWithPlateInfoSerializer
 from apps.companies.v1.serializers.driver_serializer import SingleDriverSerializer
+from apps.shared.constants import SERVICE_UNIT_CHOICES
 from apps.stations.v1.serializers import (
     ServiceNameSerializer,
     SingleStationBranchSerializer,
@@ -40,6 +41,11 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             "fuel_image",
             "fuel_consumption_rate",
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
+        return data
 
 
 class ListHomeCarOperationSerializer(serializers.ModelSerializer):

@@ -1,3 +1,4 @@
+from apps.stations.models.service_models import Service
 from apps.users.models import User
 
 COMPANY_ROLES = [
@@ -9,3 +10,10 @@ STATION_ROLES = [
     User.UserRoles.StationOwner,
     User.UserRoles.StationBranchManager,
 ]
+
+
+SERVICE_UNIT_CHOICES = {
+    Service.ServiceUnit.OTHER: "اخري",
+    Service.ServiceUnit.LITRE: "لتر",
+    Service.ServiceUnit.UNIT: "وحدة",
+}
