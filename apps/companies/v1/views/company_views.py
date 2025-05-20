@@ -282,7 +282,10 @@ class CompanyHomeView(APIView):
             )
             .first()
         )
-
+        company.cars_balance = company.cars_balance if company.cars_balance else 0
+        company.branches_balance = (
+            company.branches_balance if company.branches_balance else 0
+        )
         if self.request.user.role == User.UserRoles.CompanyOwner:
             base_balance = company.balance if company.balance else 0
             total_balance = (
