@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.companies.models.company_cash_models import CompanyCashRequest
-from apps.companies.models.company_models import Driver
+from apps.companies.models.company_models import Company, Driver
 from apps.companies.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.stations.v1.serializers import ListStationSerializer
 from apps.users.models import User
@@ -53,7 +53,22 @@ class CompanyCashRequestSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
 
         queryset = Driver.objects.all()
-        if request and hasattr(request, "company_id"):
+        if request.user.role == User.UserRoles.CompanyOwner:
             queryset = queryset.filter(branch__company_id=request.company_id)
+        if request.user.role == User.UserRoles.CompanyBranchManager:
+            queryset = queryset.filter(branch__managers__user=request.user)
 
         self.fields["driver"].queryset = queryset
+
+    def validate(self, attrs):
+        request = self.context["request"]
+        if request.user.role == User.UserRoles.CompanyOwner:
+            parent_balance = (
+                Company.objects.filter(id=request.company_id).first().balance
+            )
+        else:
+            driver = Driver.objects.filter(id=request.data["driver"]).first()
+            parent_balance = driver.branch.balance
+        if attrs["amount"] > parent_balance:
+            raise serializers.ValidationError({"amount": "الرصيد غير كافي"})
+        return attrs

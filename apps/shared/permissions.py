@@ -1,51 +1,34 @@
 from rest_framework.permissions import BasePermission
 
+from apps.shared.constants import COMPANY_ROLES, STATION_ROLES
 from apps.users.models import User
 
 
 class CompanyPermission(BasePermission):
     def has_permission(self, request, view):
-        if (
-            request.user.role == User.UserRoles.CompanyOwner
-            or request.user.role == User.UserRoles.CompanyBranchManager
-        ):
-            return True
-        return False
+        return request.user.role in COMPANY_ROLES
 
 
 class CompanyOwnerPermission(BasePermission):
     def has_permission(self, request, view):
-        if request.user.role == User.UserRoles.CompanyOwner:
-            return True
-        return False
+        return request.user.role == User.UserRoles.CompanyOwner
 
 
 class CompanyBranchManagerPermission(BasePermission):
     def has_permission(self, request, view):
-        if request.user.role == User.UserRoles.CompanyBranchManager:
-            return True
-        return False
+        return request.user.role == User.UserRoles.CompanyBranchManager
 
 
 class StationOwnerPermission(BasePermission):
     def has_permission(self, request, view):
-        if request.user.role == User.UserRoles.StationOwner:
-            return True
-        return False
+        return request.user.role == User.UserRoles.StationOwner
 
 
 class StationBranchManagerPermission(BasePermission):
     def has_permission(self, request, view):
-        if request.user.role == User.UserRoles.StationBranchManager:
-            return True
-        return False
+        return request.user.role == User.UserRoles.StationBranchManager
 
 
 class StationPermission(BasePermission):
     def has_permission(self, request, view):
-        if (
-            request.user.role == User.UserRoles.StationOwner
-            or request.user.role == User.UserRoles.StationBranchManager
-        ):
-            return True
-        return False
+        return request.user.role in STATION_ROLES
