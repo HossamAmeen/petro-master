@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission
+from rest_framework.views import PermissionDenied
 
 from apps.shared.constants import COMPANY_ROLES
 from apps.users.models import User
@@ -14,5 +15,10 @@ class CashRequestPermission(BasePermission):
         if request.user.role == User.UserRoles.CompanyOwner:
             return True
         if request.user.role == User.UserRoles.CompanyBranchManager:
-            return obj.created_by == request.user
+            if obj.created_by != request.user:
+                raise PermissionDenied(
+                    "انت لا تمتلك صلاحية الغاء هذا الطلب لانه تم انشاءه بواسطة "
+                    + obj.created_by.name
+                )
+            return True
         return False
