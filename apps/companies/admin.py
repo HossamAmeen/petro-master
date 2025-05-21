@@ -308,6 +308,19 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
     list_filter = ("company", "status", "driver", "station", "driver__branch")
     readonly_fields = ("created_by", "updated_by")
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("driver__branch")
+
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new CarOperation.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        obj.save()
+
 
 @admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
