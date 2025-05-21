@@ -1,7 +1,9 @@
 from django.contrib.auth.hashers import make_password
+from django.db.models import Sum
 from rest_framework import serializers
 
-from apps.users.models import CompanyUser
+from apps.companies.models.company_models import CompanyBranch
+from apps.users.models import User
 
 
 class LoginSerializer(serializers.Serializer):
@@ -10,16 +12,41 @@ class LoginSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    balance = serializers.SerializerMethodField()
+
     class Meta:
-        model = CompanyUser
-        fields = ["id", "name", "email", "phone_number", "role", "password"]
-        read_only_fields = ["id", "phone_number", "role"]
+        model = User
+        fields = ["id", "name", "email", "phone_number", "role", "password", "balance"]
+        read_only_fields = ["id", "phone_number", "role", "balance"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def update(self, instance, validated_data):
         if "password" in validated_data:
             validated_data["password"] = make_password(validated_data["password"])
         return super().update(instance, validated_data)
+
+    def get_balance(self, obj):
+        if obj.role == User.UserRoles.CompanyOwner:
+            return obj.companyuser.company.balance
+        elif obj.role == User.UserRoles.CompanyBranchManager:
+            return (
+                CompanyBranch.objects.filter(managers=obj).aggregate(Sum("balance"))[
+                    "balance__sum"
+                ]
+                or 0
+            )
+        elif obj.role == User.UserRoles.StationOwner:
+            return obj.StationOwner.station.balance
+        elif obj.role == User.UserRoles.StationBranchManager:
+            return (
+                obj.stationowner.station.branches.filter(managers=obj).aggregate(
+                    Sum("balance")
+                )["balance__sum"]
+                or 0
+            )
+        elif obj.role == User.UserRoles.StationWorker:
+            return 0
+        return 0
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
