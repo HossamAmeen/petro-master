@@ -10,6 +10,7 @@ from apps.companies.v1.serializers.company_cash_request_serializers import (
     CompanyCashRequestSerializer,
     ListCompanyCashRequestSerializer,
 )
+from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectCompanyUserMixin
 from apps.users.models import User
 
@@ -75,4 +76,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                     drivers__id=item.driver_id
                 ).update(balance=F("balance") + item.amount)
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        raise CustomValidationError(
+            message="لا يمكنك الغاء العمليه وهيا بالحالة " + item.status,
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
