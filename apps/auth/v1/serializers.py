@@ -30,16 +30,16 @@ class ProfileSerializer(serializers.ModelSerializer):
             return obj.companyuser.company.balance
         elif obj.role == User.UserRoles.CompanyBranchManager:
             return (
-                CompanyBranch.objects.filter(managers=obj).aggregate(Sum("balance"))[
-                    "balance__sum"
-                ]
+                CompanyBranch.objects.filter(managers__user=obj).aggregate(
+                    Sum("balance")
+                )["balance__sum"]
                 or 0
             )
         elif obj.role == User.UserRoles.StationOwner:
             return obj.StationOwner.station.balance
         elif obj.role == User.UserRoles.StationBranchManager:
             return (
-                obj.stationowner.station.branches.filter(managers=obj).aggregate(
+                obj.stationowner.station.branches.filter(managers__user=obj).aggregate(
                     Sum("balance")
                 )["balance__sum"]
                 or 0
