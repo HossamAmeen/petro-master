@@ -1,7 +1,12 @@
+import base64
+import os
 import uuid
+from io import BytesIO
 
+import qrcode
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.utils import settings
 
 from apps.shared.generate_code import generate_unique_code
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
@@ -122,6 +127,35 @@ class Car(AbstractBaseModel):
     class Meta:
         verbose_name = "Car"
         verbose_name_plural = "3. Cars"
+
+
+class CarCode(AbstractBaseModel):
+    code = models.CharField(max_length=10, unique=True, verbose_name="car code")
+    car = models.ForeignKey(Car, on_delete=models.SET_NULL, null=True, blank=True)
+
+    @property
+    def qr_code_base64(self):
+        qr = qrcode.QRCode(
+            version=1,
+            box_size=12,  # Increased from 10 to make QR bigger
+            border=4,  # Increased border
+        )
+        qr.add_data(self.code)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        return base64.b64encode(buffer.getvalue()).decode()
+
+    @property
+    def logo_base64(self):
+        logo_path = os.path.join(settings.STATIC_ROOT, "admin/img/logo.png")
+        try:
+            with open(logo_path, "rb") as logo_file:
+                return base64.b64encode(logo_file.read()).decode()
+        except Exception:
+            return None
 
 
 class Driver(AbstractBaseModel):

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Print QR Codes</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .qr-page {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            page-break-after: always;
+        }
+        .header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .company-logo {
+            max-height: 80px;
+            margin-bottom: 20px;
+        }
+        .qr-container {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 10px;
+        }
+        .qr-code {
+            width: 400px !important;
+            height: 400px !important;
+        }
+        .code-text {
+            font-size: 36px;
+            font-weight: bold;
+            margin-top: 20px;
+            letter-spacing: 2px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666;
+        }
+        @media print {
+            .qr-page {
+                height: 100%;
+            }
+            .qr-container {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% for code in car_codes %}
+    <div class="qr-page">
+        <div class="header">
+            {% if code.logo_base64 %}
+            <img class="company-logo" src="data:image/png;base64,{{ code.logo_base64 }}" alt="Company Logo">
+            {% endif %}
+            <h1>Company Name</h1>
+        </div>
+
+        <div class="qr-container">
+            <img class="qr-code" src="data:image/png;base64,{{ code.qr_code_base64 }}">
+            <div class="code-text">{{ code.code }}</div>
+        </div>
+
+        <div class="footer">
+            Generated on {% now "F j, Y" %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <script>
+        window.onload = function() {
+            window.print();
+            setTimeout(function() {
+                window.close();
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
