@@ -150,7 +150,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                             Notification(
                                 user_id=user_id,
                                 title="تم شحن رصيد السيارة",
-                                message=message,
+                                description=message,
                                 type=Notification.NotificationType.MONEY,
                             )
                             for user_id in notification_users
