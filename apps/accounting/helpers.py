@@ -14,7 +14,10 @@ def generate_company_transaction(
     for_what=None,
 ):
     reference_code = generate_unique_code(
-        model=CompanyKhaznaTransaction, min_value=10**8, max_value=10**9
+        model=CompanyKhaznaTransaction,
+        look_up="reference_code",
+        min_value=10**8,
+        max_value=10**9,
     )
     reference_code = (
         str("INT-" + str(reference_code)) if is_internal else str(reference_code)
