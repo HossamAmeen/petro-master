@@ -16,7 +16,9 @@ class KhaznaTransaction(AbstractBaseModel):
         WALLET = "wallet", ("Wallet")
 
     is_incoming = models.BooleanField(
-        help_text="True if money came into the khazna;" "False if it went out."
+        help_text="True if money came into the khazna;" "False if it went out.",
+        null=True,
+        blank=True,
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(
