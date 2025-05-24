@@ -12,6 +12,7 @@ def generate_company_transaction(
     approved_at=None,
     is_internal=False,
     for_what=None,
+    created_by_id=None,
 ):
     reference_code = generate_unique_code(
         model=CompanyKhaznaTransaction,
@@ -33,4 +34,5 @@ def generate_company_transaction(
         approved_at=approved_at,
         is_internal=is_internal,
         for_what=for_what,
+        created_by_id=created_by_id,
     )
