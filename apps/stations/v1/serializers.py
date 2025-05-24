@@ -38,7 +38,7 @@ class ListStationSerializer(serializers.ModelSerializer):
 
     def get_services(self, instance):
         services = Service.objects.filter(
-            stationbranchservice__station_branch__station=instance
+            station_branch_services__station_branch__station=instance
         ).values("id", "name")
         return list(services)
 
