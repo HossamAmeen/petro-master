@@ -4,6 +4,8 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.views import Response, status
 
+from apps.accounting.helpers import generate_company_transaction
+from apps.accounting.models import CompanyKhaznaTransaction, KhaznaTransaction
 from apps.companies.models.company_models import Car, Driver
 from apps.companies.v1.filters import CarFilter, DriverFilter
 from apps.companies.v1.serializers.car_serializer import (
@@ -15,6 +17,7 @@ from apps.companies.v1.serializers.driver_serializer import (
     DriverSerializer,
     ListDriverSerializer,
 )
+from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.users.models import User
@@ -107,8 +110,20 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
         if self.request.user.role == User.UserRoles.CompanyOwner:
             parent_object = car.branch.company
+            notification_users = list(
+                car.branch.managers.values_list("user_id", flat=True)
+            )
+            notification_users.append(request.user.id)
         elif self.request.user.role == User.UserRoles.CompanyBranchManager:
             parent_object = car.branch
+            notification_users = list(
+                car.branch.managers.exclude(user=request.user).values_list(
+                    "user_id", flat=True
+                )
+            )
+            notification_users.extend(
+                car.branch.company.owners.values_list("user_id", flat=True)
+            )
 
         with transaction.atomic():
             if serializer.validated_data["type"] == "add":
@@ -120,6 +135,26 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     parent_object.refresh_from_db()
                     parent_object.balance -= serializer.validated_data["amount"]
                     parent_object.save()
+                    message = f"تم شحن رصيد السيارة {car.code} برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
+                    generate_company_transaction(
+                        company_id=self.request.company_id,
+                        amount=serializer.validated_data["amount"],
+                        status=KhaznaTransaction.TransactionStatus.APPROVED,
+                        description=message,
+                        is_internal=True,
+                        for_what=CompanyKhaznaTransaction.ForWhat.CAR,
+                    )
+                    Notification.objects.bulk_create(
+                        [
+                            Notification(
+                                user_id=user_id,
+                                title="تم شحن رصيد السيارة",
+                                message=message,
+                                type=Notification.NotificationType.MONEY,
+                            )
+                            for user_id in notification_users
+                        ]
+                    )
                 else:
                     raise CustomValidationError(
                         message="السيارة لا تمتلك كافٍ من المال",
@@ -136,6 +171,26 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     parent_object.refresh_from_db()
                     parent_object.balance += serializer.validated_data["amount"]
                     parent_object.save()
+                    message = f"تم سحب رصيد السيارة {car.code} برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
+                    generate_company_transaction(
+                        company_id=self.request.company_id,
+                        amount=serializer.validated_data["amount"],
+                        status=KhaznaTransaction.TransactionStatus.APPROVED,
+                        description=message,
+                        is_internal=True,
+                        for_what=CompanyKhaznaTransaction.ForWhat.CAR,
+                    )
+                    Notification.objects.bulk_create(
+                        [
+                            Notification(
+                                user_id=user_id,
+                                title="تم سحب رصيد السيارة",
+                                message=message,
+                                type=Notification.NotificationType.MONEY,
+                            )
+                            for user_id in notification_users
+                        ]
+                    )
                 else:
                     raise CustomValidationError(
                         message="السيارة لا تمتلك كافٍ من المال",
