@@ -145,17 +145,14 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                         for_what=CompanyKhaznaTransaction.ForWhat.CAR,
                         created_by_id=request.user.id,
                     )
-                    Notification.objects.bulk_create(
-                        [
-                            Notification(
-                                user_id=user_id,
-                                title="تم شحن رصيد السيارة",
-                                description=message,
-                                type=Notification.NotificationType.MONEY,
-                            )
-                            for user_id in notification_users
-                        ]
-                    )
+                    for user_id in notification_users:
+                        Notification.objects.create(
+                            user_id=user_id,
+                            title="تم شحن رصيد السيارة",
+                            description=message,
+                            type=Notification.NotificationType.MONEY,
+                        )
+
                 else:
                     raise CustomValidationError(
                         message="السيارة لا تمتلك كافٍ من المال",
@@ -181,17 +178,13 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                         is_internal=True,
                         for_what=CompanyKhaznaTransaction.ForWhat.CAR,
                     )
-                    Notification.objects.bulk_create(
-                        [
-                            Notification(
-                                user_id=user_id,
-                                title="تم سحب رصيد السيارة",
-                                message=message,
-                                type=Notification.NotificationType.MONEY,
-                            )
-                            for user_id in notification_users
-                        ]
-                    )
+                    for user_id in notification_users:
+                        Notification.objects.create(
+                            user_id=user_id,
+                            title="تم سحب رصيد السيارة",
+                            description=message,
+                            type=Notification.NotificationType.MONEY,
+                        )
                 else:
                     raise CustomValidationError(
                         message="السيارة لا تمتلك كافٍ من المال",
