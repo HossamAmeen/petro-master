@@ -5,12 +5,13 @@
     <style>
         @page {
             size: A4;
-            margin: 10mm;
+            margin: 0;
         }
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            background-color: #f9f9f9;
         }
         .qr-page {
             width: 100%;
@@ -21,42 +22,57 @@
             justify-content: center;
             text-align: center;
             page-break-after: always;
-        }
-        .header {
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        .company-logo {
-            max-height: 80px;
-            margin-bottom: 20px;
+            position: relative;
         }
         .qr-container {
-            margin: 20px 0;
-            padding: 20px;
-            border: 1px solid #eee;
-            border-radius: 10px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            background-color: white;
+            padding: 40px 30px 30px;
+            position: relative;
+            width: 80%;
+            max-width: 400px;
+        }
+        .logo-on-border {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 0 20px;
+            border-radius: 50px;
+        }
+        .logo-on-border img {
+            height: 60px;
+            width: auto;
         }
         .qr-code {
-            width: 400px !important;
-            height: 400px !important;
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            aspect-ratio: 1/1;
+            margin: 0 auto;
+            display: block;
         }
         .code-text {
             font-size: 36px;
             font-weight: bold;
             margin-top: 20px;
             letter-spacing: 2px;
-        }
-        .footer {
-            margin-top: 30px;
-            font-size: 14px;
-            color: #666;
+            color: #333;
         }
         @media print {
+            body {
+                background-color: white;
+            }
             .qr-page {
-                height: 100%;
+                height: 100vh;
+                margin: 0;
             }
             .qr-container {
-                border: none;
+                border: 2px solid rgba(0, 0, 0, 0.1);
+                box-shadow: none;
+                background-color: white;
             }
         }
     </style>
@@ -64,20 +80,15 @@
 <body>
     {% for code in car_codes %}
     <div class="qr-page">
-        <div class="header">
-            {% if code.logo_base64 %}
-            <img class="company-logo" src="data:image/png;base64,{{ code.logo_base64 }}" alt="Company Logo">
-            {% endif %}
-            <h1>Company Name</h1>
-        </div>
-
         <div class="qr-container">
+            {% if code.logo_base64 %}
+            <div class="logo-on-border">
+                <img src="data:image/png;base64,{{ code.logo_base64 }}" alt="Company Logo">
+            </div>
+            {% endif %}
+
             <img class="qr-code" src="data:image/png;base64,{{ code.qr_code_base64 }}">
             <div class="code-text">{{ code.code }}</div>
-        </div>
-
-        <div class="footer">
-            Generated on {% now "F j, Y" %}
         </div>
     </div>
     {% endfor %}
