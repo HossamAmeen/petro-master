@@ -59,3 +59,34 @@ class ListHomeCarOperationSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
         return data
+
+
+class ListStationCarOperationSerializer(serializers.ModelSerializer):
+    car = CarWithPlateInfoSerializer()
+    worker = SingleWorkerSerializer()
+    service = ServiceNameSerializer()
+    company = serializers.CharField(source="driver.branch.company.name")
+
+    class Meta:
+        model = CarOperation
+        fields = [
+            "id",
+            "car",
+            "cost",
+            "start_time",
+            "end_time",
+            "duration",
+            "amount",
+            "unit",
+            "service",
+            "worker",
+            "driver",
+            "company",
+            "motor_image",
+            "fuel_image",
+        ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
+        return data

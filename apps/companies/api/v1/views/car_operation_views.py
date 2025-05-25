@@ -3,10 +3,12 @@ from datetime import datetime
 
 from django.conf import settings
 from django.http import FileResponse, Http404
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from openpyxl import Workbook
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 
 from apps.companies.api.v1.filters import CarOperationFilter
@@ -24,8 +26,9 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     queryset = CarOperation.objects.select_related(
         "car", "driver", "station_branch", "worker", "service"
     ).order_by("-id")
-    serializer_class = ListCarOperationSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CarOperationFilter
+    serializer_class = ListCarOperationSerializer
     search_fields = [
         "code",
         "car__code",
