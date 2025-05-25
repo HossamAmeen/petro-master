@@ -57,6 +57,18 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 location=OpenApiParameter.QUERY,
                 description="when logged in as station worker must send approved_by as filter to get cash requests approved by the worker and status=APPROVED",
             ),
+            OpenApiParameter(
+                name="approved_from",
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                description="when filter by approved_from as date in format YYYY-MM-DD",
+            ),
+            OpenApiParameter(
+                name="approved_to",
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                description="when filter by approved_to as date in format YYYY-MM-DD",
+            ),
         ],
     )
     def list(self, request, *args, **kwargs):
