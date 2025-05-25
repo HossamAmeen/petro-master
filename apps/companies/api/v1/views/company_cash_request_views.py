@@ -1,15 +1,17 @@
 from django.db.models import F
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework import viewsets
 from rest_framework.views import Response, status
 
-from apps.companies.models.company_cash_models import CompanyCashRequest
-from apps.companies.models.company_models import Company, CompanyBranch
-from apps.companies.v1.permissions import CashRequestPermission
-from apps.companies.v1.serializers.company_cash_request_serializers import (
+from apps.companies.api.filters.cash_request_filter import CashRequestFilter
+from apps.companies.api.v1.permissions import CashRequestPermission
+from apps.companies.api.v1.serializers.company_cash_request_serializers import (
     CompanyCashRequestSerializer,
     ListCompanyCashRequestSerializer,
 )
+from apps.companies.models.company_cash_models import CompanyCashRequest
+from apps.companies.models.company_models import Company, CompanyBranch
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectCompanyUserMixin
 from apps.users.models import User
@@ -20,14 +22,11 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         "-id"
     )
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["status"]
+    filterset_class = CashRequestFilter
     http_method_names = ["get", "post", "patch", "delete"]
 
     def get_permissions(self):
         return [CashRequestPermission()]
-
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
 
     def get_serializer_class(self):
         if self.request.method == "GET":
@@ -47,9 +46,21 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             return self.queryset.filter(
                 station__branches__managers__user=self.request.user
             )
-        if self.request.user.role == User.UserRoles.StationWorker:
-            return self.queryset.filter(station__workers__user=self.request.user)
         return self.queryset
+
+    @extend_schema(
+        description="List all cash requests",
+        parameters=[
+            OpenApiParameter(
+                name="approved_by",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description="when logged in as station worker must send approved_by as filter to get cash requests approved by the worker and status=APPROVED",
+            ),
+        ],
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(

@@ -59,7 +59,7 @@ class CompanyHomeSerializer(serializers.ModelSerializer):
         ]
 
     def to_representation(self, instance):
-        from apps.companies.v1.serializers.car_operation_serializer import (
+        from apps.companies.api.v1.serializers.car_operation_serializer import (
             ListHomeCarOperationSerializer,
         )
 

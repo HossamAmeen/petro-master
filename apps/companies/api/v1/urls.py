@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from apps.companies.v1.views.car_operation_views import CarOperationViewSet
+from apps.companies.api.v1.views.car_operation_views import CarOperationViewSet
 
 from .views.car_views import CarViewSet, DriverViewSet
 from .views.company_cash_request_views import CompanyCashRequestViewSet

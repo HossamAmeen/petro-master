@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
+from apps.companies.api.v1.serializers.car_serializer import CarWithPlateInfoSerializer
+from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.operation_model import CarOperation
-from apps.companies.v1.serializers.car_serializer import CarWithPlateInfoSerializer
-from apps.companies.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.shared.constants import SERVICE_UNIT_CHOICES
 from apps.stations.v1.serializers import (
     ServiceNameSerializer,

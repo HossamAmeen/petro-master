@@ -3,10 +3,10 @@ from datetime import timedelta
 from django.utils import timezone
 from rest_framework import serializers
 
-from apps.companies.models.company_models import Driver
-from apps.companies.v1.serializers.branch_serializers import (
+from apps.companies.api.v1.serializers.branch_serializers import (
     SingleBranchWithDistrictSerializer,
 )
+from apps.companies.models.company_models import Driver
 
 
 class ListDriverSerializer(serializers.ModelSerializer):

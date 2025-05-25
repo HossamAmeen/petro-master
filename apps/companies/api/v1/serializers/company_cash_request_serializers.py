@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
+from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Company, Driver
-from apps.companies.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.stations.v1.serializers import ListStationSerializer
 from apps.users.models import User
 

@@ -6,17 +6,17 @@ from rest_framework.views import Response, status
 
 from apps.accounting.helpers import generate_company_transaction
 from apps.accounting.models import CompanyKhaznaTransaction, KhaznaTransaction
-from apps.companies.models.company_models import Car, Driver
-from apps.companies.v1.filters import CarFilter, DriverFilter
-from apps.companies.v1.serializers.car_serializer import (
+from apps.companies.api.v1.filters import CarFilter, DriverFilter
+from apps.companies.api.v1.serializers.car_serializer import (
     CarBalanceUpdateSerializer,
     CarSerializer,
     ListCarSerializer,
 )
-from apps.companies.v1.serializers.driver_serializer import (
+from apps.companies.api.v1.serializers.driver_serializer import (
     DriverSerializer,
     ListDriverSerializer,
 )
+from apps.companies.models.company_models import Car, Driver
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin

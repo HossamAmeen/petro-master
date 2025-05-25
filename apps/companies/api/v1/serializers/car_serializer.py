@@ -3,10 +3,10 @@ from datetime import timedelta
 from django.utils import timezone
 from rest_framework import serializers
 
-from apps.companies.models.company_models import Car
-from apps.companies.v1.serializers.branch_serializers import (
+from apps.companies.api.v1.serializers.branch_serializers import (
     SingleBranchWithDistrictSerializer,
 )
+from apps.companies.models.company_models import Car
 from apps.shared.base_exception_class import CustomValidationError
 from apps.stations.v1.serializers import ServiceNameSerializer
 from apps.utilities.serializers import BalanceUpdateSerializer

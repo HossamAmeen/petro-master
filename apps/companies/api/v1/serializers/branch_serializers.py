@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
+from apps.companies.api.v1.serializers.company_serializer import CompanyNameSerializer
 from apps.companies.models.company_models import CompanyBranch
-from apps.companies.v1.serializers.company_serializer import CompanyNameSerializer
 from apps.geo.v1.serializers import ListDistrictSerializer
 from apps.users.models import CompanyBranchManager, CompanyUser, User
 from apps.users.v1.serializers.company_user_serializer import SingleUserSerializer

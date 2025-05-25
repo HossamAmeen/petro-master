@@ -9,11 +9,11 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.companies.models.operation_model import CarOperation
-from apps.companies.v1.filters import CarOperationFilter
-from apps.companies.v1.serializers.car_operation_serializer import (
+from apps.companies.api.v1.filters import CarOperationFilter
+from apps.companies.api.v1.serializers.car_operation_serializer import (
     ListCarOperationSerializer,
 )
+from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.stations.models.service_models import Service
