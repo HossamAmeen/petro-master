@@ -41,6 +41,14 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             return self.queryset.filter(
                 driver__branch__company_id=self.request.company_id
             )
+        if self.request.user.role == User.UserRoles.StationOwner:
+            return self.queryset.filter(station__owner=self.request.station_id)
+        if self.request.user.role == User.UserRoles.StationBranchManager:
+            return self.queryset.filter(
+                station__branches__managers__user=self.request.user
+            )
+        if self.request.user.role == User.UserRoles.StationWorker:
+            return self.queryset.filter(station__workers__user=self.request.user)
         return self.queryset
 
     def create(self, request, *args, **kwargs):
