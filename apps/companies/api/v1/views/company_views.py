@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime, timedelta
 
 from django.db import transaction
@@ -12,6 +11,7 @@ from rest_framework.views import APIView, Response, status
 from apps.accounting.api.v1.serializers.company_transaction_serializer import (
     CompanyKhaznaTransactionSerializer,
 )
+from apps.accounting.helpers import generate_company_transaction
 from apps.accounting.models import CompanyKhaznaTransaction
 from apps.companies.api.v1.filters import CompanyBranchFilter
 from apps.companies.api.v1.serializers.branch_serializers import (
@@ -31,6 +31,7 @@ from apps.companies.api.v1.serializers.company_serializer import (
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Car, Company, CompanyBranch
 from apps.companies.models.operation_model import CarOperation
+from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import CompanyOwnerPermission, CompanyPermission
@@ -170,19 +171,27 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     company_branch.refresh_from_db()
                     company_branch.balance += serializer.validated_data["amount"]
                     company_branch.save()
-
-                    CompanyKhaznaTransaction.objects.create(
+                    message = f"تم شحن رصيد فرع {company_branch.name} برصيد {serializer.validated_data['amount']}"
+                    generate_company_transaction(
+                        company_id=self.request.company_id,
                         amount=serializer.validated_data["amount"],
-                        is_incoming=True,
                         status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
-                        reference_code="int" + str(uuid.uuid4())[:8].upper(),
-                        description="تم اضافة شحن رصيد فرع " + str(company_branch.name),
-                        method=CompanyKhaznaTransaction.TransactionMethod.BANK,
-                        company=company,
+                        description=message,
                         is_internal=True,
+                        for_what=CompanyKhaznaTransaction.ForWhat.CAR,
                         created_by_id=request.user.id,
-                        updated_by_id=request.user.id,
                     )
+                    notification_users = list(
+                        company_branch.managers.values_list("user_id", flat=True)
+                    )
+                    notification_users.append(company.owner_id)
+                    for user_id in notification_users:
+                        Notification.objects.create(
+                            user_id=user_id,
+                            title=message,
+                            description=message,
+                            type=Notification.NotificationType.MONEY,
+                        )
                 else:
                     raise CustomValidationError(
                         message="الشركة لا تمتلك كافٍ من المال",
@@ -198,19 +207,27 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     company.refresh_from_db()
                     company.balance += serializer.validated_data["amount"]
                     company.save()
-                    CompanyKhaznaTransaction.objects.create(
-                        amount=serializer.validated_data["amount"],
-                        is_incoming=True,
-                        status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
-                        reference_code="int" + str(uuid.uuid4())[:8].upper(),
-                        description="تم اضافة خصم رصيد من فرع "
-                        + str(company_branch.name),
-                        method=CompanyKhaznaTransaction.TransactionMethod.BANK,
-                        company=company,
-                        is_internal=True,
-                        created_by_id=request.user.id,
-                        updated_by_id=request.user.id,
+                    notification_users = list(
+                        company_branch.managers.values_list("user_id", flat=True)
                     )
+                    notification_users.append(company.owner_id)
+                    message = f"تم خصم مبلغ {serializer.validated_data['amount']} من رصيد فرع {company_branch.name}"
+                    generate_company_transaction(
+                        company_id=self.request.company_id,
+                        amount=serializer.validated_data["amount"],
+                        status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
+                        description=message,
+                        is_internal=True,
+                        for_what=CompanyKhaznaTransaction.ForWhat.CAR,
+                        created_by_id=request.user.id,
+                    )
+                    for user_id in notification_users:
+                        Notification.objects.create(
+                            user_id=user_id,
+                            title=message,
+                            description=message,
+                            type=Notification.NotificationType.MONEY,
+                        )
                 else:
                     raise CustomValidationError(
                         message="الفرع لا تمتلك كافٍ من المال",
