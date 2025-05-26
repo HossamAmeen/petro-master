@@ -3,11 +3,11 @@ from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from apps.shared.base_exception_class import CustomValidationError
-from apps.stations.models.stations_models import StationBranch
-from apps.stations.v1.serializers import (
+from apps.stations.api.v1.serializers import (
     ListStationSerializer,
     SingleStationBranchSerializer,
 )
+from apps.stations.models.stations_models import StationBranch
 from apps.users.models import StationOwner, User, Worker
 
 

@@ -4,7 +4,7 @@ from apps.companies.api.v1.serializers.car_serializer import CarWithPlateInfoSer
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.operation_model import CarOperation
 from apps.shared.constants import SERVICE_UNIT_CHOICES
-from apps.stations.v1.serializers import (
+from apps.stations.api.v1.serializers import (
     ServiceNameSerializer,
     SingleStationBranchSerializer,
 )

@@ -14,7 +14,7 @@ urlpatterns = (
         path("api/v1/configrations/", include("configrations.urls")),
         path("api/v1/users/", include("apps.users.v1.urls")),
         path("api/v1/companies/", include("apps.companies.api.v1.urls")),
-        path("api/v1/stations/", include("apps.stations.v1.urls")),
+        path("api/v1/stations/", include("apps.stations.api.v1.urls")),
         path("api/v1/notifications/", include("apps.notifications.v1.urls")),
         path("api/v1/auth/", include("apps.auth.v1.urls")),
         path("api/v1/accounting/", include("apps.accounting.v1.urls")),

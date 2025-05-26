@@ -1,8 +1,8 @@
 from rest_framework import viewsets
 
+from apps.stations.api.v1.serializers import ListServiceSerializer
 from apps.stations.filters import ServiceFilter
 from apps.stations.models.service_models import Service
-from apps.stations.v1.serializers import ListServiceSerializer
 from apps.users.models import User
 
 
