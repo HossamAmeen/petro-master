@@ -9,10 +9,10 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.views import APIView, Response, status
 
-from apps.accounting.models import CompanyKhaznaTransaction
-from apps.accounting.v1.serializers.company_transaction_serializer import (
+from apps.accounting.api.v1.serializers.company_transaction_serializer import (
     CompanyKhaznaTransactionSerializer,
 )
+from apps.accounting.models import CompanyKhaznaTransaction
 from apps.companies.api.v1.filters import CompanyBranchFilter
 from apps.companies.api.v1.serializers.branch_serializers import (
     BranchBalanceUpdateSerializer,

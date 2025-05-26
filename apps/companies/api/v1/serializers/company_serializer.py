@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
-from apps.accounting.models import CompanyKhaznaTransaction
-from apps.accounting.v1.serializers.company_transaction_serializer import (
+from apps.accounting.api.v1.serializers.company_transaction_serializer import (
     CompanyKhaznaTransactionSerializer,
 )
+from apps.accounting.models import CompanyKhaznaTransaction
 from apps.companies.models.company_models import Company
 from apps.companies.models.operation_model import CarOperation
 from apps.geo.v1.serializers import ListDistrictSerializer

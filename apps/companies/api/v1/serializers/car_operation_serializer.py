@@ -81,7 +81,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
             "service",
             "worker",
             "driver",
-            "company",
+            "company_name",
             "motor_image",
             "fuel_image",
         ]

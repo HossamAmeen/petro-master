@@ -5,6 +5,7 @@ from apps.accounting.models import (
     KhaznaTransaction,
     StationKhaznaTransaction,
 )
+from apps.stations.api.v1.serializers import SingleStationBranchSerializer
 
 
 class CompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
@@ -24,4 +25,12 @@ class StationKhaznaTransactionSerializer(serializers.ModelSerializer):
 class KhaznaTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = KhaznaTransaction
+        fields = "__all__"
+
+
+class ListStationKhaznaTransactionSerializer(serializers.ModelSerializer):
+    station_branch = SingleStationBranchSerializer(read_only=True)
+
+    class Meta:
+        model = StationKhaznaTransaction
         fields = "__all__"

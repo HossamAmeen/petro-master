@@ -55,6 +55,9 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
         CAR = "Car"
 
     company = models.ForeignKey("companies.Company", on_delete=models.CASCADE)
+    company_branch = models.ForeignKey(
+        "companies.CompanyBranch", on_delete=models.SET_NULL, null=True
+    )
     for_what = models.CharField(
         max_length=20,
         choices=ForWhat.choices,
@@ -73,6 +76,9 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
 
 class StationKhaznaTransaction(KhaznaTransaction):
     station = models.ForeignKey("stations.Station", on_delete=models.CASCADE)
+    station_branch = models.ForeignKey(
+        "stations.StationBranch", on_delete=models.SET_NULL, null=True
+    )
 
     def __str__(self):
         return f"{'IN' if self.is_incoming else 'OUT'} | {self.amount} | {self.reference_code}"  # noqa
