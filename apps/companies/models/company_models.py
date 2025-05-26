@@ -54,7 +54,9 @@ class CompanyBranch(AbstractBaseModel):
 class Car(AbstractBaseModel):
     class FuelType(models.TextChoices):
         DIESEL = "Diesel"
+        SOLAR = "Solar"
         GASOLINE = "Gasoline"
+        NATURAL_GAS = "Natural_Gas"
         ELECTRIC = "Electric"
         HYDROGEN = "Hydrogen"
 

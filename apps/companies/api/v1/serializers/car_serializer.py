@@ -20,6 +20,14 @@ COLOR_CHOICES_HEX = {
     Car.PlateColor.GOLD: "#FFD700",
 }
 
+FUEL_TYPE_CHOICES = {
+    Car.FuelType.DIESEL: "ديزل",
+    Car.FuelType.SOLAR: "سولار",
+    Car.FuelType.GASOLINE: "بنزين",
+    Car.FuelType.ELECTRIC: "كهرباء",
+    Car.FuelType.NATURAL_GAS: "غاز طبيعي",
+}
+
 
 class ListCarSerializer(serializers.ModelSerializer):
     service = ServiceNameSerializer()
@@ -43,6 +51,7 @@ class ListCarSerializer(serializers.ModelSerializer):
         data["plate_color"] = COLOR_CHOICES_HEX.get(
             data["plate_color"], data["plate_color"]
         )
+        data["fuel_type"] = FUEL_TYPE_CHOICES.get(data["fuel_type"], data["fuel_type"])
         return data
 
 
