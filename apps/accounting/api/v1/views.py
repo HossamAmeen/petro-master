@@ -19,13 +19,13 @@ from apps.users.models import User
 
 
 class KhaznaTransactionViewSet(viewsets.ModelViewSet):
-    queryset = KhaznaTransaction.objects.all()
+    queryset = KhaznaTransaction.objects.order_by("-id")
     serializer_class = KhaznaTransactionSerializer
     permission_classes = [IsAuthenticated]
 
 
 class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
-    queryset = CompanyKhaznaTransaction.objects.all()
+    queryset = CompanyKhaznaTransaction.objects.order_by("-id")
     serializer_class = CompanyKhaznaTransactionSerializer
 
     def get_queryset(self):
