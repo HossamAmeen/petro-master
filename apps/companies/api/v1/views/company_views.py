@@ -184,7 +184,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     notification_users = list(
                         company_branch.managers.values_list("user_id", flat=True)
                     )
-                    notification_users.append(company.owner_id)
+                    notification_users.append(request.user.id)
                     for user_id in notification_users:
                         Notification.objects.create(
                             user_id=user_id,
@@ -210,7 +210,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     notification_users = list(
                         company_branch.managers.values_list("user_id", flat=True)
                     )
-                    notification_users.append(company.owner_id)
+                    notification_users.append(request.user.id)
                     message = f"تم خصم مبلغ {serializer.validated_data['amount']} من رصيد فرع {company_branch.name}"
                     generate_company_transaction(
                         company_id=self.request.company_id,
