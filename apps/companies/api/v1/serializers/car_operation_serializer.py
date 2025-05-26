@@ -65,7 +65,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
     worker = SingleWorkerSerializer()
     service = ServiceNameSerializer()
-    company = serializers.CharField(source="driver.branch.company.name")
+    company_name = serializers.CharField(source="driver.branch.company.name")
 
     class Meta:
         model = CarOperation
