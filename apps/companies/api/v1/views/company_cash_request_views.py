@@ -2,6 +2,7 @@ from django.db.models import F
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import Response, status
 
 from apps.companies.api.filters.cash_request_filter import CashRequestFilter
@@ -26,7 +27,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete"]
 
     def get_permissions(self):
-        return [CashRequestPermission()]
+        return [IsAuthenticated(), CashRequestPermission()]
 
     def get_serializer_class(self):
         if self.request.method == "GET":

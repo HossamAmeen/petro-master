@@ -5,8 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 
 from apps.accounting.api.v1.filters import StationKhaznaTransactionFilter
 from apps.accounting.api.v1.serializers.company_transaction_serializer import (
-    CompanyKhaznaTransactionSerializer,
     KhaznaTransactionSerializer,
+    ListCompanyKhaznaTransactionSerializer,
     ListStationKhaznaTransactionSerializer,
 )
 from apps.accounting.models import (
@@ -26,7 +26,7 @@ class KhaznaTransactionViewSet(viewsets.ModelViewSet):
 
 class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
     queryset = CompanyKhaznaTransaction.objects.order_by("-id")
-    serializer_class = CompanyKhaznaTransactionSerializer
+    serializer_class = ListCompanyKhaznaTransactionSerializer
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:

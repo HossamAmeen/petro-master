@@ -8,7 +8,7 @@ from apps.accounting.models import (
 from apps.stations.api.v1.serializers import SingleStationBranchSerializer
 
 
-class CompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
+class ListCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source="get_status_display", read_only=True)
 
     class Meta:

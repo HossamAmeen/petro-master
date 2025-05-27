@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView, Response, status
 
 from apps.accounting.api.v1.serializers.company_transaction_serializer import (
-    CompanyKhaznaTransactionSerializer,
+    ListCompanyKhaznaTransactionSerializer,
 )
 from apps.accounting.helpers import generate_company_transaction
 from apps.accounting.models import CompanyKhaznaTransaction
@@ -349,7 +349,7 @@ class CompanyHomeView(APIView):
             ],
             many=True,
         ).data
-        response_data["company_transactions"] = CompanyKhaznaTransactionSerializer(
+        response_data["company_transactions"] = ListCompanyKhaznaTransactionSerializer(
             CompanyKhaznaTransaction.objects.filter(
                 company__branches__in=branches_id
             ).order_by("-id")[:3],
