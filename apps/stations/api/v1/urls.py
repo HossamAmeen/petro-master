@@ -6,6 +6,7 @@ from apps.stations.api.v1.views.station_branch_views import StationBranchViewSet
 from apps.stations.api.v1.views.station_views import (
     StationHomeAPIView,
     StationOperationsAPIView,
+    StationReportsAPIView,
     StationViewSet,
 )
 
@@ -19,4 +20,5 @@ urlpatterns = router.urls
 urlpatterns += [
     path("home/", StationHomeAPIView.as_view(), name="station-home"),
     path("operations/", StationOperationsAPIView.as_view(), name="station-operations"),
+    path("reports/", StationReportsAPIView.as_view(), name="station-reports"),
 ]

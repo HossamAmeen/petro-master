@@ -24,7 +24,6 @@ class StationViewSet(viewsets.ModelViewSet):
 
 class StationHomeAPIView(APIView):
     def get(self, request):
-
         if request.user.role == User.UserRoles.StationOwner:
             station_branches_id = StationBranch.objects.filter(
                 station_id=request.station_id
@@ -148,3 +147,9 @@ class StationOperationsAPIView(ListAPIView):
         response.data["other_balance"] = other_service_balance
         response.data["total_balance"] = petrol_service_balance + other_service_balance
         return response
+
+
+class StationReportsAPIView(APIView):
+    def get(self, request):
+
+        return Response({"message": "Not implemented"})

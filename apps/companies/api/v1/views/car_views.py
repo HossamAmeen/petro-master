@@ -177,6 +177,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                         description=message,
                         is_internal=True,
                         for_what=CompanyKhaznaTransaction.ForWhat.CAR,
+                        created_by_id=request.user.id,
                     )
                     for user_id in notification_users:
                         Notification.objects.create(
