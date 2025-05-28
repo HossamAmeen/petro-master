@@ -16,7 +16,7 @@ from apps.accounting.v1.serializers.company_transaction_serializer import (
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Car, Company, CompanyBranch
 from apps.companies.models.operation_model import CarOperation
-from apps.companies.v1.filters import CompanyBranchFilter
+from apps.companies.v1.filters import CompanyBranchFilter, CompanyFilter
 from apps.companies.v1.serializers.branch_serializers import (
     BranchBalanceUpdateSerializer,
     CompanyBranchAssignManagersSerializer,
@@ -44,6 +44,8 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.request.method == "GET":
             return ListCompanySerializer
         return CompanySerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CompanyFilter
 
 
 class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
