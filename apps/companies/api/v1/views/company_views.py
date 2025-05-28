@@ -13,7 +13,7 @@ from apps.accounting.api.v1.serializers.company_transaction_serializer import (
 )
 from apps.accounting.helpers import generate_company_transaction
 from apps.accounting.models import CompanyKhaznaTransaction
-from apps.companies.api.v1.filters import CompanyBranchFilter
+from apps.companies.api.v1.filters import CompanyBranchFilter, CompanyFilter
 from apps.companies.api.v1.serializers.branch_serializers import (
     BranchBalanceUpdateSerializer,
     CompanyBranchAssignManagersSerializer,
@@ -45,6 +45,9 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.request.method == "GET":
             return ListCompanySerializer
         return CompanySerializer
+
+    filterset_class = CompanyFilter
+    search_fields = ["name", "phone_number"]
 
 
 class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):

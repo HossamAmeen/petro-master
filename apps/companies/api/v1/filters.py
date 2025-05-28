@@ -1,6 +1,6 @@
 from django_filters import rest_framework as django_filters
 
-from apps.companies.models.company_models import Car, CompanyBranch, Driver
+from apps.companies.models.company_models import Car, Company, CompanyBranch, Driver
 from apps.companies.models.operation_model import CarOperation
 from apps.geo.models import City
 
@@ -55,3 +55,13 @@ class DriverFilter(django_filters.FilterSet):
     class Meta:
         model = Driver
         fields = ["branch", "city"]
+
+
+class CompanyFilter(django_filters.FilterSet):
+    city = django_filters.ModelChoiceFilter(
+        queryset=City.objects.all(), field_name="district__city"
+    )
+
+    class Meta:
+        model = Company
+        fields = ["district", "city"]

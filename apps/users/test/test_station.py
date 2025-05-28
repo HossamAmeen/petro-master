@@ -45,6 +45,30 @@ class TestUserAPI:
     def test_list_station_owner(self):
         response = self.client.get(self.url_list)
         assert response.status_code == 200
+        data = response.json()
+        assert len(data['results']) == 1
+        expected_data = [
+            {
+                'name': "owner1",
+                'phone_number': "01000005693",
+                'email': "owner1@gmail.com",
+                'password': "owner1",
+                'created_by': self.user.id,
+                'updated_by': self.user.id,
+                'station': self.station.id
+            }
+        ]
+
+        sorted_results = sorted(data["results"], key=lambda x: x["name"])
+        sorted_expected = sorted(expected_data, key=lambda x: x["name"])
+
+        for actual, expected in zip(sorted_results, sorted_expected):
+            assert actual["name"] == expected["name"]
+            assert actual["email"] == expected["email"]
+            assert actual["phone_number"] == expected["phone_number"]
+            assert actual["password"] == expected["password"]
+            assert actual["created_by"] == expected["created_by"]
+            assert actual["updated_by"] == expected["updated_by"]
 
     def test_create_station_owner(self):
         data = {
