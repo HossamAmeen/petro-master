@@ -1,5 +1,5 @@
 from rest_framework.exceptions import ValidationError
-from rest_framework.views import exception_handler
+from rest_framework.views import PermissionDenied, exception_handler
 
 from apps.shared.base_exception_class import CustomValidationError
 
@@ -26,6 +26,12 @@ def custom_exception_handler(exc, context):
             "code": "validation_error",
             "message": "Validation failed",
             "errors": formatted_errors,
+        }
+    elif response is not None and isinstance(exc, PermissionDenied):
+        response.data = {
+            "code": "permission_denied",
+            "message": response.data["detail"],
+            "errors": [],
         }
 
     return response

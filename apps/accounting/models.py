@@ -16,7 +16,9 @@ class KhaznaTransaction(AbstractBaseModel):
         WALLET = "wallet", ("Wallet")
 
     is_incoming = models.BooleanField(
-        help_text="True if money came into the khazna;" "False if it went out."
+        help_text="True if money came into the khazna;" "False if it went out.",
+        null=True,
+        blank=True,
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(
@@ -53,6 +55,9 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
         CAR = "Car"
 
     company = models.ForeignKey("companies.Company", on_delete=models.CASCADE)
+    company_branch = models.ForeignKey(
+        "companies.CompanyBranch", on_delete=models.SET_NULL, null=True
+    )
     for_what = models.CharField(
         max_length=20,
         choices=ForWhat.choices,
@@ -71,6 +76,9 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
 
 class StationKhaznaTransaction(KhaznaTransaction):
     station = models.ForeignKey("stations.Station", on_delete=models.CASCADE)
+    station_branch = models.ForeignKey(
+        "stations.StationBranch", on_delete=models.SET_NULL, null=True
+    )
 
     def __str__(self):
         return f"{'IN' if self.is_incoming else 'OUT'} | {self.amount} | {self.reference_code}"  # noqa

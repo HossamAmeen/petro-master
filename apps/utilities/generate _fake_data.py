@@ -1,6 +1,9 @@
 # flake8: noqa
 
 
+from apps.users.models import User
+
+
 def generate_company_transaction():
     import random
     import uuid
@@ -22,6 +25,31 @@ def generate_company_transaction():
             for_what=for_what,
             created_by_id=1,
             updated_by_id=1,
+        )
+
+
+def generate_stations_transactions():
+    import random
+    import uuid
+
+    from apps.accounting.models import StationKhaznaTransaction
+    from apps.stations.models.stations_models import Station, StationBranch
+
+    station_ids = list(Station.objects.values_list("id", flat=True))
+    station_branch_ids = list(StationBranch.objects.values_list("id", flat=True))
+    admin_user_id = User.objects.filter(role=User.UserRoles.Admin).first().id
+    for _ in range(100):
+        StationKhaznaTransaction.objects.create(
+            amount=random.randint(100, 5000),
+            is_incoming=True,
+            status=StationKhaznaTransaction.TransactionStatus.APPROVED,
+            reference_code=str(uuid.uuid4())[:10].upper(),
+            description="Test transaction",
+            method=StationKhaznaTransaction.TransactionMethod.BANK,
+            station_id=random.choice(station_ids),
+            station_branch_id=random.choice(station_branch_ids),
+            created_by_id=admin_user_id,
+            updated_by_id=admin_user_id,
         )
 
 

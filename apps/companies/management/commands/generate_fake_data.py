@@ -92,7 +92,7 @@ class Command(BaseCommand):
             address="343 Zachary Alley\nEdwardbury, RI 32596",
             lang=3.77,
             lat=4.99,
-            district=district[0],
+            district=district,
             created_by_id=1,
             updated_by_id=1,
         )
@@ -102,7 +102,7 @@ class Command(BaseCommand):
             lang=3.77,
             lat=4.99,
             district=district,
-            station=station[0],
+            station=station,
             created_by_id=1,
             updated_by_id=1,
         )
