@@ -46,8 +46,8 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return ListCompanySerializer
         return CompanySerializer
 
-    filter_backends = [DjangoFilterBackend]
     filterset_class = CompanyFilter
+    search_fields = ["name", "phone_number"]
 
 
 class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
