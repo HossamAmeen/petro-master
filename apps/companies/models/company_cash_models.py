@@ -2,7 +2,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from apps.companies.models.company_models import Company, Driver
-from apps.stations.models.stations_models import Station
+from apps.stations.models.stations_models import Station, StationBranch
 from apps.users.models import User
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
 
@@ -25,6 +25,9 @@ class CompanyCashRequest(AbstractBaseModel):
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     station = models.ForeignKey(
         Station, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    station_branch = models.ForeignKey(
+        StationBranch, on_delete=models.SET_NULL, null=True, blank=True
     )
     approved_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True

@@ -46,6 +46,9 @@ class Service(AbstractBaseModel):
     def __str__(self):
         return self.name
 
+    def get_unit_display(self):
+        return self.unit + "+"
+
     class Meta:
         verbose_name = "Service"
         verbose_name_plural = "Services"

@@ -1,5 +1,14 @@
-from django.db.models import Count, Q, Sum
+from datetime import date
+
+from django.db.models import Count, F, Q, Sum
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework import viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListAPIView
@@ -10,7 +19,11 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
     ListCarOperationSerializer,
     ListStationCarOperationSerializer,
 )
+from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.operation_model import CarOperation
+from apps.stations.api.station_serializers.home_serializers import (
+    ListStationReportsSerializer,
+)
 from apps.stations.api.v1.serializers import ListStationSerializer
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import Station, StationBranch
@@ -150,6 +163,85 @@ class StationOperationsAPIView(ListAPIView):
 
 
 class StationReportsAPIView(APIView):
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="date_from",
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                description="Filter by date from example date_from=YYYY-MM-DD",
+            ),
+            OpenApiParameter(
+                name="date_to",
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                description="Filter by date to example date_to=YYYY-MM-DD",
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                description="Success",
+                examples=[
+                    OpenApiExample(
+                        "Example response",
+                        value={
+                            "cash_request_balance": 100,
+                            "operations": [
+                                {
+                                    "service": 1,
+                                    "service_name": "بنزين 92",
+                                    "total_balance": 100,
+                                    "count": 1,
+                                    "amount": 100,
+                                    "unit": "لتر",
+                                }
+                            ],
+                        },
+                    )
+                ],
+            )
+        },
+    )
     def get(self, request):
+        station_branch_filter = Q()
+        if request.user.role == User.UserRoles.StationOwner:
+            station_branch_filter = Q(station_branch__station_id=request.station_id)
+        if request.user.role == User.UserRoles.StationBranchManager:
+            station_branch_filter = Q(station_branch__managers__user=request.user)
+        today = date.today()
+        date_from = request.query_params.get("date_from", today)
+        date_to = request.query_params.get("date_to", today)
+        if date_from and date_to:
+            station_branch_filter &= Q(
+                modified__date__gte=date_from, modified__date__lte=date_to
+            )
 
-        return Response({"message": "Not implemented"})
+        operations = (
+            CarOperation.objects.filter(station_branch_filter)
+            .select_related("service")
+            .values("service")
+            .annotate(
+                total_balance=Sum("cost"),
+                count=Count("id"),
+                amount=Sum("amount"),
+                service_name=F("service__name"),
+                unit=F("service__unit"),
+            )
+            .order_by("-total_balance")
+        )
+
+        operations = ListStationReportsSerializer(operations, many=True).data
+
+        cash_request_balance_balance = (
+            CompanyCashRequest.objects.filter(
+                station_branch_filter,
+                status=CompanyCashRequest.Status.APPROVED,
+            ).aggregate(total_balance=Sum("amount"))["total_balance"]
+            or 0
+        )
+
+        response_data = {
+            "cash_request_balance": cash_request_balance_balance,
+            "operations": operations,
+        }
+        return Response(response_data)
