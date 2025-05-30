@@ -1,14 +1,16 @@
 from rest_framework.permissions import BasePermission
 from rest_framework.views import PermissionDenied
 
-from apps.shared.constants import COMPANY_ROLES
+from apps.shared.constants import COMPANY_ROLES, STATION_ROLES
 from apps.users.models import User
 
 
 class CashRequestPermission(BasePermission):
     def has_permission(self, request, view):
-        if request.method in ["GET", "POST", "PATCH", "DELETE"]:
+        if request.method in ["POST", "DELETE"]:
             return request.user.role in COMPANY_ROLES
+        if request.method == "PATCH":
+            return request.user.role in STATION_ROLES
         return True
 
     def has_object_permission(self, request, view, obj):

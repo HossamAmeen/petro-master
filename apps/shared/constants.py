@@ -9,6 +9,7 @@ COMPANY_ROLES = [
 STATION_ROLES = [
     User.UserRoles.StationOwner,
     User.UserRoles.StationBranchManager,
+    User.UserRoles.StationWorker,
 ]
 
 

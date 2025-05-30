@@ -36,7 +36,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                 or 0
             )
         elif obj.role == User.UserRoles.StationOwner:
-            return obj.StationOwner.station.balance
+            return obj.stationowner.station.balance
         elif obj.role == User.UserRoles.StationBranchManager:
             return (
                 obj.stationowner.station.branches.filter(managers__user=obj).aggregate(
