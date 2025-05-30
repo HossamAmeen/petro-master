@@ -182,7 +182,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     for user_id in notification_users:
                         Notification.objects.create(
                             user_id=user_id,
-                            title="تم سحب رصيد السيارة",
+                            title=message,
                             description=message,
                             type=Notification.NotificationType.MONEY,
                         )
