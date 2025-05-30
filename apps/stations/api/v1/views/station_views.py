@@ -212,7 +212,7 @@ class StationReportsAPIView(APIView):
 
         today = date.today()
         date_from = request.query_params.get("date_from", today)
-        date_to = request.query_params.get("date_to", today)
+        date_to = request.query_params.get("date_to", None)
         if date_from:
             station_branch_filter &= Q(modified__date__gte=date_from)
         if date_to:
@@ -231,7 +231,6 @@ class StationReportsAPIView(APIView):
             )
             .order_by("-total_balance")
         )
-
         operations = ListStationReportsSerializer(operations, many=True).data
 
         cash_request_balance_balance = (
