@@ -95,7 +95,7 @@ class StationHomeAPIView(APIView):
             "address": station.address,
             "balance": base_balance,
             "branches_balance": branches_balance,
-            "total_balance": base_balance + distributed_balance,
+            "distributed_balance" "total_balance": base_balance + distributed_balance,
             "workers_count": station.workers_count,
             "managers_count": station.managers_count,
             "branches_count": station.branches_count,
@@ -208,6 +208,7 @@ class StationReportsAPIView(APIView):
             station_branch_filter = Q(station_branch__station_id=request.station_id)
         if request.user.role == User.UserRoles.StationBranchManager:
             station_branch_filter = Q(station_branch__managers__user=request.user)
+
         today = date.today()
         date_from = request.query_params.get("date_from", today)
         date_to = request.query_params.get("date_to", today)
