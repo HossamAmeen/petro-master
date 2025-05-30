@@ -211,10 +211,10 @@ class StationReportsAPIView(APIView):
         today = date.today()
         date_from = request.query_params.get("date_from", today)
         date_to = request.query_params.get("date_to", today)
-        if date_from and date_to:
-            station_branch_filter &= Q(
-                modified__date__gte=date_from, modified__date__lte=date_to
-            )
+        if date_from:
+            station_branch_filter &= Q(modified__date__gte=date_from)
+        if date_to:
+            station_branch_filter &= Q(modified__date__lte=date_to)
 
         operations = (
             CarOperation.objects.filter(station_branch_filter)
