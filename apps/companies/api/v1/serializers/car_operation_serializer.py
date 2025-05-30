@@ -8,6 +8,7 @@ from apps.stations.api.v1.serializers import (
     ServiceNameSerializer,
     SingleStationBranchSerializer,
 )
+from apps.stations.models.service_models import Service
 from apps.users.v1.serializers.station_serializer import SingleWorkerSerializer
 
 
@@ -66,6 +67,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
     worker = SingleWorkerSerializer()
     service = ServiceNameSerializer()
     company_name = serializers.CharField(source="driver.branch.company.name")
+    service_category = serializers.SerializerMethodField()
 
     class Meta:
         model = CarOperation
@@ -90,3 +92,11 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
         return data
+
+    def get_service_category(self, obj):
+        if obj.service.type in [
+            Service.ServiceType.PETROL,
+            Service.ServiceType.DIESEL,
+        ]:
+            return "خدمات بترولية"
+        return "خدمات أخرى"
