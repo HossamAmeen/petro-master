@@ -241,6 +241,7 @@ class StationReportsAPIView(APIView):
         )
 
         response_data = {
+            "station_id": request.station_id,
             "cash_request_balance": cash_request_balance_balance,
             "operations": operations,
         }
