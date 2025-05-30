@@ -9,7 +9,6 @@ class StationKhaznaTransactionFilter(FilterSet):
     created_from = DateFilter(
         field_name="created_at__date",
         lookup_expr="gte",
-        format="%Y-%m-%d",
         label="Created From",
         widget=DateInput(attrs={"type": "date"}),
         help_text="Filter transactions created on or after this date. Format: YYYY-MM-DD",
@@ -17,7 +16,6 @@ class StationKhaznaTransactionFilter(FilterSet):
     created_to = DateFilter(
         field_name="created_at__date",
         lookup_expr="lte",
-        format="%Y-%m-%d",
         label="Created To",
         widget=DateInput(attrs={"type": "date"}),
         help_text="Filter transactions created on or before this date. Format: YYYY-MM-DD",
@@ -25,7 +23,6 @@ class StationKhaznaTransactionFilter(FilterSet):
     approved_from = DateFilter(
         field_name="approved_at__date",
         lookup_expr="gte",
-        format="%Y-%m-%d",
         label="Approved From",
         widget=DateInput(attrs={"type": "date"}),
         help_text="Filter transactions approved on or after this date. Format: YYYY-MM-DD",
@@ -33,7 +30,6 @@ class StationKhaznaTransactionFilter(FilterSet):
     approved_to = DateFilter(
         field_name="approved_at__date",
         lookup_expr="lte",
-        format="%Y-%m-%d",
         label="Approved To",
         widget=DateInput(attrs={"type": "date"}),
         help_text="Filter transactions approved on or before this date. Format: YYYY-MM-DD",
