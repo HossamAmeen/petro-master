@@ -37,28 +37,26 @@ class StationViewSet(viewsets.ModelViewSet):
 
 class StationHomeAPIView(APIView):
     def get(self, request):
+        station_branch_filter = Q()
+        operation_filter = Q()
         if request.user.role == User.UserRoles.StationOwner:
-            station_branches_id = StationBranch.objects.filter(
-                station_id=request.station_id
-            ).values_list("id", flat=True)
-
+            operation_filter = Q(station_branch__station_id=request.station_id)
         if request.user.role == User.UserRoles.StationBranchManager:
-            station_branches_id = StationBranch.objects.filter(
-                managers__user=request.user
-            ).values_list("id", flat=True)
-
-        branches_filter = Q(branches__id__in=list(station_branches_id))
+            station_branch_filter = Q(station_branch__managers__user=request.user)
+            operation_filter = Q(station_branch__managers__user=request.user)
 
         station = (
             Station.objects.filter(id=request.station_id)
             .annotate(
                 workers_count=Count(
-                    "branches__workers", distinct=True, filter=branches_filter
+                    "branches__workers", distinct=True, filter=station_branch_filter
                 ),
                 managers_count=Count(
-                    "branches__managers", distinct=True, filter=branches_filter
+                    "branches__managers", distinct=True, filter=station_branch_filter
                 ),
-                branches_count=Count("branches", distinct=True, filter=branches_filter),
+                branches_count=Count(
+                    "branches", distinct=True, filter=station_branch_filter
+                ),
             )
             .first()
         )
@@ -85,9 +83,13 @@ class StationHomeAPIView(APIView):
 
             distributed_balance = branches_balance
 
-        last_operations = CarOperation.objects.filter(
-            station_branch__station_id__in=station_branches_id
-        ).order_by("-id")[:5]
+        last_operations = (
+            CarOperation.objects.select_related(
+                "car", "driver", "station_branch", "worker", "service"
+            )
+            .filter(operation_filter)
+            .order_by("-id")[:5]
+        )
 
         response_data = {
             "id": station.id,
