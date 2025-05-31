@@ -46,8 +46,7 @@ class StationKhaznaTransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
-
-            return self.queryset.filter(station=self.request.station_id)
+            return self.queryset.filter(station_id=self.request.station_id)
         if self.request.user.role == User.UserRoles.StationBranchManager:
             return self.queryset.filter(
                 station__branches__managers__user=self.request.user
