@@ -135,7 +135,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     parent_object.refresh_from_db()
                     parent_object.balance -= serializer.validated_data["amount"]
                     parent_object.save()
-                    message = f"تم شحن رصيد السيارة {car.plate} برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
+                    message = f"تم شحن رصيد السيارة ({car.plate}) برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
                     generate_company_transaction(
                         company_id=self.request.company_id,
                         amount=serializer.validated_data["amount"],
@@ -169,7 +169,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     parent_object.refresh_from_db()
                     parent_object.balance += serializer.validated_data["amount"]
                     parent_object.save()
-                    message = f"تم سحب رصيد السيارة {car.plate} برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
+                    message = f"تم سحب رصيد السيارة ({car.plate}) برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
                     generate_company_transaction(
                         company_id=self.request.company_id,
                         amount=serializer.validated_data["amount"],
