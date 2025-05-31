@@ -38,7 +38,7 @@ def generate_stations_transactions():
     station_ids = list(Station.objects.values_list("id", flat=True))
     station_branch_ids = list(StationBranch.objects.values_list("id", flat=True))
     admin_user_id = User.objects.filter(role=User.UserRoles.Admin).first().id
-    for _ in range(100):
+    for _ in range(1000):
         StationKhaznaTransaction.objects.create(
             amount=random.randint(100, 5000),
             is_incoming=True,
