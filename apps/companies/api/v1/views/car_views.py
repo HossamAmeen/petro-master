@@ -2,7 +2,7 @@ from django.db import transaction
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.views import Response, status
+from rest_framework.views import APIView, Response, status
 
 from apps.accounting.helpers import generate_company_transaction
 from apps.accounting.models import CompanyKhaznaTransaction, KhaznaTransaction
@@ -195,3 +195,53 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     )
 
         return Response({"balance": car.balance}, status=status.HTTP_200_OK)
+
+
+class CarDetailsView(APIView):
+    def get(self, request, car_code):
+        car = Car.objects.filter(code=car_code.strip()).first()
+        if not car:
+            raise CustomValidationError(
+                message="كود السيارة هذا لا يعمل او غير مفعل الان.",
+                code="car_code_not_found",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+        if not car.is_available_today():
+            raise CustomValidationError(
+                message="السيارة غير مفعلة",
+                code="car_not_active",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(CarSerializer(car).data)
+
+
+class VerifyDriverView(APIView):
+    def post(self, request, driver_code, car_code):
+        driver = Driver.objects.filter(code=driver_code.strip()).first()
+        if not driver:
+            raise CustomValidationError(
+                message="كود السائق هذا لا يعمل او غير مفعل الان.",
+                code="driver_code_not_found",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+        car = Car.objects.filter(code=car_code.strip()).first()
+        if not car:
+            raise CustomValidationError(
+                message="كود السيارة هذا لا يعمل او غير مفعل الان.",
+                code="car_code_not_found",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+        if driver.branch.company_id != car.branch.company_id:
+            raise CustomValidationError(
+                message="السائق لا ينتمي للشركة",
+                code="driver_not_belongs_to_company",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(
+            {"message": "تم التحقق من السائق بنجاح"}, status=status.HTTP_200_OK
+        )

@@ -7,6 +7,7 @@ import qrcode
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.utils import settings
+from django.utils import timezone
 
 from apps.shared.generate_code import generate_unique_code
 from apps.utilities.models.abstract_base_model import AbstractBaseModel
@@ -131,6 +132,10 @@ class Car(AbstractBaseModel):
         return (
             self.plate_character + " " + self.plate_number if self.plate_number else ""
         )
+
+    def is_available_today(self):
+        today = timezone.now().date()
+        return today.strftime("%A") in self.fuel_allowed_days
 
     class Meta:
         verbose_name = "Car"
