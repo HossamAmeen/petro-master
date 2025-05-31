@@ -25,10 +25,6 @@ class Company(AbstractBaseModel):
     def __str__(self):
         return self.name
 
-    @property
-    def plate(self):
-        return self.plate_character + " " + self.plate_number
-
     class Meta:
         verbose_name = "Company"
         verbose_name_plural = "1. Companies"
@@ -129,6 +125,12 @@ class Car(AbstractBaseModel):
             self.code = generate_unique_code(Car)
         self.full_clean()
         super().save(*args, **kwargs)
+
+    @property
+    def plate(self):
+        return (
+            self.plate_character + " " + self.plate_number if self.plate_number else ""
+        )
 
     class Meta:
         verbose_name = "Car"
