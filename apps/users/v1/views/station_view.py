@@ -58,8 +58,12 @@ class WorkerViewSet(viewsets.ModelViewSet):
             return UpdateWorkerSerializer
 
     def get_queryset(self):
-        if self.request.user.role == User.UserRoles.CompanyOwner:
+        if self.request.user.role == User.UserRoles.StationOwner:
             return self.queryset.filter(
-                station_branch__station__owners=self.request.user
+                station_branch__station_id=self.request.station_id
+            )
+        if self.request.user.role == User.UserRoles.StationBranchManager:
+            return self.queryset.filter(
+                station_branch__station__branches__managers__user=self.request.user
             )
         return self.queryset

@@ -110,7 +110,7 @@ class StationBranchViewSet(viewsets.ModelViewSet):
         services = Service.objects.all().order_by("-id")
         if self.request.user.role == User.UserRoles.StationOwner:
             services = services.filter(
-                station_branch_services__station_branch__station__owners=self.request.user
+                station_branch_services__station_branch__station_id=self.request.station_id
             )
         if self.request.user.role == User.UserRoles.StationBranchManager:
             services = services.filter(

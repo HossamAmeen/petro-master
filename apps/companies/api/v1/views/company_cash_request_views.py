@@ -42,10 +42,12 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 driver__branch__company_id=self.request.company_id
             )
         if self.request.user.role == User.UserRoles.StationOwner:
-            return self.queryset.filter(station__owner=self.request.station_id)
+            return self.queryset.filter(
+                station_branch__station_id=self.request.station_id
+            )
         if self.request.user.role == User.UserRoles.StationBranchManager:
             return self.queryset.filter(
-                station__branches__managers__user=self.request.user
+                station_branch__station__branches__managers__user=self.request.user
             )
         return self.queryset
 

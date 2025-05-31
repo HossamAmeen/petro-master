@@ -14,7 +14,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
             return self.queryset.exclude(
-                station_branch_services__station_branch__station__owners=self.request.user
+                station_branch_services__station_branch__station_id=self.request.station_id
             )
         if self.request.user.role == User.UserRoles.StationBranchManager:
             return self.queryset.exclude(
