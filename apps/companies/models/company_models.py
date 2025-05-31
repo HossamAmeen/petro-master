@@ -25,6 +25,10 @@ class Company(AbstractBaseModel):
     def __str__(self):
         return self.name
 
+    @property
+    def plate(self):
+        return self.plate_character + " " + self.plate_number
+
     class Meta:
         verbose_name = "Company"
         verbose_name_plural = "1. Companies"
