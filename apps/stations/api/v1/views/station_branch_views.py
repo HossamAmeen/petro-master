@@ -144,11 +144,36 @@ class StationBranchViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="service_category",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Filter by service category exampe service_category=petrol,other",
+            ),
+            OpenApiParameter(
+                name="search",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="search by name",
+            ),
+        ]
+    )
     @action(detail=True, methods=["GET"], url_path="available-services")
     def available_services(self, request, pk=None, *args, **kwargs):
         services = Service.objects.order_by("-id").exclude(
             station_branch_services__station_branch_id=pk
         )
+        if request.query_params.get("service_category"):
+            service_category = request.query_params.get("service_category")
+            services = services.filter(
+                type__in=SERVICE_CATEGORY_CHOICES.get(service_category)
+            )
+        if request.query_params.get("search"):
+            search = request.query_params.get("search")
+            services = services.filter(name__icontains=search)
+        services = services.distinct()
         page = self.paginate_queryset(services)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
