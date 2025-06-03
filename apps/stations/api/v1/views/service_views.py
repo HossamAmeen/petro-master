@@ -18,6 +18,6 @@ class ServiceViewSet(viewsets.ModelViewSet):
             )
         if self.request.user.role == User.UserRoles.StationBranchManager:
             return self.queryset.exclude(
-                station_branch_services__station_branch__station__managers__user=self.request.user
+                station_branch_services__station_branch__managers__user=self.request.user
             )
         return self.queryset.distinct()

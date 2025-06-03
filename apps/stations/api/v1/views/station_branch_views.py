@@ -19,6 +19,11 @@ from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import StationBranch, StationBranchService
 from apps.users.models import StationBranchManager, User
 
+SERVICE_CATEGORY_CHOICES = {
+    "petrol": [Service.ServiceType.PETROL, Service.ServiceType.DIESEL],
+    "other": [Service.ServiceType.OTHER, Service.ServiceType.WASH],
+}
+
 
 class StationBranchViewSet(viewsets.ModelViewSet):
     queryset = (
@@ -41,6 +46,8 @@ class StationBranchViewSet(viewsets.ModelViewSet):
             return UpdateStationBranchBalanceSerializer
         elif self.action == "services":
             return ListServiceSerializer
+        elif self.action == "available_services":
+            return ListServiceSerializer
         elif self.action == "assign_services":
             return AssignServicesSerializer
         elif self.action == "assigned_managers":
@@ -51,7 +58,7 @@ class StationBranchViewSet(viewsets.ModelViewSet):
         if self.request.user.role == User.UserRoles.StationOwner:
             return self.queryset.filter(station__owners=self.request.user)
         if self.request.user.role == User.UserRoles.StationBranchManager:
-            return self.queryset.filter(station__managers__user=self.request.user)
+            return self.queryset.filter(managers__user=self.request.user)
         return self.queryset.distinct()
 
     @action(detail=True, methods=["post"], url_path="update-balance")
@@ -102,24 +109,46 @@ class StationBranchViewSet(viewsets.ModelViewSet):
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
                 description="Filter by type exampe types=petrol,diesel,wash,other",
-            )
+            ),
+            OpenApiParameter(
+                name="service_category",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Filter by service category exampe service_category=petrol,other",
+            ),
         ]
     )
     @action(detail=True, methods=["GET"], url_path="services")
-    def services(self, request, *args, **kwargs):
+    def services(self, request, pk=None, *args, **kwargs):
         services = Service.objects.all().order_by("-id")
         if self.request.user.role == User.UserRoles.StationOwner:
-            services = services.filter(
-                station_branch_services__station_branch__station_id=self.request.station_id
-            )
+            services = services.filter(station_branch_services__station_branch_id=pk)
         if self.request.user.role == User.UserRoles.StationBranchManager:
             services = services.filter(
-                station_branch_services__station_branch__station__managers__user=self.request.user
+                station_branch_services__station_branch__managers__user=self.request.user,
+                station_branch_services__station_branch_id=pk,
             )
         if request.query_params.get("types"):
             types = request.query_params.get("types").split(",")
             services = services.filter(type__in=types)
+        if request.query_params.get("search"):
+            search = request.query_params.get("search")
+            services = services.filter(name__icontains=search)
+        if request.query_params.get("service_category"):
+            service_category = request.query_params.get("service_category")
+            services = services.filter(
+                type__in=SERVICE_CATEGORY_CHOICES.get(service_category)
+            )
+        services = services.distinct()
+        page = self.paginate_queryset(services)
+        serializer = self.get_serializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
+    @action(detail=True, methods=["GET"], url_path="available-services")
+    def available_services(self, request, pk=None, *args, **kwargs):
+        services = Service.objects.order_by("-id").exclude(
+            station_branch_services__station_branch_id=pk
+        )
         page = self.paginate_queryset(services)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
