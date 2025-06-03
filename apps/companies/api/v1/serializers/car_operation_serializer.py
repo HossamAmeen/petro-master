@@ -18,6 +18,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
     station_branch = SingleStationBranchSerializer()
     worker = SingleWorkerSerializer()
     service = ServiceNameSerializer()
+    service_category = serializers.SerializerMethodField()
 
     class Meta:
         model = CarOperation
@@ -41,12 +42,21 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             "motor_image",
             "fuel_image",
             "fuel_consumption_rate",
+            "service_category",
         ]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
         return data
+
+    def get_service_category(self, obj):
+        if obj.service.type in [
+            Service.ServiceType.PETROL,
+            Service.ServiceType.DIESEL,
+        ]:
+            return "خدمات بترولية"
+        return "خدمات أخرى"
 
 
 class ListHomeCarOperationSerializer(serializers.ModelSerializer):
