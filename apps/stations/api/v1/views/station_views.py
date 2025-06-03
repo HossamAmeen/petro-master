@@ -209,8 +209,13 @@ class StationReportsAPIView(APIView):
         station_branch_filter = Q()
         if request.user.role == User.UserRoles.StationOwner:
             station_branch_filter = Q(station_branch__station_id=request.station_id)
+            cash_request_filter = station_branch_filter
         if request.user.role == User.UserRoles.StationBranchManager:
             station_branch_filter = Q(station_branch__managers__user=request.user)
+            cash_request_filter = station_branch_filter
+        if request.user.role == User.UserRoles.StationWorker:
+            station_branch_filter = Q(worker=request.user)
+            cash_request_filter = Q(approved_by_id=request.user.id)
 
         today = date.today()
         date_from = request.query_params.get("date_from", today)
@@ -237,7 +242,7 @@ class StationReportsAPIView(APIView):
 
         cash_request_balance_balance = (
             CompanyCashRequest.objects.filter(
-                station_branch_filter,
+                cash_request_filter,
                 status=CompanyCashRequest.Status.APPROVED,
             ).aggregate(total_balance=Sum("amount"))["total_balance"]
             or 0
