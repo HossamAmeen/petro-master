@@ -8,6 +8,7 @@ from apps.users.v1.serializers.station_serializer import (
     ListStationBranchManagerSerializer,
     ListStationOwnerSerializer,
     ListWorkerSerializer,
+    StationBranchManagerCreationSerializer,
     StationOwnerSerializer,
     UpdateWorkerSerializer,
 )
@@ -41,6 +42,7 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "GET":
             return ListStationBranchManagerSerializer
+        return StationBranchManagerCreationSerializer
 
 
 class WorkerViewSet(viewsets.ModelViewSet):

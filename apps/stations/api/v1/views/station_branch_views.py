@@ -50,7 +50,7 @@ class StationBranchViewSet(viewsets.ModelViewSet):
             return ListServiceSerializer
         elif self.action == "assign_services":
             return AssignServicesSerializer
-        elif self.action == "assigned_managers":
+        elif self.action == "assign_managers":
             return StationBranchAssignManagersSerializer
         return super().get_serializer_class()
 

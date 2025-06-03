@@ -42,7 +42,7 @@ class StationKhaznaTransactionViewSet(viewsets.ModelViewSet):
     filterset_class = StationKhaznaTransactionFilter
     search_fields = ["station__name"]
     serializer_class = ListStationKhaznaTransactionSerializer
-    permission_classes = [StationPermission]
+    permission_classes = [IsAuthenticated, StationPermission]
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
