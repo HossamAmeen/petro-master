@@ -16,6 +16,8 @@ class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
         model = CompanyCashRequest
         fields = [
             "id",
+            "code",
+            "otp",
             "driver",
             "amount",
             "status",
@@ -71,4 +73,20 @@ class CompanyCashRequestSerializer(serializers.ModelSerializer):
             parent_balance = driver.branch.balance
         if attrs["amount"] > parent_balance:
             raise serializers.ValidationError({"amount": "الرصيد غير كافي"})
+        return attrs
+
+
+class CompanyCashRequestUpdateSerializer(serializers.ModelSerializer):
+    otp = serializers.CharField()
+
+    class Meta:
+        model = CompanyCashRequest
+        fields = ["otp"]
+
+    def validate(self, attrs):
+        instance = self.instance
+        if instance.status != CompanyCashRequest.Status.IN_PROGRESS:
+            raise serializers.ValidationError({"status": "الطلب غير قابل للتعديل"})
+        if instance.otp != attrs["otp"]:
+            raise serializers.ValidationError({"otp": "الكود غير صحيح"})
         return attrs

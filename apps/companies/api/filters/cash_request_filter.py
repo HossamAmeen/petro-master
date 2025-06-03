@@ -8,6 +8,7 @@ class CashRequestFilter(filters.FilterSet):
     approved_to = filters.DateFilter(field_name="modified__date__lte")
     station_branch = filters.NumberFilter(field_name="approved_by__branch_id")
     company_branch = filters.NumberFilter(field_name="driver__branch_id")
+    driver_code = filters.CharFilter(field_name="driver__code")
 
     class Meta:
         model = CompanyCashRequest
@@ -15,6 +16,7 @@ class CashRequestFilter(filters.FilterSet):
             "status",
             "approved_by",
             "driver",
+            "driver_code",
             "station",
             "company",
             "approved_from",

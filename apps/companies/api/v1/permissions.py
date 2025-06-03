@@ -23,4 +23,6 @@ class CashRequestPermission(BasePermission):
                     + obj.created_by.name
                 )
             return True
-        return False
+        if request.user.role in STATION_ROLES:
+            pass
+        return True

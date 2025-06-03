@@ -9,6 +9,7 @@ from apps.companies.api.filters.cash_request_filter import CashRequestFilter
 from apps.companies.api.v1.permissions import CashRequestPermission
 from apps.companies.api.v1.serializers.company_cash_request_serializers import (
     CompanyCashRequestSerializer,
+    CompanyCashRequestUpdateSerializer,
     ListCompanyCashRequestSerializer,
 )
 from apps.companies.models.company_cash_models import CompanyCashRequest
@@ -32,7 +33,10 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "GET":
             return ListCompanyCashRequestSerializer
-        return CompanyCashRequestSerializer
+        if self.request.method == "POST":
+            return CompanyCashRequestSerializer
+        if self.request.method == "PATCH":
+            return CompanyCashRequestUpdateSerializer
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
@@ -49,6 +53,16 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             return self.queryset.filter(
                 station_branch__station__branches__managers__user=self.request.user
             )
+        if self.request.user.role == User.UserRoles.StationWorker:
+            if self.request.query_params.get("driver_code") or self.action == "PATCH":
+                return self.queryset.filter(
+                    status=CompanyCashRequest.Status.IN_PROGRESS,
+                )
+            elif self.action == "list":
+                return self.queryset.filter(
+                    approved_by_id=self.request.user.id,
+                    status=CompanyCashRequest.Status.APPROVED,
+                )
         return self.queryset
 
     @extend_schema(
@@ -122,3 +136,22 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             message="لا يمكنك الغاء العمليه وهيا بالحالة " + item.status,
             status_code=status.HTTP_400_BAD_REQUEST,
         )
+
+    def partial_update(self, request, *args, **kwargs):
+        cash_request = CompanyCashRequest.objects.filter(id=kwargs["pk"]).first()
+        if not cash_request:
+            raise CustomValidationError(
+                message="الطلب غير موجود", status_code=status.HTTP_404_NOT_FOUND
+            )
+        serializer = self.get_serializer(
+            instance=cash_request, data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        cash_request.status = CompanyCashRequest.Status.APPROVED
+        cash_request.approved_by_id = request.user.id
+        cash_request.save()
+        Company.objects.select_for_update().filter(id=cash_request.company.id).update(
+            balance=F("balance") - cash_request.amount
+        )
+        return Response({"message": "تم تأكيد طلبك"})

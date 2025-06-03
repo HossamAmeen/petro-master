@@ -387,9 +387,12 @@ class DriverAdmin(admin.ModelAdmin):
 @admin.register(CompanyCashRequest)
 class CompanyCashRequestAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
+        "code",
         "company",
         "amount",
         "status",
+        "otp",
         "driver",
         "station",
         "created_by",
