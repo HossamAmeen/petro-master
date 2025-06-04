@@ -147,31 +147,10 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if "password" in validated_data:
-            if validated_data["password"] != validated_data["confirm_password"]:
-                raise serializers.ValidationError("Passwords do not match.")
+            if "confirm_password" not in validated_data:
+                raise serializers.ValidationError("تاكيد كلمة المرور مطلوب.")
+            if validated_data["password"] != validated_data.get("confirm_password"):
+                raise serializers.ValidationError("كلمتا المرور غير متطابقة.")
             validated_data["password"] = make_password(validated_data["password"])
             validated_data.pop("confirm_password")
         return super().update(instance, validated_data)
-
-
-class StationBranchManagerUpdateSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-    confirm_password = serializers.CharField(write_only=True)
-
-    def validate(self, attrs):
-        if "password" in attrs:
-            if "confirm_password" not in attrs:
-                raise serializers.ValidationError("Confirm password is required.")
-            if attrs["password"] != attrs["confirm_password"]:
-                raise serializers.ValidationError("Passwords do not match.")
-        return attrs
-
-    def update(self, instance, validated_data):
-        if "password" in validated_data:
-            validated_data["password"] = make_password(validated_data["password"])
-            validated_data.pop("confirm_password", None)
-        return super().update(instance, validated_data)
-
-    class Meta:
-        model = StationOwner
-        fields = ["id", "name", "phone_number", "password", "confirm_password"]
