@@ -410,11 +410,18 @@ class WorkerInterface(admin.ModelAdmin):
         "name",
         "phone_number",
         "is_active",
+        "station_branch",
+        "get_station",
     )
     search_fields = ("name", "phone_number")
-    list_filter = ("is_active",)
+    list_filter = ("is_active", "station_branch", "station_branch__station")
     ordering = ("-created",)
     list_per_page = 10
+
+    def get_station(self, obj):
+        return obj.station_branch.station.name
+
+    get_station.short_description = "Station"
 
     def has_delete_permission(self, request, obj=None):
         return False
