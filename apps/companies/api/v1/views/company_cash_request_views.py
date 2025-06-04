@@ -20,9 +20,9 @@ from apps.users.models import User
 
 
 class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
-    queryset = CompanyCashRequest.objects.select_related("driver", "station").order_by(
-        "-id"
-    )
+    queryset = CompanyCashRequest.objects.select_related(
+        "driver", "station", "worker__station_branch__district__city"
+    ).order_by("-id")
     filter_backends = [DjangoFilterBackend]
     filterset_class = CashRequestFilter
     http_method_names = ["get", "post", "patch", "delete"]

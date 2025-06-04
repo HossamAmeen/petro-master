@@ -6,6 +6,7 @@ from apps.shared.base_exception_class import CustomValidationError
 from apps.stations.api.v1.serializers import (
     ListStationSerializer,
     SingleStationBranchSerializer,
+    StationBranchWithDistrictSerializer,
 )
 from apps.stations.models.stations_models import StationBranch
 from apps.users.models import StationOwner, User, Worker
@@ -87,6 +88,17 @@ class UpdateWorkerSerializer(serializers.ModelSerializer):
             validated_data["password"] = make_password(validated_data["password"])
             validated_data.pop("confirm_password", None)
         return super().update(instance, validated_data)
+
+
+class WorkerWithBranchSerializer(serializers.ModelSerializer):
+    station_branch = StationBranchWithDistrictSerializer()
+
+    class Meta:
+        model = Worker
+        fields = ["id", "name", "phone_number", "station_branch"]
+
+    def get_station_branch(self, obj):
+        return obj.station_branch.name
 
 
 class StationOwnerSerializer(serializers.ModelSerializer):

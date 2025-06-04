@@ -5,12 +5,14 @@ from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Company, Driver
 from apps.stations.api.v1.serializers import ListStationSerializer
 from apps.users.models import User
+from apps.users.v1.serializers.station_serializer import WorkerWithBranchSerializer
 
 
 class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
     driver = SingleDriverSerializer()
     station = ListStationSerializer()
     is_owner = serializers.SerializerMethodField()
+    worker = WorkerWithBranchSerializer()
 
     class Meta:
         model = CompanyCashRequest
@@ -26,6 +28,7 @@ class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
             "created",
             "modified",
             "is_owner",
+            "worker",
         ]
 
     def get_is_owner(self, obj):
