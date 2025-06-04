@@ -3,16 +3,20 @@ from rest_framework import serializers
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Company, Driver
-from apps.stations.api.v1.serializers import ListStationSerializer
+from apps.stations.api.v1.serializers import (
+    ListStationSerializer,
+    StationBranchWithDistrictSerializer,
+)
 from apps.users.models import User
-from apps.users.v1.serializers.station_serializer import WorkerWithBranchSerializer
+from apps.users.v1.serializers.user_serializers import SingleUserSerializer
 
 
 class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
     driver = SingleDriverSerializer()
     station = ListStationSerializer()
     is_owner = serializers.SerializerMethodField()
-    worker = WorkerWithBranchSerializer()
+    station_branch = StationBranchWithDistrictSerializer()
+    approved_by = SingleUserSerializer()
 
     class Meta:
         model = CompanyCashRequest
@@ -28,7 +32,8 @@ class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
             "created",
             "modified",
             "is_owner",
-            "worker",
+            "station_branch",
+            "approved_by",
         ]
 
     def get_is_owner(self, obj):
