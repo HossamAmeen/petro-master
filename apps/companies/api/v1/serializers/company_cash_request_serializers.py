@@ -3,17 +3,13 @@ from rest_framework import serializers
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Company, Driver
-from apps.stations.api.v1.serializers import (
-    ListStationSerializer,
-    StationBranchWithDistrictSerializer,
-)
+from apps.stations.api.v1.serializers import StationBranchWithDistrictSerializer
 from apps.users.models import User
 from apps.users.v1.serializers.user_serializers import SingleUserSerializer
 
 
 class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
     driver = SingleDriverSerializer()
-    station = ListStationSerializer()
     is_owner = serializers.SerializerMethodField()
     station_branch = StationBranchWithDistrictSerializer()
     approved_by = SingleUserSerializer()
@@ -28,7 +24,6 @@ class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
             "amount",
             "status",
             "company",
-            "station",
             "created",
             "modified",
             "is_owner",
@@ -43,6 +38,11 @@ class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
         if request.user.role == User.UserRoles.CompanyBranchManager:
             return obj.created_by == request.user
         return False
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["worker"] = data["approved_by"]
+        return data
 
 
 class CompanyCashRequestSerializer(serializers.ModelSerializer):
