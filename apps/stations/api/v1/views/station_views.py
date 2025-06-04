@@ -27,7 +27,7 @@ from apps.stations.api.station_serializers.home_serializers import (
 from apps.stations.api.v1.serializers import ListStationSerializer
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import Station, StationBranch
-from apps.users.models import User
+from apps.users.models import StationBranchManager, StationOwner, User
 
 
 class StationViewSet(viewsets.ModelViewSet):
@@ -39,23 +39,36 @@ class StationHomeAPIView(APIView):
     def get(self, request):
         station_branch_filter = Q()
         operation_filter = Q()
+        manager_count = 0
+        branch_count = 0
         if request.user.role == User.UserRoles.StationOwner:
             operation_filter = Q(station_branch__station_id=request.station_id)
+            manager_count = StationOwner.objects.filter(
+                station_id=request.station_id, role=User.UserRoles.StationBranchManager
+            ).count()
+            branch_count = StationBranch.objects.filter(
+                station_id=request.station_id
+            ).count()
         if request.user.role == User.UserRoles.StationBranchManager:
-            station_branch_filter = Q(station_branch__managers__user=request.user)
-            operation_filter = Q(station_branch__managers__user=request.user)
+            branches_list = list(
+                StationBranchManager.objects.filter(user=request.user).values_list(
+                    "station_branch_id", flat=True
+                )
+            )
+            manager_count = (
+                StationBranchManager.objects.filter(station_branch__in=branches_list)
+                .exclude(user=request.user)
+                .count()
+            )
+            branch_count = len(branches_list)
+            station_branch_filter = Q(station_branch__in=branches_list)
+            operation_filter = Q(station_branch__in=branches_list)
 
         station = (
             Station.objects.filter(id=request.station_id)
             .annotate(
                 workers_count=Count(
                     "branches__workers", distinct=True, filter=station_branch_filter
-                ),
-                managers_count=Count(
-                    "branches__managers", distinct=True, filter=station_branch_filter
-                ),
-                branches_count=Count(
-                    "branches", distinct=True, filter=station_branch_filter
                 ),
             )
             .first()
@@ -100,8 +113,8 @@ class StationHomeAPIView(APIView):
             "distributed_balance": distributed_balance,
             "total_balance": base_balance + distributed_balance,
             "workers_count": station.workers_count,
-            "managers_count": station.managers_count,
-            "branches_count": station.branches_count,
+            "managers_count": manager_count,
+            "branches_count": branch_count,
             "last_operations": ListCarOperationSerializer(
                 last_operations, many=True
             ).data,

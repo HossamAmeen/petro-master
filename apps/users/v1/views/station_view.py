@@ -1,6 +1,8 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
+from rest_framework.permissions import IsAuthenticated
 
+from apps.shared.permissions import StationOwnerPermission
 from apps.users.models import StationOwner, User, Worker
 from apps.users.v1.filters import StationBranchManagerFilter
 from apps.users.v1.serializers.station_serializer import (
@@ -33,6 +35,7 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = StationBranchManagerFilter
     search_fields = ["name", "phone_number", "email"]
+    permission_classes = [IsAuthenticated, StationOwnerPermission]
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
