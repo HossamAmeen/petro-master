@@ -129,11 +129,6 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
 
-    def validate(self, attrs):
-        if attrs["password"] != attrs["confirm_password"]:
-            raise serializers.ValidationError("Passwords do not match.")
-        return attrs
-
     class Meta:
         model = StationOwner
         fields = ["id", "name", "phone_number", "email", "password", "confirm_password"]
@@ -143,10 +138,20 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
         validated_data["email"] = validated_data.get(
             "email", validated_data["phone_number"] + "@petro.com"
         )
+        if validated_data["password"] != validated_data["confirm_password"]:
+            raise serializers.ValidationError("Passwords do not match.")
         validated_data["password"] = make_password(validated_data["password"])
         validated_data.pop("confirm_password")
         validated_data["station_id"] = self.context["request"].station_id
         return StationOwner.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        if "password" in validated_data:
+            if validated_data["password"] != validated_data["confirm_password"]:
+                raise serializers.ValidationError("Passwords do not match.")
+            validated_data["password"] = make_password(validated_data["password"])
+            validated_data.pop("confirm_password")
+        return super().update(instance, validated_data)
 
 
 class StationBranchManagerUpdateSerializer(serializers.ModelSerializer):
