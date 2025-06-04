@@ -138,8 +138,12 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
         validated_data["email"] = validated_data.get(
             "email", validated_data["phone_number"] + "@petro.com"
         )
-        if validated_data["password"] != validated_data["confirm_password"]:
-            raise serializers.ValidationError("Passwords do not match.")
+        if "password" not in validated_data:
+            raise serializers.ValidationError("كلمة المرور مطلوبة.")
+        if "confirm_password" not in validated_data:
+            raise serializers.ValidationError("تاكيد كلمة المرور مطلوب.")
+        if validated_data["password"] != validated_data.get("confirm_password"):
+            raise serializers.ValidationError("كلمتا المرور غير متطابقة.")
         validated_data["password"] = make_password(validated_data["password"])
         validated_data.pop("confirm_password")
         validated_data["station_id"] = self.context["request"].station_id
@@ -148,9 +152,17 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         if "password" in validated_data:
             if "confirm_password" not in validated_data:
-                raise serializers.ValidationError("تاكيد كلمة المرور مطلوب.")
+                raise CustomValidationError(
+                    message="تاكيد كلمة المرور مطلوب.",
+                    code="invalid",
+                    errors=[],
+                )
             if validated_data["password"] != validated_data.get("confirm_password"):
-                raise serializers.ValidationError("كلمتا المرور غير متطابقة.")
+                raise CustomValidationError(
+                    message="كلمتا المرور غير متطابقة.",
+                    code="invalid",
+                    errors=[],
+                )
             validated_data["password"] = make_password(validated_data["password"])
             validated_data.pop("confirm_password")
         return super().update(instance, validated_data)
