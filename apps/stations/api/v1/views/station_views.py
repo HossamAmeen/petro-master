@@ -98,6 +98,10 @@ class StationHomeAPIView(APIView):
             base_balance = branches_balance
 
             distributed_balance = branches_balance
+        if request.user.role == User.UserRoles.StationWorker:
+            base_balance = 0
+            distributed_balance = 0
+            branches_balance = 0
 
         last_operations = (
             CarOperation.objects.select_related(
