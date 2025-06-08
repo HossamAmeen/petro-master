@@ -21,6 +21,7 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
 )
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.operation_model import CarOperation
+from apps.shared.permissions import StationPermission
 from apps.stations.api.station_serializers.home_serializers import (
     ListStationReportsSerializer,
 )
@@ -36,6 +37,8 @@ class StationViewSet(viewsets.ModelViewSet):
 
 
 class StationHomeAPIView(APIView):
+    permission_classes = [StationPermission]
+
     def get(self, request):
         station_branch_filter = Q()
         operation_filter = Q()
@@ -61,7 +64,7 @@ class StationHomeAPIView(APIView):
                 .count()
             )
             branch_count = len(branches_list)
-            station_branch_filter = Q(station_branch__in=branches_list)
+            station_branch_filter = Q(branches__in=branches_list)
             operation_filter = Q(station_branch__in=branches_list)
 
         station = (
