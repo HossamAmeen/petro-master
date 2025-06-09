@@ -37,7 +37,9 @@ class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
 
 
 class StationKhaznaTransactionViewSet(viewsets.ModelViewSet):
-    queryset = StationKhaznaTransaction.objects.order_by("-id")
+    queryset = StationKhaznaTransaction.objects.select_related(
+        "station_branch__district__city"
+    ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = StationKhaznaTransactionFilter
     search_fields = ["station__name"]
