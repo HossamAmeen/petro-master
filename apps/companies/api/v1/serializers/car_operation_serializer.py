@@ -9,14 +9,14 @@ from apps.stations.api.v1.serializers import (
     SingleStationBranchSerializer,
 )
 from apps.stations.models.service_models import Service
-from apps.users.v1.serializers.station_serializer import SingleWorkerSerializer
+from apps.users.v1.serializers.station_serializer import WorkerWithBranchSerializer
 
 
 class ListCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
     driver = SingleDriverSerializer()
     station_branch = SingleStationBranchSerializer()
-    worker = SingleWorkerSerializer()
+    worker = WorkerWithBranchSerializer()
     service = ServiceNameSerializer()
     service_category = serializers.SerializerMethodField()
 
@@ -74,7 +74,7 @@ class ListHomeCarOperationSerializer(serializers.ModelSerializer):
 
 class ListStationCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
-    worker = SingleWorkerSerializer()
+    worker = WorkerWithBranchSerializer()
     service = ServiceNameSerializer()
     company_name = serializers.CharField(source="driver.branch.company.name")
     service_category = serializers.SerializerMethodField()

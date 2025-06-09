@@ -105,7 +105,7 @@ class StationHomeAPIView(APIView):
 
         last_operations = (
             CarOperation.objects.select_related(
-                "car", "driver", "station_branch", "worker", "service"
+                "car", "driver", "station_branch", "worker__station_branch", "service"
             )
             .filter(operation_filter)
             .order_by("-id")[:5]
@@ -131,7 +131,7 @@ class StationHomeAPIView(APIView):
 
 class StationOperationsAPIView(ListAPIView):
     queryset = CarOperation.objects.select_related(
-        "car", "driver", "station_branch", "worker", "service"
+        "car", "driver", "station_branch", "worker__station_branch", "service"
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CarOperationFilter
