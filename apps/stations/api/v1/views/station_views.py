@@ -113,7 +113,14 @@ class StationHomeAPIView(APIView):
 
         response_data = {
             "id": station.id,
+            "station_branch_id": (
+                request.user.worker.station_branch_id
+                if request.user.role == User.UserRoles.StationWorker
+                else None
+            ),
             "name": station.name,
+            "station_name": station.name,
+            "user_name": request.user.name,
             "address": station.address,
             "balance": base_balance,
             "branches_balance": branches_balance,

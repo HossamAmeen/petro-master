@@ -2,7 +2,9 @@ from rest_framework import serializers
 
 from apps.companies.api.v1.serializers.car_serializer import CarWithPlateInfoSerializer
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
+from apps.companies.models.company_models import Car, Driver
 from apps.companies.models.operation_model import CarOperation
+from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import SERVICE_UNIT_CHOICES
 from apps.stations.api.v1.serializers import (
     ServiceNameSerializer,
@@ -57,6 +59,31 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
         ]:
             return "خدمات بترولية"
         return "خدمات أخرى"
+
+
+class CreateCarOperationSerializer(serializers.ModelSerializer):
+    car_code = serializers.CharField()
+    driver_code = serializers.CharField()
+
+    class Meta:
+        model = CarOperation
+        fields = ["start_time", "car_meter", "motor_image", "car_code", "driver_code"]
+
+    def validate(self, attrs):
+        car = Car.objects.filter(code=attrs["car_code"]).first()
+        driver = Driver.objects.filter(code=attrs["driver_code"]).first()
+        if not car:
+            raise CustomValidationError({"car_code": "كود السيارة هذا غير صحيح"})
+        if not driver:
+            raise CustomValidationError({"driver_code": "كود السائق هذا غير صحيح"})
+        if car.branch.company_id != driver.branch.company_id:
+            raise CustomValidationError({"driver_code": "السائق لا ينتمي للشركة"})
+        attrs["car"] = car
+        attrs["driver"] = driver
+        attrs["service"] = car.service
+        attrs.pop("car_code")
+        attrs.pop("driver_code")
+        return attrs
 
 
 class ListHomeCarOperationSerializer(serializers.ModelSerializer):
