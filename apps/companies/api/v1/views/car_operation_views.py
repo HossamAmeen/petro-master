@@ -13,7 +13,6 @@ from rest_framework.response import Response
 
 from apps.companies.api.v1.filters import CarOperationFilter
 from apps.companies.api.v1.serializers.car_operation_serializer import (
-    CreateCarOperationSerializer,
     ListCarOperationSerializer,
 )
 from apps.companies.models.operation_model import CarOperation
@@ -39,8 +38,6 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     ]
 
     def get_serializer_class(self):
-        if self.action == "create":
-            return CreateCarOperationSerializer
         return ListCarOperationSerializer
 
     def get_queryset(self):
@@ -61,22 +58,6 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 ],
             )
         return self.queryset.filter(car__branch__company=self.request.company_id)
-
-    def create(self, request, *args, **kwargs):
-        reqest_data = request.data
-        reqest_data["start_time"] = datetime.now()
-        serializer = self.get_serializer(data=reqest_data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
-
-    def perform_create(self, serializer):
-        serializer.save(
-            worker=self.request.user, station_branch=self.request.user.branch
-        )
 
     @extend_schema(
         parameters=[

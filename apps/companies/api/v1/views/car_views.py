@@ -17,6 +17,7 @@ from apps.companies.api.v1.serializers.driver_serializer import (
     ListDriverSerializer,
 )
 from apps.companies.models.company_models import Car, Driver
+from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
@@ -218,7 +219,7 @@ class CarDetailsView(APIView):
 
 
 class VerifyDriverView(APIView):
-    def post(self, request, driver_code, car_code):
+    def post(self, request, driver_code, car_code, service_type):
         driver = Driver.objects.filter(code=driver_code.strip()).first()
         if not driver:
             raise CustomValidationError(
@@ -242,6 +243,25 @@ class VerifyDriverView(APIView):
                 errors=[],
                 status_code=status.HTTP_404_NOT_FOUND,
             )
+
+        if service_type == "Petrol":
+            service = car.service
+        else:
+            service = None
+        car_operation = CarOperation.objects.create(
+            car=car,
+            driver=driver,
+            service=service,
+            worker_id=request.user.id,
+            station_branch_id=request.user.worker.station_branch_id,
+            fuel_type=car.fuel_type,
+            status=CarOperation.OperationStatus.PENDING,
+        )
         return Response(
-            {"message": "تم التحقق من السائق بنجاح"}, status=status.HTTP_200_OK
+            {
+                "message": "تم التحقق من السائق بنجاح",
+                "car": CarSerializer(car).data,
+                "operation_id": car_operation.id,
+            },
+            status=status.HTTP_200_OK,
         )
