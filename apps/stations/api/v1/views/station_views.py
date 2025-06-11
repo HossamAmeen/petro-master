@@ -28,7 +28,7 @@ from apps.stations.api.station_serializers.home_serializers import (
 from apps.stations.api.v1.serializers import ListStationSerializer
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import Station, StationBranch
-from apps.users.models import StationBranchManager, StationOwner, User
+from apps.users.models import StationBranchManager, StationOwner, User, Worker
 
 
 class StationViewSet(viewsets.ModelViewSet):
@@ -65,10 +65,10 @@ class StationHomeAPIView(APIView):
         }
     )
     def get(self, request):
-        station_branch_filter = Q()
         operation_filter = Q()
         manager_count = 0
         branch_count = 0
+        workers_count = 0
         if request.user.role == User.UserRoles.StationOwner:
             operation_filter = Q(station_branch__station_id=request.station_id)
             manager_count = StationOwner.objects.filter(
@@ -76,6 +76,9 @@ class StationHomeAPIView(APIView):
             ).count()
             branch_count = StationBranch.objects.filter(
                 station_id=request.station_id
+            ).count()
+            workers_count = Worker.objects.filter(
+                station_branch__station_id=request.station_id
             ).count()
         if request.user.role == User.UserRoles.StationBranchManager:
             branches_list = list(
@@ -89,18 +92,12 @@ class StationHomeAPIView(APIView):
                 .count()
             )
             branch_count = len(branches_list)
-            station_branch_filter = Q(station_branch__id__in=branches_list)
+            workers_count = Worker.objects.filter(
+                station_branch__id__in=branches_list
+            ).count()
             operation_filter = Q(station_branch__in=branches_list)
 
-        station = (
-            Station.objects.filter(id=request.station_id)
-            .annotate(
-                workers_count=Count(
-                    "branches__workers", distinct=True, filter=station_branch_filter
-                ),
-            )
-            .first()
-        )
+        station = Station.objects.filter(id=request.station_id).first()
 
         if request.user.role == User.UserRoles.StationOwner:
             base_balance = station.balance
@@ -151,7 +148,7 @@ class StationHomeAPIView(APIView):
             "branches_balance": branches_balance,
             "distributed_balance": distributed_balance,
             "total_balance": base_balance + distributed_balance,
-            "workers_count": station.workers_count,
+            "workers_count": workers_count,
             "managers_count": manager_count,
             "branches_count": branch_count,
             "last_operations": ListCarOperationSerializer(
