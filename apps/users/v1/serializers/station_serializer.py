@@ -31,6 +31,9 @@ class CreateWorkerSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
+    station_branch = serializers.PrimaryKeyRelatedField(
+        queryset=StationBranch.objects.all(), required=True
+    )
 
     def validate(self, attrs):
         if attrs["password"] != attrs["confirm_password"]:
