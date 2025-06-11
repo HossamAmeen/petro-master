@@ -32,12 +32,16 @@ class CreateWorkerSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
     station_branch = serializers.PrimaryKeyRelatedField(
-        queryset=StationBranch.objects.all(), required=True
+        queryset=StationBranch.objects.all(), required=True, null=False
+    )
+    phone_number = serializers.CharField(
+        error_messages={"unique": "هذا الرقم موجود بالفعل"}
     )
 
     def validate(self, attrs):
         if attrs["password"] != attrs["confirm_password"]:
             raise serializers.ValidationError("Passwords do not match.")
+
         return attrs
 
     class Meta:
