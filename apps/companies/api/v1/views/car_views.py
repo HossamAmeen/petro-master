@@ -1,8 +1,16 @@
 from django.db import transaction
-from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
-from rest_framework import viewsets
+from django.utils import timezone
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.views import APIView, Response, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.accounting.helpers import generate_company_transaction
 from apps.accounting.models import CompanyKhaznaTransaction, KhaznaTransaction
@@ -21,6 +29,7 @@ from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.shared.permissions import StationWorkerPermission
 from apps.users.models import User
 
 
@@ -198,8 +207,66 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return Response({"balance": car.balance}, status=status.HTTP_200_OK)
 
 
-class CarDetailsView(APIView):
-    def get(self, request, car_code):
+class VerifyDriverView(APIView):
+    permission_classes = [IsAuthenticated, StationWorkerPermission]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "driver_code",
+                type=str,
+                required=True,
+                description="The unique code of the driver to verify.",
+            ),
+            OpenApiParameter(
+                "car_code",
+                type=str,
+                required=True,
+                description="The unique code of the car to verify.",
+            ),
+            OpenApiParameter(
+                "service_type",
+                type=str,
+                required=True,
+                description="Type of service requested (e.g., petrol,other).",
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string"},
+                        "car": {
+                            "type": "object",
+                            "properties": {
+                                "plate_number": {"type": "string"},
+                                "plate_character": {"type": "string"},
+                                "plate_color": {"type": "string"},
+                                "fuel_type": {"type": "string"},
+                                "liter_count": {"type": "integer"},
+                                "cost": {"type": "number"},
+                                "code": {"type": "string"},
+                            },
+                        },
+                        "operation_id": {"type": "integer"},
+                    },
+                    "required": ["message", "car", "operation_id"],
+                }
+            )
+        },
+    )
+    @transaction.atomic
+    def post(self, request, driver_code, car_code, service_type):
+        driver = Driver.objects.filter(code=driver_code.strip()).first()
+        if not driver:
+            raise CustomValidationError(
+                message="كود السائق هذا لا يعمل او غير مفعل الان.",
+                code="driver_code_not_found",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
         car = Car.objects.filter(code=car_code.strip()).first()
         if not car:
             raise CustomValidationError(
@@ -215,27 +282,6 @@ class CarDetailsView(APIView):
                 errors=[],
                 status_code=status.HTTP_404_NOT_FOUND,
             )
-        return Response(CarSerializer(car).data)
-
-
-class VerifyDriverView(APIView):
-    def post(self, request, driver_code, car_code, service_type):
-        driver = Driver.objects.filter(code=driver_code.strip()).first()
-        if not driver:
-            raise CustomValidationError(
-                message="كود السائق هذا لا يعمل او غير مفعل الان.",
-                code="driver_code_not_found",
-                errors=[],
-                status_code=status.HTTP_404_NOT_FOUND,
-            )
-        car = Car.objects.filter(code=car_code.strip()).first()
-        if not car:
-            raise CustomValidationError(
-                message="كود السيارة هذا لا يعمل او غير مفعل الان.",
-                code="car_code_not_found",
-                errors=[],
-                status_code=status.HTTP_404_NOT_FOUND,
-            )
         if driver.branch.company_id != car.branch.company_id:
             raise CustomValidationError(
                 message="السائق لا ينتمي للشركة",
@@ -244,23 +290,44 @@ class VerifyDriverView(APIView):
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
-        if service_type == "Petrol":
+        if service_type == "petrol":
             service = car.service
         else:
             service = None
+
+        station_branch = request.user.worker.station_branch
         car_operation = CarOperation.objects.create(
             car=car,
             driver=driver,
             service=service,
             worker_id=request.user.id,
-            station_branch_id=request.user.worker.station_branch_id,
+            station_branch_id=station_branch.id,
             fuel_type=car.fuel_type,
             status=CarOperation.OperationStatus.PENDING,
+            start_time=timezone.now(),
+            created_by_id=request.user.id,
         )
+        liters_count = (
+            car.permitted_fuel_amount
+            if car.permitted_fuel_amount
+            else car.tank_capacity
+        )
+        car_service = car.service
+        service_cost = car_service.cost if car_service else 0
         return Response(
             {
                 "message": "تم التحقق من السائق بنجاح",
-                "car": CarSerializer(car).data,
+                "car": {
+                    "plate_number": car.plate_number,
+                    "plate_character": car.plate_character,
+                    "plate_color": car.plate_color,
+                    "fuel_type": car.fuel_type,
+                    "liter_count": liters_count,
+                    "cost": (liters_count * service_cost)
+                    + (liters_count * station_branch.fees),
+                    "code": car.code,
+                    "car_service": car_service.name if car_service else None,
+                },
                 "operation_id": car_operation.id,
             },
             status=status.HTTP_200_OK,

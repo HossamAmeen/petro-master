@@ -15,7 +15,7 @@ class CarOperation(AbstractBaseModel):
         CANCELLED = "cancelled"
 
     start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
     duration = models.IntegerField(default=0)
     status = models.CharField(
         max_length=20, choices=OperationStatus.choices, default=OperationStatus.PENDING
@@ -51,7 +51,11 @@ class CarOperation(AbstractBaseModel):
         Worker, on_delete=models.CASCADE, related_name="operations"
     )
     service = models.ForeignKey(
-        Service, on_delete=models.CASCADE, related_name="operations"
+        Service,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="operations",
     )
 
     class Meta:

@@ -29,6 +29,11 @@ class StationBranchManagerPermission(BasePermission):
         return request.user.role == User.UserRoles.StationBranchManager
 
 
+class StationWorkerPermission(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == User.UserRoles.StationWorker
+
+
 class StationPermission(BasePermission):
     def has_permission(self, request, view):
         return request.user.role in STATION_ROLES

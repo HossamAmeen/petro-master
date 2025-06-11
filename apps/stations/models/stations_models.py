@@ -35,6 +35,7 @@ class StationBranch(AbstractBaseModel):
         Station, on_delete=models.CASCADE, related_name="branches"
     )
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
 
     class Meta:
         verbose_name = "Station Branch"
