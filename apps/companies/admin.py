@@ -197,7 +197,6 @@ class CarAdmin(admin.ModelAdmin):
         "updated_by",
         "created",
         "modified",
-        "code",
     )
     list_per_page = 10
 
