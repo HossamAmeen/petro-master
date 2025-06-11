@@ -5,6 +5,9 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.views import Response
 
+from apps.accounting.helpers import generate_station_transaction
+from apps.accounting.models import StationKhaznaTransaction
+from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.permissions import StationOwnerPermission
 from apps.stations.api.v1.serializers import (
@@ -77,7 +80,26 @@ class StationBranchViewSet(viewsets.ModelViewSet):
 
                     station.balance -= serializer.validated_data["amount"]
                     station.save()
-
+                    message = f"تم شحن رصيد فرع {station_branch.name} برصيد {serializer.validated_data['amount']}"
+                    generate_station_transaction(
+                        station_id=station_branch.station_id,
+                        amount=serializer.validated_data["amount"],
+                        status=StationKhaznaTransaction.TransactionStatus.APPROVED,
+                        description=message,
+                        is_internal=True,
+                        created_by_id=request.user.id,
+                    )
+                    notification_users = list(
+                        station_branch.managers.values_list("user_id", flat=True)
+                    )
+                    notification_users.append(request.user.id)
+                    for user_id in notification_users:
+                        Notification.objects.create(
+                            user_id=user_id,
+                            title=message,
+                            description=message,
+                            type=Notification.NotificationType.MONEY,
+                        )
                 else:
                     raise CustomValidationError(
                         message="المحطة لا تمتلك كافٍ من المال",
@@ -93,6 +115,27 @@ class StationBranchViewSet(viewsets.ModelViewSet):
                     station.refresh_from_db()
                     station.balance += serializer.validated_data["amount"]
                     station.save()
+
+                    message = f"تم خصم رصيد فرع {station_branch.name} برصيد {serializer.validated_data['amount']}"
+                    generate_station_transaction(
+                        station_id=station_branch.station_id,
+                        amount=serializer.validated_data["amount"],
+                        status=StationKhaznaTransaction.TransactionStatus.APPROVED,
+                        description=message,
+                        is_internal=True,
+                        created_by_id=request.user.id,
+                    )
+                    notification_users = list(
+                        station_branch.managers.values_list("user_id", flat=True)
+                    )
+                    notification_users.append(request.user.id)
+                    for user_id in notification_users:
+                        Notification.objects.create(
+                            user_id=user_id,
+                            title=message,
+                            description=message,
+                            type=Notification.NotificationType.MONEY,
+                        )
                 else:
                     raise CustomValidationError(
                         message="الفرع لا يمتلك كافٍ من المال",
