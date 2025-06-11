@@ -89,7 +89,7 @@ class StationHomeAPIView(APIView):
                 .count()
             )
             branch_count = len(branches_list)
-            station_branch_filter = Q(branches__in=branches_list)
+            station_branch_filter = Q(station_branch__id__in=branches_list)
             operation_filter = Q(station_branch__in=branches_list)
 
         station = (
