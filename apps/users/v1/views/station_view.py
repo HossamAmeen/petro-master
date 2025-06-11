@@ -69,6 +69,6 @@ class WorkerViewSet(viewsets.ModelViewSet):
             )
         if self.request.user.role == User.UserRoles.StationBranchManager:
             return self.queryset.filter(
-                station_branch__station__branches__managers__user=self.request.user
+                station_branch__managers__user=self.request.user
             )
         return self.queryset

@@ -85,6 +85,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
             "id",
             "car",
             "cost",
+            "station_cost",
             "start_time",
             "end_time",
             "duration",
@@ -101,6 +102,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+        data["cost"] = instance.station_cost
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
         return data
 

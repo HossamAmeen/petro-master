@@ -39,6 +39,31 @@ class StationViewSet(viewsets.ModelViewSet):
 class StationHomeAPIView(APIView):
     permission_classes = [StationPermission]
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "station_branch_id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "station_name": {"type": "string"},
+                        "user_name": {"type": "string"},
+                        "address": {"type": "string"},
+                        "balance": {"type": "number"},
+                        "branches_balance": {"type": "number"},
+                        "distributed_balance": {"type": "number"},
+                        "total_balance": {"type": "number"},
+                        "workers_count": {"type": "integer"},
+                        "managers_count": {"type": "integer"},
+                        "branches_count": {"type": "integer"},
+                        "last_operations": {"type": "array", "items": "object"},
+                    },
+                }
+            )
+        }
+    )
     def get(self, request):
         station_branch_filter = Q()
         operation_filter = Q()

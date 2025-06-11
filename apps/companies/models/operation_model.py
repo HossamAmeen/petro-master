@@ -11,10 +11,11 @@ from apps.utilities.models.abstract_base_model import AbstractBaseModel
 class CarOperation(AbstractBaseModel):
     class OperationStatus(models.TextChoices):
         PENDING = "pending"
+        IN_PROGRESS = "in_progress"
         COMPLETED = "completed"
         CANCELLED = "cancelled"
 
-    start_time = models.DateTimeField()
+    start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     duration = models.IntegerField(default=0)
     status = models.CharField(
@@ -22,6 +23,8 @@ class CarOperation(AbstractBaseModel):
     )
     code = models.CharField(max_length=50)
     cost = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    company_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    station_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     fuel_type = models.CharField(
         max_length=20,
         choices=Car.FuelType.choices,
