@@ -33,7 +33,7 @@ class updateCarOperationSerializer(serializers.Serializer):
         instance.motor_image = validated_data.get("motor_image", instance.motor_image)
         instance.fuel_image = validated_data.get("fuel_image", instance.fuel_image)
         instance.amount = validated_data.get("amount", instance.amount)
-        instance.start_time = validated_data.get("start_time", instance.start_time)
+        instance.status = validated_data.get("status", instance.status)
         instance.save()
 
         return instance

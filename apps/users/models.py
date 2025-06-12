@@ -80,7 +80,7 @@ class FirebaseToken(models.Model):
         return f"Token for {self.user.phone_number}"
 
 
-class CompanyUser(User, TimeStampedModel):
+class CompanyUser(User):
     company = models.ForeignKey(
         "companies.Company", on_delete=models.CASCADE, related_name="owners"
     )

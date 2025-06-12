@@ -436,6 +436,7 @@ class CarOperationAdmin(admin.ModelAdmin):
         obj.save()
 
     list_display = (
+        "id",
         "code",
         "status",
         "start_time",
