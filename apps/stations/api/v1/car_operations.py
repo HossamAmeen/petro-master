@@ -61,9 +61,8 @@ class StationGasOperationsAPIView(APIView):
                 )
 
                 return Response(serializer.data)
-
-            else:
-                serializer.save()
+            elif "start_time" in serializer.validated_data:
+                serializer.save(start_time=now())
             return Response(serializer.data)
 
         raise CustomValidationError(serializer.errors)
