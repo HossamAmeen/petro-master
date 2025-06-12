@@ -28,6 +28,7 @@ from apps.companies.models.company_models import Car, Driver
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import COLOR_CHOICES_HEX
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import StationWorkerPermission
 from apps.users.models import User
@@ -320,7 +321,7 @@ class VerifyDriverView(APIView):
                 "car": {
                     "plate_number": car.plate_number,
                     "plate_character": car.plate_character,
-                    "plate_color": car.plate_color,
+                    "plate_color": COLOR_CHOICES_HEX.get(car.plate_color),
                     "fuel_type": car.fuel_type,
                     "liter_count": liters_count,
                     "cost": (liters_count * service_cost)

@@ -8,17 +8,9 @@ from apps.companies.api.v1.serializers.branch_serializers import (
 )
 from apps.companies.models.company_models import Car
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import COLOR_CHOICES_HEX
 from apps.stations.api.v1.serializers import ServiceNameSerializer
 from apps.utilities.serializers import BalanceUpdateSerializer
-
-COLOR_CHOICES_HEX = {
-    Car.PlateColor.RED: "#FF0000",
-    Car.PlateColor.BLUE: "#0000FF",
-    Car.PlateColor.ORANGE: "#FFA500",
-    Car.PlateColor.YELLOW: "#FFFF00",
-    Car.PlateColor.GREEN: "#008000",
-    Car.PlateColor.GOLD: "#FFD700",
-}
 
 FUEL_TYPE_CHOICES = {
     Car.FuelType.DIESEL: "ديزل",
