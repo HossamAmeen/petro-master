@@ -15,7 +15,7 @@ class CarOperation(AbstractBaseModel):
         COMPLETED = "completed"
         CANCELLED = "cancelled"
 
-    start_time = models.DateTimeField(auto_now_add=True)
+    start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
     duration = models.IntegerField(default=0)
     status = models.CharField(
@@ -25,12 +25,13 @@ class CarOperation(AbstractBaseModel):
     cost = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     company_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     station_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    profits = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     fuel_type = models.CharField(
         max_length=20,
         choices=Car.FuelType.choices,
         null=True,
         blank=True,
-    )
+    )  # may be removed
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     unit = models.CharField(
         max_length=20,
@@ -38,8 +39,10 @@ class CarOperation(AbstractBaseModel):
         null=True,
         blank=True,
     )
-    car_meter = models.IntegerField(null=True)
-    fuel_consumption_rate = models.IntegerField(null=True, blank=True)
+    car_meter = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    fuel_consumption_rate = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
     motor_image = models.ImageField(upload_to="motor_images/", null=True, blank=True)
     fuel_image = models.ImageField(upload_to="fuel_images/", null=True, blank=True)
 

@@ -277,7 +277,7 @@ class VerifyDriverView(APIView):
             )
         if not car.is_available_today():
             raise CustomValidationError(
-                message="السيارة غير مفعلة",
+                message="السيبارة غير مصرح لها هذا اليوم",
                 code="car_not_active",
                 errors=[],
                 status_code=status.HTTP_404_NOT_FOUND,
