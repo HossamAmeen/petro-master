@@ -31,6 +31,7 @@ class CarOperationFilter(django_filters.FilterSet):
             "service",
             "start_date",
             "end_date",
+            "status",
         ]
 
 
