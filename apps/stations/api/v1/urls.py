@@ -22,7 +22,7 @@ urlpatterns += [
     path("home/", StationHomeAPIView.as_view(), name="station-home"),
     path("operations/", StationOperationsAPIView.as_view(), name="station-operations"),
     path(
-        "gas-operations/<int:pk>",
+        "gas-operations/<int:pk>/",
         StationGasOperationsAPIView.as_view(),
         name="station-gas-operations",
     ),
