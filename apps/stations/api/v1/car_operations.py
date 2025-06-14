@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.db.transaction import atomic
 from django.utils.timezone import now
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -17,12 +17,13 @@ from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.stations.api.station_serializers.car_operation_serializer import (
     updateStationGasCarOperationSerializer,
+    updateStationOtherCarOperationSerializer,
 )
 from apps.stations.models.service_models import Service
 from apps.users.models import CompanyUser, StationOwner
 
 
-class StationGasOperationsAPIView(APIView):
+class StationGasOperationAPIView(APIView):
     @extend_schema(
         request=updateStationGasCarOperationSerializer,
         responses={200: updateStationGasCarOperationSerializer},
@@ -158,5 +159,114 @@ class StationGasOperationsAPIView(APIView):
 
 
 class StationOtherOperationAPIView(APIView):
+    @extend_schema(
+        request=updateStationOtherCarOperationSerializer,
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string"},
+                    },
+                },
+                description="",
+            )
+        },
+    )
+    @atomic
     def patch(self, request, pk, *args, **kwargs):
-        pass
+        car_operation = CarOperation.objects.filter(
+            id=pk,
+            status__in=[
+                CarOperation.OperationStatus.PENDING,
+                CarOperation.OperationStatus.IN_PROGRESS,
+            ],
+            worker_id=request.user.id,
+            service__isnull=True,
+        ).first()
+        if not car_operation:
+            raise CustomValidationError(
+                {
+                    "error": " هذا العمليه غير موجوده او انتهت بالفعل او لا يوجد بها خدمه محدده"
+                },
+                code="not_found",
+            )
+        station_branch = request.user.worker.station_branch
+        serializer = updateStationOtherCarOperationSerializer(
+            car_operation,
+            data=request.data,
+            partial=True,
+            context={"station_branch_id": station_branch.id},
+        )
+        if serializer.is_valid():
+            status = CarOperation.OperationStatus.COMPLETED
+            serializer.save(status=status)
+            generate_station_transaction(
+                station_id=station_branch.id,
+                amount=serializer.validated_data["cost"],
+                status=KhaznaTransaction.TransactionStatus.APPROVED,
+                description="تم اضافة الخدمه بنجاح",
+                created_by_id=request.user.id,
+                is_internal=True,
+            )
+            # send notifications for station users
+            message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح"
+            notification_users = list(
+                StationOwner.objects.filter(
+                    station_id=station_branch.station_id
+                ).values_list("id", flat=True)
+            )
+            notification_users.append(request.user.id)
+            for user_id in notification_users:
+                Notification.objects.create(
+                    user_id=user_id,
+                    title=message,
+                    description=message,
+                    type=Notification.NotificationType.MONEY,
+                )
+            # send notfication for company user
+            company_id = car_operation.car.branch.company_id
+            generate_company_transaction(
+                company_id=company_id,
+                amount=serializer.validated_data["cost"],
+                status=KhaznaTransaction.TransactionStatus.APPROVED,
+                description="تم اضافة الخدمه بنجاح",
+                created_by_id=request.user.id,
+                is_internal=True,
+            )
+            message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح"
+            notification_users = list(
+                CompanyUser.objects.filter(company_id=company_id).values_list(
+                    "id", flat=True
+                )
+            )
+            notification_users.append(request.user.id)
+            for user_id in notification_users:
+                Notification.objects.create(
+                    user_id=user_id,
+                    title=message,
+                    description=message,
+                    type=Notification.NotificationType.MONEY,
+                )
+            return Response({"message": "تم اضافة الخدمه بنجاح"})
+        raise CustomValidationError(serializer.errors)
+
+    def delete(self, request, pk, *args, **kwargs):
+        car_opertion = CarOperation.objects.filter(
+            id=pk,
+            status__in=[
+                CarOperation.OperationStatus.PENDING,
+                CarOperation.OperationStatus.IN_PROGRESS,
+            ],
+            worker_id=request.user.id,
+            service__isnull=True,
+        ).first()
+        if not car_opertion:
+            raise CustomValidationError(
+                {
+                    "error": " هذا العمليه غير موجوده او انتهت بالفعل او لا يوجد بها خدمه محدده"
+                },
+                code="not_found",
+            )
+        car_opertion.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

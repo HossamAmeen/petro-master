@@ -1,6 +1,9 @@
 from rest_framework import serializers
 
+from apps.companies.models.operation_model import CarOperation
 from apps.shared.base_exception_class import CustomValidationError
+from apps.stations.models.service_models import Service
+from apps.stations.models.stations_models import StationBranchService
 
 
 class updateStationGasCarOperationSerializer(serializers.Serializer):
@@ -39,6 +42,45 @@ class updateStationGasCarOperationSerializer(serializers.Serializer):
         return instance
 
 
-class updateStationOtherCarOperationSerializer(serializers.Serializer):
-    amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
-    start_time = serializers.DateTimeField(required=False, allow_null=True)
+class updateStationOtherCarOperationSerializer(serializers.ModelSerializer):
+    service = serializers.IntegerField(required=True)
+    cost = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
+    car_image = serializers.ImageField(required=True)
+
+    class Meta:
+        model = CarOperation
+        fields = ["service", "cost", "car_image"]
+
+    def __init__(self, *args, **kwargs):
+        self.service_name = None
+        super().__init__(*args, **kwargs)
+
+    def validate_cost(self, cost):
+        if cost <= 0:
+            raise CustomValidationError({"cost": "السعر يجب ان يكون اكبر من 0"})
+        return cost
+
+    def validate_service(self, service):
+        station_branch = self.context["station_branch_id"]
+        branch_service = (
+            StationBranchService.objects.select_related("service")
+            .filter(service=service, station_branch=station_branch)
+            .first()
+        )
+        if not branch_service:
+            raise CustomValidationError({"service": "الخدمة غير متاح للفرع الخاص بكم"})
+        self.service_name = branch_service.service.name
+        return branch_service.service
+
+    def update(self, instance, validated_data):
+        instance.service_id = validated_data.get("service", instance.service)
+        instance.cost = validated_data.get("cost", instance.cost)
+        instance.car_image = validated_data.get("car_image", instance.car_image)
+        instance.unit = (Service.ServiceUnit.UNIT,)
+        instance.status = validated_data.get("status", instance.status)
+        instance.save()
+
+        return instance
+
+    def to_representation(self, instance):
+        return {"service_name": self.service_name}

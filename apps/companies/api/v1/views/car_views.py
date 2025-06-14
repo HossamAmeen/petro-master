@@ -1,5 +1,4 @@
 from django.db import transaction
-from django.utils import timezone
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -296,14 +295,13 @@ class VerifyDriverView(APIView):
         else:
             service = None
 
-        station_branch = request.user.worker.station_branch
         if CarOperation.objects.filter(
             status__in=[
                 CarOperation.OperationStatus.PENDING,
                 CarOperation.OperationStatus.IN_PROGRESS,
             ],
             car=car,
-        ).first():
+        ).exists():
             raise CustomValidationError(
                 message="السيارة قيد عمليه اخرى",
                 code="car_in_progress",
@@ -311,17 +309,20 @@ class VerifyDriverView(APIView):
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
+        station_branch = request.user.worker.station_branch
         car_operation = CarOperation.objects.create(
             car=car,
             driver=driver,
             service=service,
             worker_id=request.user.id,
             station_branch_id=station_branch.id,
-            fuel_type=car.fuel_type,
             status=CarOperation.OperationStatus.PENDING,
-            start_time=timezone.now(),
             created_by_id=request.user.id,
         )
+
+        car.is_blocked_balance_update = True
+        car.save()
+
         liters_count = (
             car.permitted_fuel_amount
             if car.permitted_fuel_amount
@@ -329,8 +330,7 @@ class VerifyDriverView(APIView):
         )
         car_service = car.service
         service_cost = car_service.cost if car_service else 0
-        car.is_blocked_balance_update = True
-        car.save()
+
         return Response(
             {
                 "message": "تم التحقق من السائق بنجاح",
