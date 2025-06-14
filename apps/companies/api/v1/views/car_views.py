@@ -115,6 +115,13 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
     )
     def update_balance(self, request, *args, **kwargs):
         car = self.get_object()
+        if car.is_blocked_balance_update:
+            raise CustomValidationError(
+                {
+                    "error": "لا يمكن تحديث رصيد السيارة حاليا لانها في منتصف عملية، يرجى اتمام العملية اولا"
+                },
+                code="not_found",
+            )
         serializer = CarBalanceUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 

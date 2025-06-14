@@ -83,6 +83,9 @@ class StationGasOperationAPIView(APIView):
                     unit=Service.ServiceUnit.LITRE,
                 )
 
+                car.is_blocked_balance_update = False
+                car.save()
+
                 station_id = request.station_id
                 generate_station_transaction(
                     station_id=station_id,
@@ -141,6 +144,7 @@ class StationGasOperationAPIView(APIView):
 
         raise CustomValidationError(serializer.errors)
 
+    @atomic
     def delete(self, request, pk, *args, **kwargs):
         car_opertion = CarOperation.objects.filter(
             id=pk,
@@ -155,6 +159,9 @@ class StationGasOperationAPIView(APIView):
                 code="not_found",
             )
         car_opertion.delete()
+        car = car_opertion.car
+        car.is_blocked_balance_update = False
+        car.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -201,6 +208,11 @@ class StationOtherOperationAPIView(APIView):
         if serializer.is_valid():
             status = CarOperation.OperationStatus.COMPLETED
             serializer.save(status=status)
+
+            car = car_operation.car
+            car.is_blocked_balance_update = False
+            car.save()
+
             generate_station_transaction(
                 station_id=station_branch.id,
                 amount=serializer.validated_data["cost"],
@@ -269,4 +281,9 @@ class StationOtherOperationAPIView(APIView):
                 code="not_found",
             )
         car_opertion.delete()
+
+        car = car_opertion.car
+        car.is_blocked_balance_update = False
+        car.save()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
