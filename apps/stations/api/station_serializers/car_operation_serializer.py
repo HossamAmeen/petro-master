@@ -3,7 +3,7 @@ from rest_framework import serializers
 from apps.shared.base_exception_class import CustomValidationError
 
 
-class updateCarOperationSerializer(serializers.Serializer):
+class updateStationGasCarOperationSerializer(serializers.Serializer):
     car_meter = serializers.DecimalField(
         max_digits=10, decimal_places=2, required=False
     )
@@ -37,3 +37,8 @@ class updateCarOperationSerializer(serializers.Serializer):
         instance.save()
 
         return instance
+
+
+class updateStationOtherCarOperationSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    start_time = serializers.DateTimeField(required=False, allow_null=True)

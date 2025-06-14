@@ -16,7 +16,7 @@ from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.stations.api.station_serializers.car_operation_serializer import (
-    updateCarOperationSerializer,
+    updateStationGasCarOperationSerializer,
 )
 from apps.stations.models.service_models import Service
 from apps.users.models import CompanyUser, StationOwner
@@ -24,8 +24,8 @@ from apps.users.models import CompanyUser, StationOwner
 
 class StationGasOperationsAPIView(APIView):
     @extend_schema(
-        request=updateCarOperationSerializer,
-        responses={200: updateCarOperationSerializer},
+        request=updateStationGasCarOperationSerializer,
+        responses={200: updateStationGasCarOperationSerializer},
     )
     @atomic
     def patch(self, request, pk, *args, **kwargs):
@@ -41,7 +41,7 @@ class StationGasOperationsAPIView(APIView):
                 {"error": "هذا العمليه غير موجوده او انتهت بالفعل"},
                 code="not_found",
             )
-        serializer = updateCarOperationSerializer(
+        serializer = updateStationGasCarOperationSerializer(
             car_opertion, data=request.data, partial=True
         )
         if serializer.is_valid():
@@ -155,3 +155,8 @@ class StationGasOperationsAPIView(APIView):
             )
         car_opertion.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StationOtherOperationAPIView(APIView):
+    def patch(self, request, pk, *args, **kwargs):
+        pass

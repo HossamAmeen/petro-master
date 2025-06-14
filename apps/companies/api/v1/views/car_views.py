@@ -297,6 +297,20 @@ class VerifyDriverView(APIView):
             service = None
 
         station_branch = request.user.worker.station_branch
+        if CarOperation.objects.filter(
+            status__in=[
+                CarOperation.OperationStatus.PENDING,
+                CarOperation.OperationStatus.IN_PROGRESS,
+            ],
+            car=car,
+        ).first():
+            raise CustomValidationError(
+                message="السيارة قيد عمليه اخرى",
+                code="car_in_progress",
+                errors=[],
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
         car_operation = CarOperation.objects.create(
             car=car,
             driver=driver,
@@ -315,6 +329,8 @@ class VerifyDriverView(APIView):
         )
         car_service = car.service
         service_cost = car_service.cost if car_service else 0
+        car.is_blocked_balance_update = True
+        car.save()
         return Response(
             {
                 "message": "تم التحقق من السائق بنجاح",

@@ -109,6 +109,7 @@ class Car(AbstractBaseModel):
     number_of_washes_per_month = models.IntegerField()
     fuel_allowed_days = models.JSONField(default=list, blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    is_blocked_balance_update = models.BooleanField(default=False)
     city = models.ForeignKey(
         "geo.City", on_delete=models.SET_NULL, null=True, blank=True
     )
