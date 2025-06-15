@@ -44,9 +44,14 @@ class CarOperationFilter(django_filters.FilterSet):
 
 
 class CarFilter(django_filters.FilterSet):
-    fuel_type = django_filters.MultipleChoiceFilter(
-        choices=Car.FuelType.choices, field_name="fuel_type"
+    fuel_type = django_filters.CharFilter(
+        method="filter_by_fuel_type",
+        help_text="Filter by fuel type example fuel_type=diesel,solar,electric",
     )
+
+    def filter_by_fuel_type(self, queryset, name, value):
+        fuel_type_values = value.split(",")
+        return queryset.filter(fuel_type__in=fuel_type_values)
 
     class Meta:
         model = Car
