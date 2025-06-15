@@ -20,6 +20,14 @@ class CarOperationFilter(django_filters.FilterSet):
         field_name="start_time__date", lookup_expr="gte"
     )
     end_date = django_filters.DateFilter(field_name="end_time__date", lookup_expr="lte")
+    status = django_filters.CharFilter(
+        method="filter_by_status",
+        help_text="Filter by status example statusing=pending,in_progress,completed,cancelled",
+    )
+
+    def filter_by_status(self, queryset, name, value):
+        status_values = value.split(",")
+        return queryset.filter(status__in=status_values)
 
     class Meta:
         model = CarOperation
