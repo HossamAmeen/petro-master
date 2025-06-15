@@ -51,7 +51,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
         return data
 
     def get_service_category(self, obj):
-        if obj.service.type in [
+        if obj.service and obj.service.type in [
             Service.ServiceType.PETROL,
             Service.ServiceType.DIESEL,
         ]:
@@ -91,6 +91,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
             "duration",
             "amount",
             "unit",
+            "status",
             "service",
             "service_category",
             "worker",
