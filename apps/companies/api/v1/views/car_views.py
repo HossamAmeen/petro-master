@@ -337,7 +337,13 @@ class VerifyDriverView(APIView):
         )
         car_service = car.service
         service_cost = car_service.cost if car_service else 0
-
+        if car.balance < liters_count * service_cost:
+            raise CustomValidationError(
+                message="السيارة لا تمتلك كافٍ من المال",
+                code="not_enough_balance",
+                errors=[],
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
             {
                 "message": "تم التحقق من السائق بنجاح",

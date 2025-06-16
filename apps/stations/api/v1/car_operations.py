@@ -72,6 +72,7 @@ class StationGasOperationAPIView(APIView):
                     car_opertion.service.cost + car_opertion.worker.station_branch.fees
                 )
                 profits = company_cost - station_cost
+
                 serializer.save(
                     end_time=end_time,
                     status=status,
@@ -84,7 +85,7 @@ class StationGasOperationAPIView(APIView):
                 )
 
                 car.is_blocked_balance_update = False
-                car.balance -= company_cost
+                car.balance = car.balance - company_cost
                 car.save()
 
                 station_id = request.station_id
@@ -209,9 +210,16 @@ class StationOtherOperationAPIView(APIView):
         if serializer.is_valid():
             status = CarOperation.OperationStatus.COMPLETED
             serializer.save(status=status)
-
             car = car_operation.car
+            if car.balance < serializer.validated_data["cost"]:
+                raise CustomValidationError(
+                    {"error": "السيارة لا تمتلك كافٍ من المال"},
+                    code="not_enough_balance",
+                    errors=[],
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
             car.is_blocked_balance_update = False
+            car.balance = car.balance - serializer.validated_data["cost"]
             car.save()
 
             generate_station_transaction(
