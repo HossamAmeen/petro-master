@@ -127,7 +127,6 @@ class Car(AbstractBaseModel):
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = generate_unique_code(Car)
-        self.full_clean()
         super().save(*args, **kwargs)
 
     @property
