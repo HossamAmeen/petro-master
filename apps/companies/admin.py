@@ -213,6 +213,18 @@ class CarAdmin(admin.ModelAdmin):
         if not obj.pk:  # Only set created_by on creation, not updates
             obj.created_by = request.user
             obj.balance = 0
+        if obj.code:
+            car_code = CarCode.objects.filter(code=obj.code).first()
+            if car_code:
+                if car_code.car:
+                    if car_code.car != obj:
+                        raise forms.ValidationError("Car code is busy")
+                else:
+                    car_code.car = obj
+                    car_code.save()
+            else:
+                raise forms.ValidationError("Invalid car code")
+
         obj.updated_by = request.user
         obj.save()
 
