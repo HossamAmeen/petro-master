@@ -37,6 +37,16 @@ class updateStationGasCarOperationSerializer(serializers.Serializer):
         instance.fuel_image = validated_data.get("fuel_image", instance.fuel_image)
         instance.amount = validated_data.get("amount", instance.amount)
         instance.status = validated_data.get("status", instance.status)
+        instance.unit = validated_data.get("unit", instance.unit)
+        instance.duration = validated_data.get("duration", instance.duration)
+        instance.cost = validated_data.get("cost", instance.cost)
+        instance.company_cost = validated_data.get(
+            "company_cost", instance.company_cost
+        )
+        instance.station_cost = validated_data.get(
+            "station_cost", instance.station_cost
+        )
+        instance.profits = validated_data.get("profits", instance.profits)
         instance.save()
 
         return instance

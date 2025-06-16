@@ -84,6 +84,7 @@ class StationGasOperationAPIView(APIView):
                 )
 
                 car.is_blocked_balance_update = False
+                car.balance -= company_cost
                 car.save()
 
                 station_id = request.station_id
