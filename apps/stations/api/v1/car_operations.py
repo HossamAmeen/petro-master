@@ -60,10 +60,20 @@ class StationGasOperationAPIView(APIView):
                 end_time = now()
                 if end_time > car_opertion.start_time + timedelta(minutes=1):
                     pass
-
                 car = car_opertion.car
+                car_tank_capacity = (
+                    car.permitted_fuel_amount
+                    if car.permitted_fuel_amount
+                    else car.tank_capacity
+                )
+                if serializer.validated_data["amount"] > car_tank_capacity:
+                    raise CustomValidationError(
+                        {"error": "الكمية المطلوبة اكبر من الحد الأقصى"},
+                        code="not_found",
+                    )
+
                 status = CarOperation.OperationStatus.COMPLETED
-                duration = (end_time - car_opertion.start_time).total_seconds() / 60
+                duration = (end_time - car_opertion.created).total_seconds() / 60
                 cost = serializer.validated_data["amount"] * car_opertion.service.cost
                 company_cost = serializer.validated_data["amount"] * (
                     car_opertion.service.cost + car.branch.fees
