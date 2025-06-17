@@ -192,7 +192,6 @@ class CarAdmin(admin.ModelAdmin):
         "branch__company",
     )
     readonly_fields = (
-        "balance",
         "created_by",
         "updated_by",
         "created",
