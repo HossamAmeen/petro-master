@@ -223,7 +223,6 @@ class StationOtherOperationAPIView(APIView):
         serializer = updateStationOtherCarOperationSerializer(
             car_operation,
             data=request.data,
-            partial=True,
             context={"station_branch_id": station_branch.id},
         )
         if serializer.is_valid():
@@ -242,7 +241,8 @@ class StationOtherOperationAPIView(APIView):
             car.save()
 
             generate_station_transaction(
-                station_id=station_branch.id,
+                station_id=station_branch.station_id,
+                station_branch_id=station_branch.id,
                 amount=serializer.validated_data["cost"],
                 status=KhaznaTransaction.TransactionStatus.APPROVED,
                 description="تم اضافة الخدمه بنجاح",
