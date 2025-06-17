@@ -68,8 +68,9 @@ class StationGasOperationAPIView(APIView):
                 company_cost = serializer.validated_data["amount"] * (
                     car_opertion.service.cost + car.branch.fees
                 )
+                worker = car_opertion.worker
                 station_cost = serializer.validated_data["amount"] * (
-                    car_opertion.service.cost + car_opertion.worker.station_branch.fees
+                    car_opertion.service.cost + worker.station_branch.fees
                 )
                 profits = company_cost - station_cost
 
@@ -91,12 +92,17 @@ class StationGasOperationAPIView(APIView):
                 station_id = request.station_id
                 generate_station_transaction(
                     station_id=station_id,
+                    station_branch_id=worker.station_branch_id,
                     amount=station_cost,
                     status=KhaznaTransaction.TransactionStatus.APPROVED,
                     description=f"تم تفويل سيارة رقم {car.plate} بعدد {car_opertion.amount} لتر",
                     created_by_id=request.user.id,
                     is_internal=True,
                 )
+                station_branch = worker.station_branch
+                station_branch.balance = station_branch.balance - station_cost
+                station_branch.save()
+
                 # send notifications for station users
                 message = f"تم تفويل سيارة رقم {car_opertion.car.plate} بعدد {car_opertion.amount} لتر"
                 notification_users = list(
@@ -123,7 +129,10 @@ class StationGasOperationAPIView(APIView):
                     created_by_id=request.user.id,
                     is_internal=True,
                 )
-                message = f"تم تفويل سيارة رقم {car_opertion.car.plate} بعدد {car_opertion.amount} لتر وخصم مبلغ بمقدار {car_opertion.company_cost}"
+                message = (
+                    f"تم تفويل سيارة رقم {car_opertion.car.plate} بعدد {car_opertion.amount} لتر "
+                    f"وخصم مبلغ بمقدار {car_opertion.company_cost:.2f} ريال"  # noqa
+                )
                 notification_users = list(
                     CompanyUser.objects.filter(company_id=company_id).values_list(
                         "id", flat=True

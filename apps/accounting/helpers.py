@@ -40,6 +40,7 @@ def generate_company_transaction(
 
 def generate_station_transaction(
     station_id,
+    station_branch_id,
     amount,
     status,
     description,
@@ -59,6 +60,7 @@ def generate_station_transaction(
 
     StationKhaznaTransaction.objects.create(
         station_id=station_id,
+        station_branch_id=station_branch_id,
         amount=amount,
         status=status,
         reference_code=reference_code,
