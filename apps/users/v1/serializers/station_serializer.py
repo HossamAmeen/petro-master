@@ -38,6 +38,11 @@ class CreateWorkerSerializer(serializers.ModelSerializer):
         error_messages={"unique": "هذا الرقم موجود بالفعل"}
     )
 
+    def validate_phone_number(self, phone_number):
+        if User.objects.filter(phone_number=phone_number).exists():
+            raise serializers.ValidationError("هذا الرقم موجود بالفعل.")
+        return phone_number
+
     def validate(self, attrs):
         if attrs["password"] != attrs["confirm_password"]:
             raise serializers.ValidationError("Passwords do not match.")
