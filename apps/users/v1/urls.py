@@ -1,7 +1,7 @@
 from rest_framework.routers import DefaultRouter
 
 from .views.company_users_view import CompanyBranchManagerViewSet
-from .views.station_view import (
+from .views.station_users_view import (
     StationBranchManagerViewSet,
     StationOwnerViewSet,
     WorkerViewSet,

@@ -22,7 +22,7 @@ from apps.companies.api.v1.serializers.branch_serializers import (
     RetrieveCompanyBranchSerializer,
 )
 from apps.companies.api.v1.serializers.car_operation_serializer import (
-    ListHomeCarOperationSerializer,
+    ListCompanyHomeCarOperationSerializer,
 )
 from apps.companies.api.v1.serializers.company_serializer import (
     CompanySerializer,
@@ -346,7 +346,7 @@ class CompanyHomeView(APIView):
             "total_balance": total_balance if total_balance else 0,
         }
 
-        response_data["car_operations"] = ListHomeCarOperationSerializer(
+        response_data["car_operations"] = ListCompanyHomeCarOperationSerializer(
             CarOperation.objects.filter(car__branch__in=branches_id).order_by("-id")[
                 :3
             ],

@@ -28,6 +28,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             "status",
             "start_time",
             "end_time",
+            "created",
             "duration",
             "cost",
             "amount",
@@ -59,12 +60,20 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
         return "خدمات أخرى"
 
 
-class ListHomeCarOperationSerializer(serializers.ModelSerializer):
+class ListCompanyHomeCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
 
     class Meta:
         model = CarOperation
-        fields = ["id", "car", "start_time", "cost", "amount", "unit"]
+        fields = [
+            "id",
+            "car",
+            "start_time",
+            "cost",
+            "company_cost",
+            "amount",
+            "unit",
+        ]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -88,6 +97,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
             "station_cost",
             "start_time",
             "end_time",
+            "created",
             "duration",
             "amount",
             "unit",
