@@ -254,7 +254,7 @@ class CarCodeAdmin(admin.ModelAdmin):
         "car__plate_number",
         "car__branch__company__name",
     )
-    list_filter = ("car__branch__company",)
+    list_filter = ("car__branch__company", "created")
     actions = ["print_qr_codes"]
 
     list_per_page = 10000
