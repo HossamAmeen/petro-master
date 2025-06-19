@@ -267,7 +267,11 @@ class CarCodeAdmin(admin.ModelAdmin):
                 code_list = []
                 for i in range(generate_count):
                     code_list.append(generate_unique_code(CarCode))
-
+                code_list = list(set(code_list))
+                if len(code_list) < generate_count:
+                    for i in range(generate_count - len(code_list)):
+                        code_list.append(generate_unique_code(CarCode))
+                code_list = list(set(code_list))
                 CarCode.objects.bulk_create(
                     [
                         CarCode(
@@ -280,7 +284,7 @@ class CarCodeAdmin(admin.ModelAdmin):
                     ]
                 )
             messages.success(
-                request, f"Successfully generated {generate_count} car codes."
+                request, f"Successfully generated {len(code_list)} car codes."
             )
             return
         else:
