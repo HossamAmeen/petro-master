@@ -197,7 +197,7 @@ class CarAdmin(admin.ModelAdmin):
         "created",
         "modified",
     )
-    list_per_page = 10
+    list_per_page = 500
 
     def company_name(self, obj):
         return obj.branch.company.name
