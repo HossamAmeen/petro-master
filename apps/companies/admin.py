@@ -248,6 +248,7 @@ class CarCodeAdmin(admin.ModelAdmin):
     list_display = (
         "code",
         "car",
+        "created",
     )
     search_fields = (
         "code",

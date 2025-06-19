@@ -284,3 +284,6 @@ if not env("ENVIRONMENT", default="local") == "local":
         # run the profiler on when there is an active transaction
         profile_lifecycle="trace",
     )
+
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000  # Increase as needed
