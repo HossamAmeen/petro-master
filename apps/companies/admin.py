@@ -257,7 +257,7 @@ class CarCodeAdmin(admin.ModelAdmin):
     list_filter = ("car__branch__company",)
     actions = ["print_qr_codes"]
 
-    list_per_page = 500
+    list_per_page = 10000
 
     def save_model(self, request, obj, form, change):
         generate_count = form.cleaned_data.get("generate_count", 1)
