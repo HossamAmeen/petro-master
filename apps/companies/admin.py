@@ -257,7 +257,7 @@ class CarCodeAdmin(admin.ModelAdmin):
     list_filter = ("car__branch__company", "created")
     actions = ["print_qr_codes"]
 
-    list_per_page = 10000
+    list_per_page = 4395
 
     def save_model(self, request, obj, form, change):
         generate_count = form.cleaned_data.get("generate_count", 1)
@@ -327,6 +327,9 @@ class CarCodeAdmin(admin.ModelAdmin):
         selected_ids = request.GET.get("ids", "").split(",")
         queryset = self.get_queryset(request).filter(id__in=selected_ids)
         return self.print_qr_codes(request, queryset)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).order_by("-created")
 
 
 @admin.register(Driver)
