@@ -141,7 +141,7 @@ class StationGasOperationAPIView(APIView):
                 )
                 message = (
                     f"تم تفويل سيارة رقم {car_opertion.car.plate} بعدد {car_opertion.amount} لتر "
-                    f"وخصم مبلغ بمقدار {car_opertion.company_cost:.2f} ريال"  # noqa
+                    f"وخصم مبلغ بمقدار {car_opertion.company_cost:.2f} جنية"  # noqa
                 )
                 notification_users = list(
                     CompanyUser.objects.filter(company_id=company_id).values_list(
@@ -245,12 +245,12 @@ class StationOtherOperationAPIView(APIView):
                 station_branch_id=station_branch.id,
                 amount=serializer.validated_data["cost"],
                 status=KhaznaTransaction.TransactionStatus.APPROVED,
-                description="تم اضافة الخدمه بنجاح",
+                description="تم اضافة الخدمه بنجاح الي السيارة رقم {car.plate}",
                 created_by_id=request.user.id,
                 is_internal=True,
             )
             # send notifications for station users
-            message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح"
+            message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}"
             notification_users = list(
                 StationOwner.objects.filter(
                     station_id=station_branch.station_id
@@ -270,11 +270,11 @@ class StationOtherOperationAPIView(APIView):
                 company_id=company_id,
                 amount=serializer.validated_data["cost"],
                 status=KhaznaTransaction.TransactionStatus.APPROVED,
-                description="تم اضافة الخدمه بنجاح",
+                description=f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}",
                 created_by_id=request.user.id,
                 is_internal=True,
             )
-            message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح"
+            message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}"
             notification_users = list(
                 CompanyUser.objects.filter(company_id=company_id).values_list(
                     "id", flat=True
