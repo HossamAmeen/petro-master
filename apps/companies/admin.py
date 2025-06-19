@@ -232,7 +232,7 @@ class CarCodeForm(forms.ModelForm):
     generate_count = forms.IntegerField(
         label="Number of codes to generate",
         min_value=1,
-        max_value=100,
+        max_value=10000,
         required=False,
         help_text="Leave empty to create just one code",
     )
