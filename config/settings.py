@@ -63,6 +63,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
     "polymorphic",
     "gunicorn",
+    "psycopg2",
 ]
 
 LOCAL_APPS = [
@@ -109,18 +110,33 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if env("ENVIRONMENT", default="local") != "PRODUCTION":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
-
-
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("DB_NAME", default="defaultdb"),
+            "USER": env("DB_USER", default="doadmin"),
+            "PASSWORD": env("DB_PASSWORD", default="password"),
+            "HOST": env(
+                "DB_HOST",
+                default="db-postgresql-fra1-63337-do-user-21327337-0.k.db.ondigitalocean.com",
+            ),
+            "PORT": env("DB_PORT", default="25060"),
+            "OPTIONS": {
+                "sslmode": env("DB_SSL_MODE", default="require"),
+            },
+        }
+    }
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -242,8 +258,8 @@ SPECTACULAR_SETTINGS = {
     ],
 }
 
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+SENDGRID_API_KEY = env("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.sendgrid.net"

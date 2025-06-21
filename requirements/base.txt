@@ -37,3 +37,6 @@ sentry-sdk==2.27.0
 
 # qrcode
 qrcode==8.2
+
+# DataBase
+psycopg2-binary==2.9.10

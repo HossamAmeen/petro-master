@@ -265,6 +265,15 @@ class VerifyDriverView(APIView):
     )
     @transaction.atomic
     def post(self, request, driver_code, car_code, service_type):
+        car = Car.objects.filter(code=car_code.strip()).first()
+        if not car:
+            raise CustomValidationError(
+                message="كود السيارة هذا لا يعمل او غير مفعل الان.",
+                code="car_code_not_found",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
         driver = Driver.objects.filter(code=driver_code.strip()).first()
         if not driver:
             raise CustomValidationError(
@@ -274,14 +283,6 @@ class VerifyDriverView(APIView):
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
-        car = Car.objects.filter(code=car_code.strip()).first()
-        if not car:
-            raise CustomValidationError(
-                message="كود السيارة هذا لا يعمل او غير مفعل الان.",
-                code="car_code_not_found",
-                errors=[],
-                status_code=status.HTTP_404_NOT_FOUND,
-            )
         if not car.is_available_today():
             raise CustomValidationError(
                 message="السيبارة غير مصرح لها هذا اليوم",
