@@ -1,0 +1,19 @@
+[
+    {
+        "model": "companies.company",
+        "pk": 1,
+        "fields": {
+            "name": "google company",
+            "address": "new Cairo",
+            "balance": 10000.00,
+            "email": "test_company@gmail.com",
+            "phone_number": "01712345678",
+            "district": 1,
+            "fees": 10.00,
+            "created_by": 1,
+            "updated_by": 1,
+            "created": "2025-06-23T20:56:17.000Z",
+            "modified": "2025-06-23T20:56:17.000Z"
+        }
+    }
+]

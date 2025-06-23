@@ -35,7 +35,6 @@ class CompanyAdmin(admin.ModelAdmin):
     search_fields = ("name", "address", "phone_number")
     readonly_fields = ["created_by", "updated_by"]
     list_per_page = 20
-    # inlines = [BranchInline]
 
     def cars_link(self, obj):
         count = obj.branches.aggregate(total_cars=Count("cars"))["total_cars"] or 0
@@ -62,6 +61,16 @@ class CompanyAdmin(admin.ModelAdmin):
             + f"?company__id__exact={obj.id}"
         )
         return format_html('<a class="button" href="{}">Branches ({})</a>', url, count)
+
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new Driver.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        obj.save()
 
     drivers_link.short_description = "Drivers"
     cars_link.short_description = "Cars"
