@@ -1,6 +1,5 @@
 import base64
 import os
-import uuid
 from io import BytesIO
 
 import qrcode
@@ -188,16 +187,9 @@ class Driver(AbstractBaseModel):
     def __str__(self):
         return self.name
 
-    def generate_unique_code(self):
-        """Generate a unique alphanumeric code."""
-        while True:
-            new_code = f"DR-{uuid.uuid4().hex[:10].upper()}"  # Example: DR-ABC123
-            if not Driver.objects.filter(code=new_code).exists():
-                return new_code
-
     def save(self, *args, **kwargs):
         if not self.code:
-            self.code = self.generate_unique_code()
+            self.code = generate_unique_code(Driver)
         super().save(*args, **kwargs)
 
     class Meta:
