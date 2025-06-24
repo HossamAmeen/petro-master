@@ -228,6 +228,7 @@ class CarAdmin(admin.ModelAdmin):
                     if car_code.car != obj:
                         raise forms.ValidationError("Car code is busy")
                 else:
+                    obj.save()
                     car_code.car = obj
                     car_code.save()
             else:
