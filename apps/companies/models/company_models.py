@@ -21,7 +21,6 @@ class Company(AbstractBaseModel):
     district = models.ForeignKey(
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
-    fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
 
     def __str__(self):
         return self.name
@@ -44,6 +43,10 @@ class CompanyBranch(AbstractBaseModel):
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
     fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    other_service_fees = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0.0
+    )
+    cash_request_fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
 
     def __str__(self):
         return self.name + " - " + self.company.name
