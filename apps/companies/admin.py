@@ -69,6 +69,9 @@ class CompanyAdmin(admin.ModelAdmin):
         """
         if not obj.pk:  # Only set created_by on creation, not updates
             obj.created_by = request.user
+            obj.balance = 0
+        else:
+            obj.balance = form.cleaned_data.get("balance", obj.balance)
         obj.updated_by = request.user
         obj.save()
 
