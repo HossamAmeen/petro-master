@@ -1,3 +1,4 @@
+import math
 from datetime import timedelta
 
 from django.db.transaction import atomic
@@ -48,6 +49,11 @@ class StationGasOperationAPIView(APIView):
         if serializer.is_valid():
             status = CarOperation.OperationStatus.PENDING
             if "car_meter" in serializer.validated_data:
+                if serializer.validated_data["car_meter"] < car_opertion.car.last_meter:
+                    raise CustomValidationError(
+                        {"error": "العداد الحالي يجب ان يكون اكبر من العداد السابق"},
+                        code="not_found",
+                    )
                 status = CarOperation.OperationStatus.IN_PROGRESS
                 serializer.save(status=status)
 
@@ -58,15 +64,24 @@ class StationGasOperationAPIView(APIView):
                         code="not_found",
                     )
                 end_time = now()
-                if end_time > car_opertion.start_time + timedelta(minutes=1):
-                    pass
+                if end_time > car_opertion.start_time + timedelta(seconds=70):
+                    raise CustomValidationError(
+                        {"error": "الوقت الانتهاء يجب ان يكون اقل من 60 ثانية"},
+                        code="not_found",
+                    )
                 car = car_opertion.car
                 car_tank_capacity = (
                     car.permitted_fuel_amount
                     if car.permitted_fuel_amount
                     else car.tank_capacity
                 )
-                if serializer.validated_data["amount"] > car_tank_capacity:
+                company_liter_cost = (
+                    car_opertion.service.cost * (car.branch.fees / 100)
+                    + car_opertion.service.cost
+                )
+                available_liters = math.floor(car.balance / company_liter_cost)
+                available_liters = min(car_tank_capacity, available_liters)
+                if serializer.validated_data["amount"] > available_liters:
                     raise CustomValidationError(
                         {"error": "الكمية المطلوبة اكبر من الحد الأقصى"},
                         code="not_found",
@@ -75,9 +90,7 @@ class StationGasOperationAPIView(APIView):
                 status = CarOperation.OperationStatus.COMPLETED
                 duration = (end_time - car_opertion.created).total_seconds() / 60
                 cost = serializer.validated_data["amount"] * car_opertion.service.cost
-                company_cost = serializer.validated_data["amount"] * (
-                    car_opertion.service.cost + car.branch.fees
-                )
+                company_cost = serializer.validated_data["amount"] * company_liter_cost
                 worker = car_opertion.worker
                 station_cost = serializer.validated_data["amount"] * (
                     car_opertion.service.cost + worker.station_branch.fees
@@ -96,7 +109,13 @@ class StationGasOperationAPIView(APIView):
                 )
 
                 car.is_blocked_balance_update = False
+                if car.is_with_odometer:
+                    car.fuel_consumption_rate = (
+                        car_opertion.car_meter - car.last_meter
+                    ) / serializer.validated_data["amount"]
+                    car.last_meter = car_opertion.car_meter
                 car.balance = car.balance - company_cost
+
                 car.save()
 
                 station_id = request.station_id

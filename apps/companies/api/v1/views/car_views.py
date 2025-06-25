@@ -1,4 +1,7 @@
+import math
+
 from django.db import transaction
+from django.utils import timezone
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -317,6 +320,21 @@ class VerifyDriverView(APIView):
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
+        if (
+            CarOperation.objects.filter(
+                status=CarOperation.OperationStatus.COMPLETED,
+                car=car,
+                created_at__date=timezone.now().date(),
+            ).count()
+            > car.number_of_fuelings_per_day
+        ):
+            raise CustomValidationError(
+                message="السيارة تجاوزت عدد عمليات البترولية اليومية المسموح بها",
+                code="car_in_progress",
+                errors=[],
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
         station_branch = request.user.worker.station_branch
         car_operation = CarOperation.objects.create(
             car=car,
@@ -338,13 +356,9 @@ class VerifyDriverView(APIView):
         )
         car_service = car.service
         service_cost = car_service.cost if car_service else 0
-        if car.balance < liters_count * service_cost:
-            raise CustomValidationError(
-                message="السيارة لا تمتلك كافٍ من المال",
-                code="not_enough_balance",
-                errors=[],
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
+        liter_cost = (service_cost * car.branch.fees / 100) + service_cost
+        available_liters = math.floor(car.balance / liter_cost)
+        available_liters = min(liters_count, available_liters)
         return Response(
             {
                 "message": "تم التحقق من السائق بنجاح",
@@ -353,9 +367,8 @@ class VerifyDriverView(APIView):
                     "plate_character": car.plate_character,
                     "plate_color": COLOR_CHOICES_HEX.get(car.plate_color),
                     "fuel_type": car.fuel_type,
-                    "liter_count": liters_count,
-                    "cost": (liters_count * service_cost)
-                    + (liters_count * station_branch.fees),
+                    "liter_count": available_liters,
+                    "cost": available_liters * liter_cost,
                     "code": car.code,
                     "car_service": car_service.name if car_service else None,
                 },
