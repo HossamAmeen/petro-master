@@ -286,13 +286,6 @@ class VerifyDriverView(APIView):
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
-        if not car.is_available_today():
-            raise CustomValidationError(
-                message="السيبارة غير مصرح لها هذا اليوم",
-                code="car_not_active",
-                errors=[],
-                status_code=status.HTTP_404_NOT_FOUND,
-            )
         if driver.branch.company_id != car.branch.company_id:
             raise CustomValidationError(
                 message="السائق لا ينتمي للشركة",
@@ -300,11 +293,6 @@ class VerifyDriverView(APIView):
                 errors=[],
                 status_code=status.HTTP_404_NOT_FOUND,
             )
-
-        if service_type == "petrol":
-            service = car.service
-        else:
-            service = None
 
         if CarOperation.objects.filter(
             status__in=[
@@ -320,11 +308,23 @@ class VerifyDriverView(APIView):
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
+        if service_type == "petrol":
+            service = car.service
+            if not car.is_available_today():
+                raise CustomValidationError(
+                    message="السيبارة غير مصرح لها هذا اليوم",
+                    code="car_not_active",
+                    errors=[],
+                    status_code=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            service = None
+
         if (
             CarOperation.objects.filter(
                 status=CarOperation.OperationStatus.COMPLETED,
                 car=car,
-                created_at__date=timezone.now().date(),
+                created__date=timezone.now().date(),
             ).count()
             > car.number_of_fuelings_per_day
         ):
