@@ -117,7 +117,7 @@ class StationHomeAPIView(APIView):
                 .get("balance")
             )
 
-            base_balance = branches_balance
+            base_balance = branches_balance or 0
 
             distributed_balance = branches_balance
         if request.user.role == User.UserRoles.StationWorker:

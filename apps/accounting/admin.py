@@ -29,6 +29,14 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
         "modified",
     )
 
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+            super().save_model(request, obj, form, change)
+            obj.update_company_balance()
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(StationKhaznaTransaction)
 class StationKhaznaTransactionAdmin(admin.ModelAdmin):
@@ -62,3 +70,10 @@ class StationKhaznaTransactionAdmin(admin.ModelAdmin):
         "created",
         "modified",
     )
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+            obj.update_station_balance()
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)

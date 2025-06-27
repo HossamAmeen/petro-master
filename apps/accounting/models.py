@@ -48,6 +48,13 @@ class KhaznaTransaction(AbstractBaseModel):
     def __str__(self):
         return f"{'IN' if self.is_incoming else 'OUT'} | {self.amount} | {self.reference_code}"  # noqa
 
+    def update_company_balance(self):
+        if self.is_incoming:
+            self.company.balance -= self.amount
+        else:
+            self.company.balance += self.amount
+        self.company.save()
+
 
 class CompanyKhaznaTransaction(KhaznaTransaction):
     class ForWhat(models.TextChoices):
@@ -86,3 +93,10 @@ class StationKhaznaTransaction(KhaznaTransaction):
     class Meta:
         verbose_name = "Station Khazna Transaction"
         verbose_name_plural = "Station Khazna Transactions"
+
+    def update_station_balance(self):
+        if self.is_incoming:
+            self.station.balance += self.amount
+        else:
+            self.station.balance -= self.amount
+        self.station.save()
