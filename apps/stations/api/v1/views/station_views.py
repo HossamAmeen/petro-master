@@ -12,6 +12,7 @@ from drf_spectacular.utils import (
 from rest_framework import viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView, Response
 
 from apps.companies.api.v1.filters import CarOperationFilter
@@ -215,6 +216,8 @@ class StationOperationsAPIView(ListAPIView):
 
 
 class StationReportsAPIView(APIView):
+    permission_classes = [IsAuthenticated, StationPermission]
+
     @extend_schema(
         parameters=[
             OpenApiParameter(
