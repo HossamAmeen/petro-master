@@ -280,6 +280,7 @@ class VerifyDriverView(APIView):
                 errors=[],
                 status_code=status.HTTP_404_NOT_FOUND,
             )
+
         company_branch = car.branch
         if not company_branch.company.is_active:
             raise CustomValidationError(
@@ -369,8 +370,16 @@ class VerifyDriverView(APIView):
         )
         service_cost = car_service.cost if car_service else 0
         liter_cost = (service_cost * company_branch.fees / 100) + service_cost
+        if car.balance < liter_cost:
+            raise CustomValidationError(
+                message="السيارة لا تمتلك كافٍ من المال",
+                code="not_enough_balance",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
         available_liters = math.floor(car.balance / liter_cost)
         available_liters = min(liters_count, available_liters)
+
         return Response(
             {
                 "message": "تم التحقق من السائق بنجاح",
