@@ -51,6 +51,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
+        data["duration"] = instance.duration / 60
         return data
 
     def get_service_category(self, obj):
@@ -118,6 +119,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         data["cost"] = instance.station_cost
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
+        data["duration"] = instance.duration / 60
         return data
 
     def get_service_category(self, obj):
