@@ -88,7 +88,7 @@ class StationGasOperationAPIView(APIView):
                     )
 
                 status = CarOperation.OperationStatus.COMPLETED
-                duration = (end_time - car_opertion.created).total_seconds() / 60
+                duration = (end_time - car_opertion.created).total_seconds()
                 cost = serializer.validated_data["amount"] * car_opertion.service.cost
                 company_cost = serializer.validated_data["amount"] * company_liter_cost
                 worker = car_opertion.worker

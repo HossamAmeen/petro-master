@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from apps.stations.api.v1.car_operations import (
+from apps.stations.api.v1.views.car_operations_views import (
     StationGasOperationAPIView,
     StationOtherOperationAPIView,
 )
