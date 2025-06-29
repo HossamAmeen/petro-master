@@ -52,6 +52,15 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
         data["duration"] = instance.duration / 60
+        data["cost"] = (
+            float(instance.company_cost) if instance.company_cost else 0
+        )  # should be deleted
+        data["company_cost"] = (
+            float(instance.company_cost) if instance.company_cost else 0
+        )  # should be deleted
+        data["amount"] = (
+            float(instance.amount) if instance.amount else 0
+        )  # should be deleted
         return data
 
     def get_service_category(self, obj):
@@ -65,6 +74,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
 
 class ListCompanyHomeCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         model = CarOperation
@@ -81,7 +91,15 @@ class ListCompanyHomeCarOperationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
-        data["cost"] = instance.company_cost  # should be deleted
+        data["cost"] = (
+            float(instance.company_cost) if instance.company_cost else 0
+        )  # should be deleted
+        data["company_cost"] = (
+            float(instance.company_cost) if instance.company_cost else 0
+        )  # should be deleted
+        data["amount"] = (
+            float(instance.amount) if instance.amount else 0
+        )  # should be deleted
         return data
 
 
@@ -117,9 +135,13 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["cost"] = instance.station_cost
+        data["cost"] = float(instance.station_cost) if instance.station_cost else 0
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
         data["duration"] = instance.duration / 60
+        data["station_cost"] = (
+            float(instance.station_cost) if instance.station_cost else 0
+        )
+        data["amount"] = float(instance.amount) if instance.amount else 0
         return data
 
     def get_service_category(self, obj):

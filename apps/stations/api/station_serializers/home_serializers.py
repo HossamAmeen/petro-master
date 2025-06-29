@@ -22,5 +22,12 @@ class ListStationReportsSerializer(serializers.ModelSerializer):
         model = CarOperation
         fields = ["service", "service_name", "total_balance", "count", "amount", "unit"]
 
-    def get_unit(self, obj):
-        return SERVICE_UNIT_CHOICES.get(obj["unit"])
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"])
+        data["station_cost"] = (
+            float(instance.station_cost) if instance.station_cost else 0
+        )
+        data["amount"] = float(instance.amount) if instance.amount else 0
+        data["cost"] = float(instance.cost) if instance.cost else 0
+        return data
