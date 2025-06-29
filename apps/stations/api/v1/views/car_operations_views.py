@@ -1,5 +1,6 @@
 import math
 from datetime import timedelta
+from decimal import Decimal
 
 from django.db.transaction import atomic
 from django.utils.timezone import now
@@ -89,13 +90,23 @@ class StationGasOperationAPIView(APIView):
 
                 status = CarOperation.OperationStatus.COMPLETED
                 duration = (end_time - car_opertion.created).total_seconds()
-                cost = serializer.validated_data["amount"] * car_opertion.service.cost
-                company_cost = serializer.validated_data["amount"] * company_liter_cost
-                worker = car_opertion.worker
-                station_cost = serializer.validated_data["amount"] * (
-                    car_opertion.service.cost + worker.station_branch.fees
+                cost = round(
+                    Decimal(serializer.validated_data["amount"])
+                    * Decimal(car_opertion.service.cost),
+                    2,
                 )
-                profits = company_cost - station_cost
+                company_cost = round(
+                    Decimal(serializer.validated_data["amount"])
+                    * Decimal(company_liter_cost),
+                    2,
+                )
+                worker = car_opertion.worker
+                station_cost = round(
+                    Decimal(serializer.validated_data["amount"])
+                    * Decimal(car_opertion.service.cost + worker.station_branch.fees),
+                    2,
+                )
+                profits = round(company_cost - station_cost, 2)
 
                 serializer.save(
                     end_time=end_time,
