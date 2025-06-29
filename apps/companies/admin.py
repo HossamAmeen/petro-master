@@ -242,6 +242,11 @@ class CarAdmin(admin.ModelAdmin):
         if not obj.pk:  # Only set created_by on creation, not updates
             obj.created_by = request.user
             obj.balance = 0
+            obj.fuel_consumption_rate = 0
+            obj.number_of_fuelings_per_day = 0
+            obj.number_of_washes_per_month = 0
+            obj.fuel_allowed_days = []
+            obj.is_blocked_balance_update = False
         if obj.code:
             car_code = CarCode.objects.filter(code=obj.code).first()
             if car_code:
@@ -266,6 +271,7 @@ class CarAdmin(admin.ModelAdmin):
             "number_of_fuelings_per_day",
             "number_of_washes_per_month",
             "fuel_allowed_days",
+            "fuel_type",
         ]
         if not obj:
             fields = [

@@ -102,7 +102,13 @@ class Car(AbstractBaseModel):
     is_with_odometer = models.BooleanField()
     tank_capacity = models.IntegerField()
     permitted_fuel_amount = models.IntegerField()
-    fuel_type = models.CharField(max_length=20, choices=FuelType.choices)
+    fuel_type = models.CharField(
+        max_length=20,
+        choices=FuelType.choices,
+        null=True,
+        blank=True,
+        default=FuelType.DIESEL,
+    )
     service = models.ForeignKey(
         "stations.Service", on_delete=models.SET_NULL, null=True, blank=True
     )
