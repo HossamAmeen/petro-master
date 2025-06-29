@@ -66,7 +66,7 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
                 message = f"تم شحن رصيد الشركة {obj.company.name} برصيد {obj.amount}"
                 if company_owner:
                     Notification.objects.create(
-                        user_id=company_owner.user.id,
+                        user_id=company_owner.id,
                         title=message,
                         description=message,
                         type=Notification.NotificationType.MONEY,
