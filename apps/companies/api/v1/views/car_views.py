@@ -268,11 +268,23 @@ class VerifyDriverView(APIView):
     )
     @transaction.atomic
     def post(self, request, driver_code, car_code, service_type):
-        car = Car.objects.filter(code=car_code.strip()).first()
+        car = (
+            Car.objects.filter(code=car_code.strip())
+            .select_related("branch__company")
+            .first()
+        )
         if not car:
             raise CustomValidationError(
                 message="كود السيارة هذا لا يعمل او غير مفعل الان.",
                 code="car_code_not_found",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+        company_branch = car.branch
+        if not company_branch.company.is_active:
+            raise CustomValidationError(
+                message="حساب الشركه معلق مؤقتا",
+                code="company_not_active",
                 errors=[],
                 status_code=status.HTTP_404_NOT_FOUND,
             )
@@ -286,7 +298,7 @@ class VerifyDriverView(APIView):
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
-        if driver.branch.company_id != car.branch.company_id:
+        if driver.branch.company_id != company_branch.company_id:
             raise CustomValidationError(
                 message="السائق لا ينتمي للشركة",
                 code="driver_not_belongs_to_company",
@@ -308,38 +320,39 @@ class VerifyDriverView(APIView):
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
-        if service_type == "petrol":
-            service = car.service
-            if not car.is_available_today():
-                raise CustomValidationError(
-                    message="السيبارة غير مصرح لها هذا اليوم",
-                    code="car_not_active",
-                    errors=[],
-                    status_code=status.HTTP_404_NOT_FOUND,
-                )
-        else:
-            service = None
-
-        if (
-            CarOperation.objects.filter(
-                status=CarOperation.OperationStatus.COMPLETED,
-                car=car,
-                created__date=timezone.now().date(),
-            ).count()
-            > car.number_of_fuelings_per_day
-        ):
+        if not car.is_available_today():
             raise CustomValidationError(
-                message="السيارة تجاوزت عدد عمليات البترولية اليومية المسموح بها",
-                code="car_in_progress",
+                message="السيبارة غير مصرح لها هذا اليوم",
+                code="car_not_active",
                 errors=[],
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_404_NOT_FOUND,
             )
+
+        if service_type == "petrol":
+            car_service = car.service
+            if (
+                CarOperation.objects.filter(
+                    status=CarOperation.OperationStatus.COMPLETED,
+                    car=car,
+                    created__date=timezone.now().date(),
+                ).count()
+                > car.number_of_fuelings_per_day
+            ):
+                raise CustomValidationError(
+                    message="السيارة تجاوزت عدد عمليات البترولية اليومية المسموح بها",
+                    code="car_in_progress",
+                    errors=[],
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+        else:
+            car_service = None
 
         station_branch = request.user.worker.station_branch
         car_operation = CarOperation.objects.create(
             car=car,
             driver=driver,
-            service=service,
+            service=car_service,
             worker_id=request.user.id,
             station_branch_id=station_branch.id,
             status=CarOperation.OperationStatus.PENDING,
@@ -354,9 +367,8 @@ class VerifyDriverView(APIView):
             if car.permitted_fuel_amount
             else car.tank_capacity
         )
-        car_service = car.service
         service_cost = car_service.cost if car_service else 0
-        liter_cost = (service_cost * car.branch.fees / 100) + service_cost
+        liter_cost = (service_cost * company_branch.fees / 100) + service_cost
         available_liters = math.floor(car.balance / liter_cost)
         available_liters = min(liters_count, available_liters)
         return Response(

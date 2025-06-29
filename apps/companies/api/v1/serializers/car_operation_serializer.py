@@ -80,6 +80,7 @@ class ListCompanyHomeCarOperationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
+        data["cost"] = instance.company_cost  # should be deleted
         return data
 
 

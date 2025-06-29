@@ -282,7 +282,7 @@ class StationReportsAPIView(APIView):
             .select_related("service")
             .values("service")
             .annotate(
-                total_balance=Sum("cost"),
+                total_balance=Sum("station_cost"),
                 count=Count("id"),
                 amount=Sum("amount"),
                 service_name=F("service__name"),

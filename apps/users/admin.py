@@ -168,7 +168,6 @@ class CompanyUserInterface(admin.ModelAdmin):
         "phone_number",
         "role",
         "is_active",
-        "is_staff",
         "company",
         "created",
     )

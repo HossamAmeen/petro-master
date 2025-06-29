@@ -15,12 +15,13 @@ from apps.utilities.models.abstract_base_model import AbstractBaseModel
 class Company(AbstractBaseModel):
     name = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
-    balance = models.DecimalField(max_digits=10, decimal_places=2)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     email = models.EmailField(max_length=255, null=True, blank=True)
     phone_number = models.CharField(max_length=11, null=True, blank=True)
     district = models.ForeignKey(
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -121,7 +122,11 @@ class Car(AbstractBaseModel):
     )
 
     def __str__(self):
-        return self.code + " - " + self.plate_number if self.plate_number else self.code
+        return (
+            self.plate_character + " - " + self.plate_number
+            if self.plate_number
+            else self.code
+        )
 
     def clean(self):
         if self.permitted_fuel_amount > self.tank_capacity:

@@ -1,16 +1,12 @@
 from django.contrib import admin
+from django.db.models import Sum
 from django.urls import reverse
 from django.utils.html import format_html
 
 from apps.users.models import StationBranchManager
 
 from .models.service_models import Service
-from .models.stations_models import (
-    Station,
-    StationBranch,
-    StationBranchService,
-    StationService,
-)
+from .models.stations_models import Station, StationBranch, StationBranchService
 
 
 @admin.register(Service)
@@ -80,24 +76,24 @@ class StationAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-@admin.register(StationService)
-class StationServiceAdmin(admin.ModelAdmin):
-    list_display = (
-        "service",
-        "station",
-        "created_by",
-        "updated_by",
-    )
-    readonly_fields = ("created_by", "updated_by")
-    search_fields = ("service__name", "station__name")
-    list_filter = ("station", "service")
+# @admin.register(StationService)
+# class StationServiceAdmin(admin.ModelAdmin):
+#     list_display = (
+#         "service",
+#         "station",
+#         "created_by",
+#         "updated_by",
+#     )
+#     readonly_fields = ("created_by", "updated_by")
+#     search_fields = ("service__name", "station__name")
+#     list_filter = ("station", "service")
 
-    def save_model(self, request, obj, form, change):
-        """Assign the logged-in user to created_by before saving."""
-        if not obj.pk:  # Only set created_by on creation, not updates
-            obj.created_by = request.user
-        obj.updated_by = request.user
-        super().save_model(request, obj, form, change)
+#     def save_model(self, request, obj, form, change):
+#         """Assign the logged-in user to created_by before saving."""
+#         if not obj.pk:  # Only set created_by on creation, not updates
+#             obj.created_by = request.user
+#         obj.updated_by = request.user
+#         super().save_model(request, obj, form, change)
 
 
 @admin.register(StationBranch)
@@ -110,12 +106,17 @@ class StationBranchAdmin(admin.ModelAdmin):
         "district",
         "managers_link",
         "workers_link",
+        "operations_link",
+        "total_cost",
         "created_by",
         "updated_by",
     )
     readonly_fields = ("created_by", "updated_by")
     list_filter = ("station",)
     search_fields = ("name", "address")
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 20
 
     def managers_link(self, obj):
         count = obj.managers.count()
@@ -136,6 +137,23 @@ class StationBranchAdmin(admin.ModelAdmin):
         return format_html('<a class="button" href="{}">Workers ({})</a>', url, count)
 
     workers_link.short_description = "Workers"
+
+    def operations_link(self, obj):
+        count = obj.operations.count()
+        url = (
+            reverse("admin:companies_caroperation_changelist")
+            + f"?station_branch__id__exact={obj.id}"
+        )
+        return format_html(
+            '<a class="button" href="{}">Operations ({})</a>', url, count
+        )
+
+    operations_link.short_description = "Operations"
+
+    def total_cost(self, obj):
+        return obj.operations.aggregate(Sum("station_cost"))["station_cost__sum"] or 0
+
+    total_cost.short_description = "Total Cost"
 
     def save_model(self, request, obj, form, change):
         """Assign the logged-in user to created_by before saving."""
