@@ -68,7 +68,6 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
 
 class ListCompanyHomeCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
-    amount = serializers.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         model = CarOperation
