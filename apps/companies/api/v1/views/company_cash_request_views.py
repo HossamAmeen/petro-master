@@ -231,7 +231,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         station_owner = StationOwner.objects.filter(
             station_id=station_branch.station_id
         ).first()
-        notification_users.append(station_owner.user_id)
+        notification_users.append(station_owner.id)
         notification_users.append(request.user.id)
         notification_users = list(set(notification_users))
         for user_id in notification_users:
