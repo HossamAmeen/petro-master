@@ -193,7 +193,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         company_owner = CompanyUser.objects.filter(
             company_id=company_branch.company_id
         ).first()
-        notification_users.append(company_owner.user_id)
+        notification_users.append(company_owner.id)
         for user_id in notification_users:
             Notification.objects.create(
                 user_id=user_id,
