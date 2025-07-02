@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import F
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
@@ -150,6 +151,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
+    @transaction.atomic
     def partial_update(self, request, *args, **kwargs):
         cash_request = CompanyCashRequest.objects.filter(id=kwargs["pk"]).first()
         if not cash_request:

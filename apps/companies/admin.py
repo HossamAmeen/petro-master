@@ -481,6 +481,7 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
         "otp",
         "driver",
         "station",
+        "station_branch",
         "created_by",
         "updated_by",
         "created",
@@ -492,6 +493,7 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
         "status",
         "driver__name",
         "station__name",
+        "station_branch__name",
     )
     list_filter = ("company", "status", "driver", "station", "driver__branch")
     readonly_fields = ("created_by", "updated_by")
@@ -503,6 +505,11 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
         pass
 
     def has_change_permission(self, request, obj=None):
+        if obj and obj.status == "in_progress":
+            return True
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         if obj and obj.status == "in_progress":
             return True
         return False
