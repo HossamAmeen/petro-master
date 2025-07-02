@@ -256,10 +256,15 @@ class StationOtherOperationAPIView(APIView):
             context={"station_branch_id": station_branch.id},
         )
         if serializer.is_valid():
-            status = CarOperation.OperationStatus.COMPLETED
-            serializer.save(status=status)
+            serializer.save(status=CarOperation.OperationStatus.COMPLETED)
             car = car_operation.car
-            if car.balance < serializer.validated_data["cost"]:
+            company_branch = car.branch
+            company_cost = (
+                serializer.validated_data["cost"]
+                * company_branch.other_service_fees
+                / 100
+            ) + serializer.validated_data["cost"]
+            if car.balance < company_cost:
                 raise CustomValidationError(
                     {"error": "السيارة لا تمتلك كافٍ من المال"},
                     code="not_enough_balance",
@@ -267,20 +272,25 @@ class StationOtherOperationAPIView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
             car.is_blocked_balance_update = False
-            car.balance = car.balance - serializer.validated_data["cost"]
+            car.balance = car.balance - company_cost
             car.save()
 
+            station_cost = serializer.validated_data["cost"] - (
+                serializer.validated_data["cost"]
+                * station_branch.other_service_fees
+                / 100
+            )
             generate_station_transaction(
                 station_id=station_branch.station_id,
                 station_branch_id=station_branch.id,
-                amount=serializer.validated_data["cost"],
+                amount=station_cost,
                 status=KhaznaTransaction.TransactionStatus.APPROVED,
                 description="تم اضافة الخدمه بنجاح الي السيارة رقم {car.plate}",
                 created_by_id=request.user.id,
                 is_internal=False,
             )
             # send notifications for station users
-            message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}"
+            message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate} بقيمة {station_cost:.2f} جنية"  # noqa
             notification_users = list(
                 StationOwner.objects.filter(
                     station_id=station_branch.station_id
@@ -295,16 +305,16 @@ class StationOtherOperationAPIView(APIView):
                     type=Notification.NotificationType.MONEY,
                 )
             # send notfication for company user
-            company_id = car_operation.car.branch.company_id
+            company_id = company_branch.company_id
             generate_company_transaction(
                 company_id=company_id,
-                amount=serializer.validated_data["cost"],
+                amount=company_cost,
                 status=KhaznaTransaction.TransactionStatus.APPROVED,
                 description=f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}",
                 created_by_id=request.user.id,
                 is_internal=False,
             )
-            message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}"
+            message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate} بقيمة {company_cost:.2f} جنية"  # noqa
             notification_users = list(
                 CompanyUser.objects.filter(company_id=company_id).values_list(
                     "id", flat=True
