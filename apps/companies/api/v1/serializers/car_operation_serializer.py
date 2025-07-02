@@ -1,3 +1,5 @@
+from math import ceil
+
 from rest_framework import serializers
 
 from apps.companies.api.v1.serializers.car_serializer import CarWithPlateInfoSerializer
@@ -51,7 +53,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
-        data["duration"] = round(float(instance.duration / 60), 2)
+        data["duration"] = ceil(instance.duration / 60)
         return data
 
     def get_service_category(self, obj):
@@ -117,7 +119,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
-        data["duration"] = round(float(instance.duration / 60), 2)
+        data["duration"] = ceil(instance.duration / 60)
         return data
 
     def get_service_category(self, obj):
