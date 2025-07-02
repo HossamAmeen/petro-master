@@ -52,15 +52,9 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
         data["duration"] = instance.duration / 60
-        data["cost"] = (
-            float(instance.company_cost) if instance.company_cost else 0
-        )  # should be deleted
-        data["company_cost"] = (
-            float(instance.company_cost) if instance.company_cost else 0
-        )  # should be deleted
-        data["amount"] = (
-            float(instance.amount) if instance.amount else 0
-        )  # should be deleted
+        data["cost"] = instance.company_cost if instance.company_cost else 0
+        data["company_cost"] = instance.company_cost if instance.company_cost else 0
+        data["amount"] = instance.amount if instance.amount else 0
         return data
 
     def get_service_category(self, obj):
@@ -91,15 +85,9 @@ class ListCompanyHomeCarOperationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
-        data["cost"] = (
-            float(instance.company_cost) if instance.company_cost else 0
-        )  # should be deleted
-        data["company_cost"] = (
-            float(instance.company_cost) if instance.company_cost else 0
-        )  # should be deleted
-        data["amount"] = (
-            float(instance.amount) if instance.amount else 0
-        )  # should be deleted
+        data["cost"] = instance.company_cost if instance.company_cost else 0
+        data["company_cost"] = instance.company_cost if instance.company_cost else 0
+        data["amount"] = instance.amount if instance.amount else 0
         return data
 
 
