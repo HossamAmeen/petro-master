@@ -25,7 +25,4 @@ class ListStationReportsSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"])
-        data["station_cost"] = instance.station_cost if instance.station_cost else 0
-        data["amount"] = instance.amount if instance.amount else 0
-        data["cost"] = instance.cost if instance.cost else 0
         return data
