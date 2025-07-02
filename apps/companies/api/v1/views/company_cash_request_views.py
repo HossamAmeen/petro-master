@@ -164,7 +164,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         station_branch = request.user.worker.station_branch
         cash_request.status = CompanyCashRequest.Status.APPROVED
         cash_request.station_branch = station_branch
-        cash_request.station = station_branch.station_id
+        cash_request.station_id = station_branch.station_id
         cash_request.approved_by_id = request.user.id
         cash_request.save()
 
