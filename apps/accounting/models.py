@@ -60,6 +60,7 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
     class ForWhat(models.TextChoices):
         BRANCH = "Branch"
         CAR = "Car"
+        DRIVER = "Driver"
 
     company = models.ForeignKey("companies.Company", on_delete=models.CASCADE)
     company_branch = models.ForeignKey(

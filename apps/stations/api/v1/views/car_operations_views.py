@@ -137,7 +137,7 @@ class StationGasOperationAPIView(APIView):
                     status=KhaznaTransaction.TransactionStatus.APPROVED,
                     description=f"تم تفويل سيارة رقم {car.plate} بعدد {car_opertion.amount} لتر",
                     created_by_id=request.user.id,
-                    is_internal=True,
+                    is_internal=False,
                 )
                 station_branch = worker.station_branch
                 station_branch.balance = station_branch.balance - station_cost
@@ -277,7 +277,7 @@ class StationOtherOperationAPIView(APIView):
                 status=KhaznaTransaction.TransactionStatus.APPROVED,
                 description="تم اضافة الخدمه بنجاح الي السيارة رقم {car.plate}",
                 created_by_id=request.user.id,
-                is_internal=True,
+                is_internal=False,
             )
             # send notifications for station users
             message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}"
@@ -302,7 +302,7 @@ class StationOtherOperationAPIView(APIView):
                 status=KhaznaTransaction.TransactionStatus.APPROVED,
                 description=f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}",
                 created_by_id=request.user.id,
-                is_internal=True,
+                is_internal=False,
             )
             message = f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}"
             notification_users = list(

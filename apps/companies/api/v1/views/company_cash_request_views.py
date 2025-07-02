@@ -5,6 +5,11 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import Response, status
 
+from apps.accounting.helpers import (
+    generate_company_transaction,
+    generate_station_transaction,
+)
+from apps.accounting.models import CompanyKhaznaTransaction, KhaznaTransaction
 from apps.companies.api.filters.cash_request_filter import CashRequestFilter
 from apps.companies.api.v1.permissions import CashRequestPermission
 from apps.companies.api.v1.serializers.company_cash_request_serializers import (
@@ -14,9 +19,17 @@ from apps.companies.api.v1.serializers.company_cash_request_serializers import (
 )
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Company, CompanyBranch
+from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectCompanyUserMixin
-from apps.users.models import User
+from apps.stations.models.stations_models import Station
+from apps.users.models import (
+    CompanyBranchManager,
+    CompanyUser,
+    StationBranchManager,
+    StationOwner,
+    User,
+)
 
 
 class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
@@ -148,10 +161,85 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
 
+        station_branch = request.user.worker.station_branch
         cash_request.status = CompanyCashRequest.Status.APPROVED
+        cash_request.station_branch = station_branch
+        cash_request.station = station_branch.station_id
         cash_request.approved_by_id = request.user.id
         cash_request.save()
+
+        # company
+        company_branch = cash_request.driver.branch
+        company_cost = (
+            cash_request.amount * company_branch.cash_request_fees / 100
+        ) + cash_request.amount
+        message = (
+            f"تم تسليم طلب نقدي بقيمة {company_cost} للسائق {cash_request.driver.name}"
+        )
+        generate_company_transaction(
+            company_id=company_branch.company_id,
+            amount=company_cost,
+            status=KhaznaTransaction.TransactionStatus.APPROVED,
+            description=message,
+            is_internal=False,
+            for_what=CompanyKhaznaTransaction.ForWhat.DRIVER,
+            created_by_id=request.user.id,
+        )
+        notification_users = list(
+            CompanyBranchManager.objects.filter(
+                company_branch_id=company_branch.id
+            ).values_list("user", flat=True)
+        )
+        company_owner = CompanyUser.objects.filter(
+            company_id=company_branch.company_id
+        ).first()
+        notification_users.append(company_owner.user_id)
+        for user_id in notification_users:
+            Notification.objects.create(
+                user_id=user_id,
+                title=message,
+                description=message,
+                type=Notification.NotificationType.MONEY,
+            )
         Company.objects.select_for_update().filter(id=cash_request.company.id).update(
-            balance=F("balance") - cash_request.amount
+            balance=F("balance") - company_cost
+        )
+
+        # station
+        station_cost = (
+            cash_request.amount * station_branch.cash_request_fees / 100
+        ) + cash_request.amount
+        message = (
+            f"تم تسليم طلب نقدي بقيمة {station_cost} للسائق {cash_request.driver.name}"
+        )
+        generate_station_transaction(
+            station_id=station_branch.station_id,
+            station_branch_id=station_branch.id,
+            amount=station_cost,
+            status=KhaznaTransaction.TransactionStatus.APPROVED,
+            description=message,
+            created_by_id=request.user.id,
+            is_internal=False,
+        )
+        notification_users = list(
+            StationBranchManager.objects.filter(
+                station_branch_id=station_branch.id
+            ).values_list("user", flat=True)
+        )
+        station_owner = StationOwner.objects.filter(
+            station_id=station_branch.station_id
+        ).first()
+        notification_users.append(station_owner.user_id)
+        notification_users.append(request.user.id)
+        notification_users = list(set(notification_users))
+        for user_id in notification_users:
+            Notification.objects.create(
+                user_id=user_id,
+                title=message,
+                description=message,
+                type=Notification.NotificationType.MONEY,
+            )
+        Station.objects.select_for_update().filter(id=cash_request.station_id).update(
+            balance=F("balance") + station_cost
         )
         return Response({"message": "تم تأكيد طلبك"})
