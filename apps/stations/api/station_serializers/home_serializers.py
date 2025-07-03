@@ -16,7 +16,6 @@ class ListStationReportsSerializer(serializers.ModelSerializer):
     total_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
     count = serializers.IntegerField()
     amount = serializers.DecimalField(max_digits=10, decimal_places=2)
-    unit = serializers.SerializerMethodField()
 
     class Meta:
         model = CarOperation

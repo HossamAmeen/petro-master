@@ -142,7 +142,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 )
             )
             notification_users.extend(
-                car.branch.company.owners.values_list("user_id", flat=True)
+                car.branch.company.owners.values_list("id", flat=True)
             )
 
         with transaction.atomic():
