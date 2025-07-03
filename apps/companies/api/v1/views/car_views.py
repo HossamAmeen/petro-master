@@ -331,6 +331,25 @@ class VerifyDriverView(APIView):
 
         if service_type == "petrol":
             car_service = car.service
+            liter_cost = (
+                car_service.cost * company_branch.fees / 100
+            ) + car_service.cost
+            if car.balance < liter_cost:
+                raise CustomValidationError(
+                    message="السيارة لا تمتلك كافٍ من المال",
+                    code="not_enough_balance",
+                    errors=[],
+                    status_code=status.HTTP_404_NOT_FOUND,
+                )
+
+            liters_count = (
+                car.permitted_fuel_amount
+                if car.permitted_fuel_amount
+                else car.tank_capacity
+            )
+            available_liters = math.floor(car.balance / liter_cost)
+            available_liters = min(liters_count, available_liters)
+
             if (
                 CarOperation.objects.filter(
                     status=CarOperation.OperationStatus.COMPLETED,
@@ -345,9 +364,10 @@ class VerifyDriverView(APIView):
                     errors=[],
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
-
         else:
             car_service = None
+            available_liters = 0
+            liter_cost = 0
 
         station_branch = request.user.worker.station_branch
         car_operation = CarOperation.objects.create(
@@ -362,23 +382,6 @@ class VerifyDriverView(APIView):
 
         car.is_blocked_balance_update = True
         car.save()
-
-        liters_count = (
-            car.permitted_fuel_amount
-            if car.permitted_fuel_amount
-            else car.tank_capacity
-        )
-        service_cost = car_service.cost if car_service else 0
-        liter_cost = (service_cost * company_branch.fees / 100) + service_cost
-        if car.balance < liter_cost:
-            raise CustomValidationError(
-                message="السيارة لا تمتلك كافٍ من المال",
-                code="not_enough_balance",
-                errors=[],
-                status_code=status.HTTP_404_NOT_FOUND,
-            )
-        available_liters = math.floor(car.balance / liter_cost)
-        available_liters = min(liters_count, available_liters)
 
         return Response(
             {
