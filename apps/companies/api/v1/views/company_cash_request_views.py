@@ -175,9 +175,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         company_cost = (
             cash_request.amount * company_branch.cash_request_fees / 100
         ) + cash_request.amount
-        message = (
-            f"تم تسليم طلب نقدي بقيمة {company_cost} للسائق {cash_request.driver.name}"
-        )
+        message = f"تم تسليم طلب نقدي بقيمة {company_cost:.2f} للسائق {cash_request.driver.name}"  # noqa
         generate_company_transaction(
             company_id=company_branch.company_id,
             amount=company_cost,
