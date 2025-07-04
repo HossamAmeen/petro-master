@@ -17,6 +17,8 @@ class User(AbstractUser, TimeStampedModel):
 
     class UserRoles(models.TextChoices):
         Admin = "admin"
+        Finance = "finance"
+        CustomerSupport = "customer_support"
         CompanyOwner = "company_owner"
         CompanyBranchManager = "company_branch_manager"
         Driver = "driver"

@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     CompanyLoginAPIView,
+    DashboardLoginAPIView,
     PasswordResetConfirmAPIView,
     PasswordResetRequestAPIView,
     ProfileAPIView,
@@ -11,6 +12,7 @@ from .views import (
 urlpatterns = [
     path("company/login/", CompanyLoginAPIView.as_view(), name="company_login"),
     path("station/login/", StationLoginAPIView.as_view(), name="station_login"),
+    path("dashboard/login/", DashboardLoginAPIView.as_view(), name="dashboard_login"),
     path("profile/", ProfileAPIView.as_view(), name="profile"),
     path(
         "password-reset-request/",
