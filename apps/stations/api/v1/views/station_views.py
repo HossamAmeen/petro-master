@@ -232,6 +232,18 @@ class StationReportsAPIView(APIView):
                 location=OpenApiParameter.QUERY,
                 description="Filter by date to example date_to=YYYY-MM-DD",
             ),
+            OpenApiParameter(
+                name="time_from",
+                type=OpenApiTypes.TIME,
+                location=OpenApiParameter.QUERY,
+                description="Filter by time from example time_from=HH:MM:SS",
+            ),
+            OpenApiParameter(
+                name="time_to",
+                type=OpenApiTypes.TIME,
+                location=OpenApiParameter.QUERY,
+                description="Filter by time to example time_to=HH:MM:SS",
+            ),
         ],
         responses={
             200: OpenApiResponse(
@@ -272,12 +284,20 @@ class StationReportsAPIView(APIView):
         today = date.today()
         date_from = request.query_params.get("date_from", today)
         date_to = request.query_params.get("date_to", None)
+        time_from = request.query_params.get("time_from", "00:00:00")
+        time_to = request.query_params.get("time_to", "23:59:59")
         if date_from:
             station_branch_filter &= Q(modified__date__gte=date_from)
             cash_request_filter &= Q(modified__date__gte=date_from)
         if date_to:
             station_branch_filter &= Q(modified__date__lte=date_to)
             cash_request_filter &= Q(modified__date__lte=date_to)
+        if time_from:
+            station_branch_filter &= Q(modified__time__gte=time_from)
+            cash_request_filter &= Q(modified__time__gte=time_from)
+        if time_to:
+            station_branch_filter &= Q(modified__time__lte=time_to)
+            cash_request_filter &= Q(modified__time__lte=time_to)
 
         operations = (
             CarOperation.objects.filter(station_branch_filter)
