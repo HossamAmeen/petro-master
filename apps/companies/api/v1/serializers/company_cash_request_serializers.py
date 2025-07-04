@@ -35,8 +35,8 @@ class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
         ]
 
     def __init__(self, *args, **kwargs):
-        self.user_role = self.context["request"].user.role
         super().__init__(*args, **kwargs)
+        self.user_role = self.context["request"].user.role
 
     def get_is_owner(self, obj):
         if self.user_role == User.UserRoles.CompanyOwner:
