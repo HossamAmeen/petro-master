@@ -163,6 +163,15 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
 
+        company_branch = cash_request.driver.branch
+        company_cost = (
+            cash_request.amount * company_branch.cash_request_fees / 100
+        ) + cash_request.amount
+        if company_branch.balance < company_cost:
+            raise CustomValidationError(
+                message="الرصيد غير كافي", status_code=status.HTTP_400_BAD_REQUEST
+            )
+
         station_branch = request.user.worker.station_branch
         cash_request.status = CompanyCashRequest.Status.APPROVED
         cash_request.station_branch = station_branch
@@ -171,10 +180,6 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         cash_request.save()
 
         # company
-        company_branch = cash_request.driver.branch
-        company_cost = (
-            cash_request.amount * company_branch.cash_request_fees / 100
-        ) + cash_request.amount
         message = f"تم تسليم طلب نقدي بقيمة {company_cost:.2f} للسائق {cash_request.driver.name}"  # noqa
         generate_company_transaction(
             company_id=company_branch.company_id,
@@ -201,7 +206,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 description=message,
                 type=Notification.NotificationType.MONEY,
             )
-        Company.objects.select_for_update().filter(id=cash_request.company.id).update(
+        CompanyBranch.objects.select_for_update().filter(id=company_branch.id).update(
             balance=F("balance") - company_cost
         )
 
@@ -240,6 +245,6 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 type=Notification.NotificationType.MONEY,
             )
         Station.objects.select_for_update().filter(id=cash_request.station_id).update(
-            balance=F("balance") + station_cost
+            balance=F("balance") - station_cost
         )
         return Response({"message": "تم تأكيد طلبك"})

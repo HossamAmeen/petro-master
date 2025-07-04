@@ -274,8 +274,10 @@ class StationReportsAPIView(APIView):
         date_to = request.query_params.get("date_to", None)
         if date_from:
             station_branch_filter &= Q(modified__date__gte=date_from)
+            cash_request_filter &= Q(modified__date__gte=date_from)
         if date_to:
             station_branch_filter &= Q(modified__date__lte=date_to)
+            cash_request_filter &= Q(modified__date__lte=date_to)
 
         operations = (
             CarOperation.objects.filter(station_branch_filter)
@@ -292,7 +294,7 @@ class StationReportsAPIView(APIView):
         )
         operations = ListStationReportsSerializer(operations, many=True).data
 
-        cash_request_balance_balance = (
+        cash_request_balance = (
             CompanyCashRequest.objects.filter(
                 cash_request_filter,
                 status=CompanyCashRequest.Status.APPROVED,
@@ -303,7 +305,7 @@ class StationReportsAPIView(APIView):
         response_data = {
             "station_branch_filter": str(station_branch_filter),
             "station_id": request.station_id,
-            "cash_request_balance": cash_request_balance_balance,
+            "cash_request_balance": cash_request_balance,
             "operations": operations,
         }
         return Response(response_data)
