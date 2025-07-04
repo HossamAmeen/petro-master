@@ -3,7 +3,13 @@ from datetime import datetime, timedelta
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.views import APIView, Response, status
@@ -18,6 +24,7 @@ from apps.companies.api.v1.serializers.branch_serializers import (
     BranchBalanceUpdateSerializer,
     CompanyBranchAssignManagersSerializer,
     CompanyBranchSerializer,
+    ListCompanyBranchNameSerializer,
     ListCompanyBranchSerializer,
     RetrieveCompanyBranchSerializer,
 )
@@ -82,6 +89,8 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == "list":
+            if self.request.query_params.get("no_paginate", "").lower() == "true":
+                return ListCompanyBranchNameSerializer
             return ListCompanyBranchSerializer
         if self.action == "retrieve":
             return RetrieveCompanyBranchSerializer
@@ -90,6 +99,24 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.action == "update_balance":
             return BranchBalanceUpdateSerializer
         return CompanyBranchSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="no_paginate",
+                type=OpenApiTypes.BOOL,
+                description="if true will return all data without pagination",
+            )
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=ListCompanyBranchSerializer(many=True),
+                description="List of company branches.",
+            )
+        },
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=["post"], url_name="assign-managers")
     def assign_managers(self, request, *args, **kwargs):

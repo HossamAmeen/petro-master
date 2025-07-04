@@ -180,7 +180,7 @@ CSRF_TRUSTED_ORIGINS = ["https://api.petro-master.org", "https://petro-master.or
 REST_FRAMEWORK = {
     # "EXCEPTION_HANDLER": "drf_standardized_errors.handler.exception_handler",
     "EXCEPTION_HANDLER": "apps.shared.exceptions.custom_exception_handler",
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
+    "DEFAULT_PAGINATION_CLASS": "apps.shared.pagination_class.CustomLimitOffsetPagination",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "PAGE_SIZE": 100,
     "DEFAULT_AUTHENTICATION_CLASSES": (
