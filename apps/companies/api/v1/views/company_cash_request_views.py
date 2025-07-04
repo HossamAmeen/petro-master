@@ -118,19 +118,24 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 message="السائق لديه طلب بالفعل",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
+        cash_request = self.perform_create(serializer)
+        company_branch = cash_request.driver.branch
+        company_cost = (
+            cash_request.amount * company_branch.cash_request_fees / 100
+        ) + cash_request.amount
         if request.user.role == User.UserRoles.CompanyOwner:
             Company.objects.filter(id=request.company_id).update(
-                balance=F("balance") - serializer.validated_data["amount"]
+                balance=F("balance") - company_cost
             )
         else:
             CompanyBranch.objects.select_for_update().filter(
                 drivers__id=request.data["driver"]
-            ).update(balance=F("balance") - serializer.validated_data["amount"])
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
+            ).update(balance=F("balance") - company_cost)
+
+        cash_request.company_cost = company_cost
+        cash_request.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
         item = self.get_object()
@@ -164,13 +169,6 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         company_branch = cash_request.driver.branch
-        company_cost = (
-            cash_request.amount * company_branch.cash_request_fees / 100
-        ) + cash_request.amount
-        if company_branch.balance < company_cost:
-            raise CustomValidationError(
-                message="الرصيد غير كافي", status_code=status.HTTP_400_BAD_REQUEST
-            )
 
         station_branch = request.user.worker.station_branch
         cash_request.status = CompanyCashRequest.Status.APPROVED
@@ -180,10 +178,10 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         cash_request.save()
 
         # company
-        message = f"تم تسليم طلب نقدي بقيمة {company_cost:.2f} للسائق {cash_request.driver.name}"  # noqa
+        message = f"تم تسليم طلب نقدي بقيمة {cash_request.company_cost:.2f} للسائق {cash_request.driver.name}"  # noqa
         generate_company_transaction(
             company_id=company_branch.company_id,
-            amount=company_cost,
+            amount=cash_request.company_cost,
             status=KhaznaTransaction.TransactionStatus.APPROVED,
             description=message,
             is_internal=False,
@@ -206,9 +204,6 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 description=message,
                 type=Notification.NotificationType.MONEY,
             )
-        CompanyBranch.objects.select_for_update().filter(id=company_branch.id).update(
-            balance=F("balance") - company_cost
-        )
 
         # station
         station_cost = (
@@ -247,4 +242,8 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         Station.objects.select_for_update().filter(id=cash_request.station_id).update(
             balance=F("balance") - station_cost
         )
+
+        cash_request.station_cost = station_cost
+        cash_request.save(update_fields=["station_cost"])
+
         return Response({"message": "تم تأكيد طلبك"})

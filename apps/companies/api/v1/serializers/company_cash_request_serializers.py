@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Company, Driver
+from apps.shared.constants import COMPANY_ROLES, STATION_ROLES
 from apps.stations.api.v1.serializers import StationBranchWithDistrictSerializer
 from apps.users.models import User
 from apps.users.v1.serializers.user_serializers import SingleUserSerializer
@@ -22,6 +23,8 @@ class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
             "otp",
             "driver",
             "amount",
+            "company_cost",
+            "station_cost",
             "status",
             "company",
             "created",
@@ -31,17 +34,24 @@ class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
             "approved_by",
         ]
 
+    def __init__(self, *args, **kwargs):
+        self.user_role = self.context["request"].user.role
+        super().__init__(*args, **kwargs)
+
     def get_is_owner(self, obj):
-        request = self.context["request"]
-        if request.user.role == User.UserRoles.CompanyOwner:
+        if self.user_role == User.UserRoles.CompanyOwner:
             return True
-        if request.user.role == User.UserRoles.CompanyBranchManager:
-            return obj.created_by == request.user
+        if self.user_role == User.UserRoles.CompanyBranchManager:
+            return obj.created_by == self.request.user
         return False
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["worker"] = data["approved_by"]
+        if self.user_role in COMPANY_ROLES:
+            data["amount"] = str(instance.company_cost)
+        elif self.user_role in STATION_ROLES:
+            data["amount"] = str(instance.station_cost)
         return data
 
 
