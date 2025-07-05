@@ -1,11 +1,11 @@
-from math import ceil
+import math
 
 from rest_framework import serializers
 
 from apps.companies.api.v1.serializers.car_serializer import CarWithPlateInfoSerializer
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.operation_model import CarOperation
-from apps.shared.constants import SERVICE_UNIT_CHOICES
+from apps.shared.constants import COLOR_CHOICES_HEX, SERVICE_UNIT_CHOICES
 from apps.stations.api.v1.serializers import (
     ServiceNameSerializer,
     SingleStationBranchSerializer,
@@ -53,7 +53,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
-        data["duration"] = ceil(instance.duration / 60)
+        data["duration"] = math.ceil(instance.duration / 60)
         return data
 
     def get_service_category(self, obj):
@@ -63,6 +63,36 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
         ]:
             return "خدمات بترولية"
         return "خدمات أخرى"
+
+
+class SingleCarOperationSerializer(ListCarOperationSerializer):
+    car = serializers.SerializerMethodField()
+
+    def get_car(self, obj):
+        car = obj.car
+        company_branch = car.branch
+        if obj.service:
+            liter_cost = (
+                obj.service.cost * company_branch.fees / 100
+            ) + obj.service.cost
+
+            liters_count = (
+                car.permitted_fuel_amount
+                if car.permitted_fuel_amount
+                else car.tank_capacity
+            )
+            available_liters = math.floor(car.balance / liter_cost)
+            available_liters = min(liters_count, available_liters)
+        return {
+            "plate_number": car.plate_number,
+            "plate_character": car.plate_character,
+            "plate_color": COLOR_CHOICES_HEX.get(car.plate_color),
+            "fuel_type": car.fuel_type,
+            "liter_count": available_liters,
+            "cost": available_liters * liter_cost,
+            "code": obj.code,
+            "id": obj.id,
+        }
 
 
 class ListCompanyHomeCarOperationSerializer(serializers.ModelSerializer):
@@ -119,7 +149,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
-        data["duration"] = ceil(instance.duration / 60)
+        data["duration"] = math.ceil(instance.duration / 60)
         return data
 
     def get_service_category(self, obj):

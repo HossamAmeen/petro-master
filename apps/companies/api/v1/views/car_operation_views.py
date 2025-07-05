@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from apps.companies.api.v1.filters import CarOperationFilter
 from apps.companies.api.v1.serializers.car_operation_serializer import (
     ListCarOperationSerializer,
+    SingleCarOperationSerializer,
 )
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
@@ -38,6 +39,10 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     ]
 
     def get_serializer_class(self):
+        if self.request.action == "list":
+            return ListCarOperationSerializer
+        if self.request.action == "retrieve":
+            return SingleCarOperationSerializer
         return ListCarOperationSerializer
 
     def get_queryset(self):

@@ -394,7 +394,9 @@ class VerifyDriverView(APIView):
                     "liter_count": available_liters,
                     "cost": available_liters * liter_cost,
                     "code": car.code,
-                    "car_service": car_service.name if car_service else None,
+                    "service": {
+                        "name": car_service.name if car_service else "-",
+                    },
                 },
                 "operation_id": car_operation.id,
             },
