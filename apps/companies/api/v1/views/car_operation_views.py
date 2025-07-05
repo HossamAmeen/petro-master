@@ -39,9 +39,9 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     ]
 
     def get_serializer_class(self):
-        if self.request.action == "list":
+        if self.action == "list":
             return ListCarOperationSerializer
-        if self.request.action == "retrieve":
+        if self.action == "retrieve":
             return SingleCarOperationSerializer
         return ListCarOperationSerializer
 
