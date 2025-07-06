@@ -15,6 +15,7 @@ from apps.users.v1.serializers.station_serializer import WorkerWithBranchSeriali
 
 
 class ListCarOperationSerializer(serializers.ModelSerializer):
+    car = CarWithPlateInfoSerializer()
     car = serializers.SerializerMethodField()
     driver = SingleDriverSerializer()
     station_branch = SingleStationBranchSerializer()
@@ -64,36 +65,6 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             return "خدمات بترولية"
         return "خدمات أخرى"
 
-    def get_car(self, obj):
-        car = obj.car
-        company_branch = car.branch
-        if obj.service:
-            liter_cost = (
-                obj.service.cost * company_branch.fees / 100
-            ) + obj.service.cost
-
-            liters_count = (
-                car.permitted_fuel_amount
-                if car.permitted_fuel_amount
-                else car.tank_capacity
-            )
-            available_liters = math.floor(car.balance / liter_cost)
-            available_liters = min(liters_count, available_liters)
-        else:
-            available_liters = 0
-            liter_cost = 0
-
-        return {
-            "plate_number": car.plate_number,
-            "plate_character": car.plate_character,
-            "plate_color": COLOR_CHOICES_HEX.get(car.plate_color),
-            "fuel_type": car.fuel_type,
-            "liter_count": available_liters,
-            "cost": available_liters * liter_cost,
-            "code": obj.code,
-            "id": obj.id,
-        }
-
 
 class SingleCarOperationSerializer(ListCarOperationSerializer):
     pass
@@ -121,7 +92,7 @@ class ListCompanyHomeCarOperationSerializer(serializers.ModelSerializer):
 
 
 class ListStationCarOperationSerializer(serializers.ModelSerializer):
-    car = CarWithPlateInfoSerializer()
+    car = serializers.SerializerMethodField()
     worker = WorkerWithBranchSerializer()
     service = ServiceNameSerializer()
     company_name = serializers.CharField(source="driver.branch.company.name")
@@ -163,3 +134,33 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
         ]:
             return "خدمات بترولية"
         return "خدمات أخرى"
+
+    def get_car(self, obj):
+        car = obj.car
+        company_branch = car.branch
+        if obj.service:
+            liter_cost = (
+                obj.service.cost * company_branch.fees / 100
+            ) + obj.service.cost
+
+            liters_count = (
+                car.permitted_fuel_amount
+                if car.permitted_fuel_amount
+                else car.tank_capacity
+            )
+            available_liters = math.floor(car.balance / liter_cost)
+            available_liters = min(liters_count, available_liters)
+        else:
+            available_liters = 0
+            liter_cost = 0
+
+        return {
+            "plate_number": car.plate_number,
+            "plate_character": car.plate_character,
+            "plate_color": COLOR_CHOICES_HEX.get(car.plate_color),
+            "fuel_type": car.fuel_type,
+            "liter_count": available_liters,
+            "cost": available_liters * liter_cost,
+            "code": obj.code,
+            "id": obj.id,
+        }
