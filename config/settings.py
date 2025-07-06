@@ -198,10 +198,13 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # API needs credentials like cookies or authorization headers
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080",
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost(:\d+)?$",  # localhost + any port
+    r"^http://127.0.0.1(:\d+)?$",  # 127.0.0.1 + any port
+    r"^https://api.petro-master.org$",
+    r"^https://petro-master.org$",
 ]
-
 
 AUTH_USER_MODEL = "users.User"
 

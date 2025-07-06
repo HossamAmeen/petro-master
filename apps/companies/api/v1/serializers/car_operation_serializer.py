@@ -15,7 +15,7 @@ from apps.users.v1.serializers.station_serializer import WorkerWithBranchSeriali
 
 
 class ListCarOperationSerializer(serializers.ModelSerializer):
-    car = CarWithPlateInfoSerializer()
+    car = serializers.SerializerMethodField()
     driver = SingleDriverSerializer()
     station_branch = SingleStationBranchSerializer()
     worker = WorkerWithBranchSerializer()
@@ -64,10 +64,6 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             return "خدمات بترولية"
         return "خدمات أخرى"
 
-
-class SingleCarOperationSerializer(ListCarOperationSerializer):
-    car = serializers.SerializerMethodField()
-
     def get_car(self, obj):
         car = obj.car
         company_branch = car.branch
@@ -83,6 +79,10 @@ class SingleCarOperationSerializer(ListCarOperationSerializer):
             )
             available_liters = math.floor(car.balance / liter_cost)
             available_liters = min(liters_count, available_liters)
+        else:
+            available_liters = 0
+            liter_cost = 0
+
         return {
             "plate_number": car.plate_number,
             "plate_character": car.plate_character,
@@ -93,6 +93,10 @@ class SingleCarOperationSerializer(ListCarOperationSerializer):
             "code": obj.code,
             "id": obj.id,
         }
+
+
+class SingleCarOperationSerializer(ListCarOperationSerializer):
+    pass
 
 
 class ListCompanyHomeCarOperationSerializer(serializers.ModelSerializer):
