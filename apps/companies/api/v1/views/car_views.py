@@ -175,14 +175,14 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
                 else:
                     raise CustomValidationError(
-                        message="السيارة لا تمتلك كافٍ من المال",
+                        message="الرصيد غير كافٍ",
                         code="not_enough_balance",
                         errors=[],
                         status_code=status.HTTP_400_BAD_REQUEST,
                     )
             elif serializer.validated_data["type"] == "subtract":
                 car.refresh_from_db()
-                if parent_object.balance >= serializer.validated_data["amount"]:
+                if car.balance >= serializer.validated_data["amount"]:
                     car.balance -= serializer.validated_data["amount"]
                     car.save()
 
