@@ -38,7 +38,7 @@ class StationViewSet(viewsets.ModelViewSet):
 
 
 class StationHomeAPIView(APIView):
-    permission_classes = [StationPermission]
+    permission_classes = [IsAuthenticated, StationPermission]
 
     @extend_schema(
         responses={

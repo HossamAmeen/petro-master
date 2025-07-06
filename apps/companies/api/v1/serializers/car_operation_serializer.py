@@ -16,7 +16,6 @@ from apps.users.v1.serializers.station_serializer import WorkerWithBranchSeriali
 
 class ListCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
-    car = serializers.SerializerMethodField()
     driver = SingleDriverSerializer()
     station_branch = SingleStationBranchSerializer()
     worker = WorkerWithBranchSerializer()
