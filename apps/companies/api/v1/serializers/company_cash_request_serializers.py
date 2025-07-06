@@ -73,11 +73,12 @@ class CompanyCashRequestSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
         request = self.context.get("request")
 
-        queryset = Driver.objects.all()
-        if request.user.role == User.UserRoles.CompanyOwner:
-            queryset = queryset.filter(branch__company_id=request.company_id)
-        if request.user.role == User.UserRoles.CompanyBranchManager:
-            queryset = queryset.filter(branch__managers__user=request.user)
+        queryset = Driver.objects.order_by("-id")
+        if request:
+            if request.user.role == User.UserRoles.CompanyOwner:
+                queryset = queryset.filter(branch__company_id=request.company_id)
+            if request.user.role == User.UserRoles.CompanyBranchManager:
+                queryset = queryset.filter(branch__managers__user=request.user)
 
         self.fields["driver"].queryset = queryset
 

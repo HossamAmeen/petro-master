@@ -1,7 +1,12 @@
 from django.db import transaction
 from django.db.models import F
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiTypes,
+    extend_schema,
+)
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import Response, status
@@ -105,6 +110,16 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
+    @extend_schema(
+        description="Create a new cash request",
+        request=CompanyCashRequestSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=CompanyCashRequestSerializer,
+                description="Cash request created successfully.",
+            )
+        },
+    )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
             data=request.data, context={"request": request}
@@ -119,6 +134,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
         cash_request = self.perform_create(serializer)
+
         company_branch = cash_request.driver.branch
         company_cost = (
             cash_request.amount * company_branch.cash_request_fees / 100
