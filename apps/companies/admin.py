@@ -434,6 +434,7 @@ class DriverAdmin(admin.ModelAdmin):
         "branch__company",
     )
     readonly_fields = ("code", "created_by", "updated_by")
+    list_per_page = 10
 
     def company_name(self, obj):
         return obj.branch.company.name
