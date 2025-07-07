@@ -45,6 +45,7 @@ from apps.shared.permissions import (
     CompanyOwnerPermission,
     CompanyPermission,
     DashboardPermission,
+    EitherPermission,
 )
 from apps.users.models import CompanyBranchManager, User
 
@@ -77,7 +78,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "list":
-            return [CompanyPermission() | DashboardPermission()]
+            return [EitherPermission([CompanyPermission, DashboardPermission])]
         if self.action == "assign_managers":
             return [CompanyOwnerPermission()]
         if self.action == "update_balance":

@@ -42,3 +42,11 @@ class StationPermission(BasePermission):
 class DashboardPermission(BasePermission):
     def has_permission(self, request, view):
         return request.user.role in DASHBOARD_ROLES
+
+
+class EitherPermission(BasePermission):
+    def __init__(self, permissions):
+        self.permissions = permissions
+
+    def has_permission(self, request, view):
+        return any(perm().has_permission(request, view) for perm in self.permissions)
