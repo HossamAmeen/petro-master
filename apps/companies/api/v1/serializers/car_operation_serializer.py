@@ -159,7 +159,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
             "plate_color": COLOR_CHOICES_HEX.get(car.plate_color),
             "fuel_type": car.fuel_type,
             "liter_count": available_liters,
-            "cost": "xxxx",
+            "cost": available_liters * liter_cost,
             "code": obj.code,
             "id": obj.id,
         }
