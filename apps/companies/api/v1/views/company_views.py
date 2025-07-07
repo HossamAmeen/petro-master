@@ -41,7 +41,11 @@ from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
-from apps.shared.permissions import CompanyOwnerPermission, CompanyPermission
+from apps.shared.permissions import (
+    CompanyOwnerPermission,
+    CompanyPermission,
+    DashboardPermission,
+)
 from apps.users.models import CompanyBranchManager, User
 
 
@@ -73,7 +77,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "list":
-            return [CompanyPermission()]
+            return [CompanyPermission(), DashboardPermission()]
         if self.action == "assign_managers":
             return [CompanyOwnerPermission()]
         if self.action == "update_balance":

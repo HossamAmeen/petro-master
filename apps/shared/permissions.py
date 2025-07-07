@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from apps.shared.constants import COMPANY_ROLES, STATION_ROLES
+from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES, STATION_ROLES
 from apps.users.models import User
 
 
@@ -37,3 +37,8 @@ class StationWorkerPermission(BasePermission):
 class StationPermission(BasePermission):
     def has_permission(self, request, view):
         return request.user.role in STATION_ROLES
+
+
+class DashboardPermission(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role in DASHBOARD_ROLES

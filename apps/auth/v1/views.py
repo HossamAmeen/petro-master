@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import DASHBOARD_ROLES
 from apps.users.models import User
 from apps.utilities.serializers import MessageErrorsSerializer
 
@@ -334,15 +335,11 @@ class DashboardLoginAPIView(APIView):
             | Q(email=serializer.validated_data["identifier"]),
             is_active=True,
         ).first()
-        dashboard_roles = [
-            User.UserRoles.Admin,
-            User.UserRoles.Finance,
-            User.UserRoles.CustomerSupport,
-        ]
+
         if (
             user
             and user.check_password(serializer.validated_data["password"])
-            and user.role in dashboard_roles
+            and user.role in DASHBOARD_ROLES
         ):
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
