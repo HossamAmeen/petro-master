@@ -108,6 +108,11 @@ class StationGasOperationAPIView(APIView):
                 )
                 profits = round(company_cost - station_cost, 2)
 
+                if car.is_with_odometer:
+                    car.fuel_consumption_rate = (
+                        car_opertion.car_meter - car.last_meter
+                    ) / serializer.validated_data["amount"]
+
                 serializer.save(
                     end_time=end_time,
                     status=status,
@@ -117,16 +122,12 @@ class StationGasOperationAPIView(APIView):
                     station_cost=station_cost,
                     profits=profits,
                     unit=Service.ServiceUnit.LITRE,
+                    fuel_consumption_rate=car.fuel_consumption_rate,
                 )
 
                 car.is_blocked_balance_update = False
-                if car.is_with_odometer:
-                    car.fuel_consumption_rate = (
-                        car_opertion.car_meter - car.last_meter
-                    ) / serializer.validated_data["amount"]
-                    car.last_meter = car_opertion.car_meter
+                car.last_meter = car_opertion.car_meter
                 car.balance = car.balance - company_cost
-
                 car.save()
 
                 station_id = request.station_id

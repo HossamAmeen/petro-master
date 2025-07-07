@@ -60,6 +60,9 @@ class updateStationGasCarOperationSerializer(serializers.Serializer):
             "station_cost", instance.station_cost
         )
         instance.profits = validated_data.get("profits", instance.profits)
+        instance.fuel_consumption_rate = validated_data.get(
+            "fuel_consumption_rate", instance.fuel_consumption_rate
+        )
         instance.save()
 
         return instance
