@@ -1,9 +1,21 @@
+import math
+
 from rest_framework import serializers
 
+from apps.companies.api.v1.serializers.car_serializer import (
+    RetrieveCarWithCompanySerializer,
+)
+from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.operation_model import CarOperation
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import SERVICE_UNIT_CHOICES
+from apps.stations.api.v1.serializers import (
+    ServiceNameSerializer,
+    SingleStationBranchSerializer,
+)
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import StationBranchService
+from apps.users.v1.serializers.station_serializer import WorkerWithBranchSerializer
 
 
 class updateStationGasCarOperationSerializer(serializers.Serializer):
@@ -95,3 +107,54 @@ class updateStationOtherCarOperationSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return {"service_name": self.service_name}
+
+
+class ListStationHomeCarOperationSerializer(serializers.ModelSerializer):
+    car = RetrieveCarWithCompanySerializer()
+    driver = SingleDriverSerializer()
+    station_branch = SingleStationBranchSerializer()
+    worker = WorkerWithBranchSerializer()
+    service = ServiceNameSerializer()
+    service_category = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CarOperation
+        fields = [
+            "id",
+            "code",
+            "status",
+            "start_time",
+            "end_time",
+            "created",
+            "duration",
+            "cost",
+            "company_cost",
+            "station_cost",
+            "amount",
+            "unit",
+            "fuel_type",
+            "car",
+            "driver",
+            "station_branch",
+            "worker",
+            "service",
+            "car_meter",
+            "motor_image",
+            "fuel_image",
+            "fuel_consumption_rate",
+            "service_category",
+        ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
+        data["duration"] = math.ceil(instance.duration / 60)
+        return data
+
+    def get_service_category(self, obj):
+        if obj.service and obj.service.type in [
+            Service.ServiceType.PETROL,
+            Service.ServiceType.DIESEL,
+        ]:
+            return "خدمات بترولية"
+        return "خدمات أخرى"

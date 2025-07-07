@@ -85,3 +85,25 @@ class CarWithPlateInfoSerializer(serializers.ModelSerializer):
 
 class CarBalanceUpdateSerializer(BalanceUpdateSerializer):
     pass
+
+
+class RetrieveCarWithCompanySerializer(serializers.ModelSerializer):
+    company = serializers.CharField(source="branch.company.name")
+
+    class Meta:
+        model = Car
+        fields = [
+            "id",
+            "code",
+            "plate_number",
+            "plate_character",
+            "plate_color",
+            "company",
+        ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["plate_color"] = COLOR_CHOICES_HEX.get(
+            data["plate_color"], COLOR_CHOICES_HEX[Car.PlateColor.RED]
+        )
+        return data

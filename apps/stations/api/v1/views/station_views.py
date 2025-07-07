@@ -17,12 +17,14 @@ from rest_framework.views import APIView, Response
 
 from apps.companies.api.v1.filters import CarOperationFilter
 from apps.companies.api.v1.serializers.car_operation_serializer import (
-    ListCarOperationSerializer,
     ListStationCarOperationSerializer,
 )
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.operation_model import CarOperation
 from apps.shared.permissions import StationPermission
+from apps.stations.api.station_serializers.car_operation_serializer import (
+    ListStationHomeCarOperationSerializer,
+)
 from apps.stations.api.station_serializers.home_serializers import (
     ListStationReportsSerializer,
 )
@@ -40,31 +42,6 @@ class StationViewSet(viewsets.ModelViewSet):
 class StationHomeAPIView(APIView):
     permission_classes = [IsAuthenticated, StationPermission]
 
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(
-                response={
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "station_branch_id": {"type": "integer"},
-                        "name": {"type": "string"},
-                        "station_name": {"type": "string"},
-                        "user_name": {"type": "string"},
-                        "address": {"type": "string"},
-                        "balance": {"type": "number"},
-                        "branches_balance": {"type": "number"},
-                        "distributed_balance": {"type": "number"},
-                        "total_balance": {"type": "number"},
-                        "workers_count": {"type": "integer"},
-                        "managers_count": {"type": "integer"},
-                        "branches_count": {"type": "integer"},
-                        "last_operations": {"type": "array", "items": "object"},
-                    },
-                }
-            )
-        }
-    )
     def get(self, request):
         operation_filter = Q()
         manager_count = 0
@@ -128,7 +105,11 @@ class StationHomeAPIView(APIView):
 
         last_operations = (
             CarOperation.objects.select_related(
-                "car", "driver", "station_branch", "worker__station_branch", "service"
+                "car__branch__company",
+                "driver",
+                "station_branch",
+                "worker__station_branch",
+                "service",
             )
             .filter(operation_filter)
             .order_by("-id")[:5]
@@ -152,8 +133,8 @@ class StationHomeAPIView(APIView):
             "workers_count": workers_count,
             "managers_count": manager_count,
             "branches_count": branch_count,
-            "last_operations": ListCarOperationSerializer(
-                last_operations, many=True
+            "last_operations": ListStationHomeCarOperationSerializer(
+                last_operations, many=True, context={"request": request}
             ).data,
         }
         return Response(response_data)
@@ -161,7 +142,7 @@ class StationHomeAPIView(APIView):
 
 class StationOperationsAPIView(ListAPIView):
     queryset = CarOperation.objects.select_related(
-        "car", "driver", "station_branch", "worker__station_branch", "service"
+        "car__branch", "driver", "station_branch", "worker__station_branch", "service"
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CarOperationFilter
