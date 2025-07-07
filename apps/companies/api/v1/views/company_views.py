@@ -77,7 +77,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "list":
-            return [CompanyPermission(), DashboardPermission()]
+            return [CompanyPermission() | DashboardPermission()]
         if self.action == "assign_managers":
             return [CompanyOwnerPermission()]
         if self.action == "update_balance":
