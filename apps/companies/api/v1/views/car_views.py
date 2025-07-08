@@ -349,7 +349,7 @@ class VerifyDriverView(APIView):
             )
             available_liters = math.floor(car.balance / liter_cost)
             available_liters = min(liters_count, available_liters)
-
+            available_cost = available_liters * liter_cost
             if (
                 CarOperation.objects.filter(
                     status=CarOperation.OperationStatus.COMPLETED,
@@ -368,6 +368,7 @@ class VerifyDriverView(APIView):
             car_service = None
             available_liters = 0
             liter_cost = 0
+            available_cost = car.balance
 
         station_branch = request.user.worker.station_branch
         car_operation = CarOperation.objects.create(
@@ -392,7 +393,7 @@ class VerifyDriverView(APIView):
                     "plate_color": COLOR_CHOICES_HEX.get(car.plate_color),
                     "fuel_type": car.fuel_type,
                     "liter_count": available_liters,
-                    "cost": available_liters * liter_cost,
+                    "cost": available_cost,
                     "code": car.code,
                     "service": {
                         "name": car_service.name if car_service else "-",
