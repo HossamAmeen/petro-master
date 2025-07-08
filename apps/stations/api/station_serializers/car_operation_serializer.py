@@ -102,7 +102,7 @@ class updateStationOtherCarOperationSerializer(serializers.ModelSerializer):
         instance.service_id = validated_data.get("service", instance.service)
         instance.cost = validated_data.get("cost", instance.cost)
         instance.car_image = validated_data.get("car_image", instance.car_image)
-        instance.unit = (Service.ServiceUnit.UNIT,)
+        instance.unit = Service.ServiceUnit.UNIT
         instance.status = validated_data.get("status", instance.status)
         instance.save()
 
