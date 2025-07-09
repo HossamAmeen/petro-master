@@ -34,6 +34,7 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
 )
 from apps.companies.api.v1.serializers.company_serializer import (
     CompanySerializer,
+    ListCompanyNameSerializer,
     ListCompanySerializer,
 )
 from apps.companies.models.company_cash_models import CompanyCashRequest
@@ -56,6 +57,8 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.request.method == "GET":
+            if self.request.query_params.get("no_paginate", "").lower() == "true":
+                return ListCompanyNameSerializer
             return ListCompanySerializer
         return CompanySerializer
 
@@ -64,16 +67,7 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 
 class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    queryset = (
-        CompanyBranch.objects.select_related("district__city", "company")
-        .prefetch_related("managers")
-        .annotate(
-            cars_count=Count("cars", distinct=True),
-            drivers_count=Count("drivers", distinct=True),
-            managers_count=Count("managers", distinct=True),
-        )
-        .order_by("-id")
-    )
+    queryset = CompanyBranch.objects.order_by("-id")
     filter_backends = [DjangoFilterBackend]
     filterset_class = CompanyBranchFilter
 
@@ -90,6 +84,16 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return super().get_permissions()
 
     def get_queryset(self):
+        if self.request.query_params.get("no_paginate", "").lower() != "true":
+            self.queryset = (
+                self.queryset.select_related("district__city", "company")
+                .prefetch_related("managers")
+                .annotate(
+                    cars_count=Count("cars", distinct=True),
+                    drivers_count=Count("drivers", distinct=True),
+                    managers_count=Count("managers", distinct=True),
+                )
+            )
         if self.request.user.role == User.UserRoles.CompanyOwner:
             self.queryset = self.queryset.filter(company=self.request.company_id)
         if self.request.user.role == User.UserRoles.CompanyBranchManager:

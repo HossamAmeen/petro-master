@@ -38,7 +38,9 @@ from apps.users.models import User
 
 class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
     filterset_class = DriverFilter
-    queryset = Driver.objects.select_related("branch__district").order_by("-id")
+    queryset = Driver.objects.select_related(
+        "branch__district", "branch__company"
+    ).order_by("-id")
     search_fields = [
         "name",
         "branch__name",
@@ -59,7 +61,9 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 
 class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    queryset = Car.objects.select_related("branch__district").order_by("-id")
+    queryset = Car.objects.select_related(
+        "branch__district", "branch__company"
+    ).order_by("-id")
     filterset_class = CarFilter
     search_fields = [
         "code",

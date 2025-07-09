@@ -16,6 +16,13 @@ class ListCompanySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class ListCompanyNameSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Company
+        fields = ["id", "name"]
+
+
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
@@ -25,7 +32,7 @@ class CompanySerializer(serializers.ModelSerializer):
 class CompanyNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = ["name"]
+        fields = ["id", "name"]
 
 
 class CompanyWalletSerializer(serializers.ModelSerializer):

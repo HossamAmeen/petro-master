@@ -67,10 +67,16 @@ class DriverFilter(django_filters.FilterSet):
     city = django_filters.NumberFilter(field_name="branch__district__city")
     company = django_filters.NumberFilter(field_name="branch__company")
     lincense_expiration_date__from = django_filters.DateFilter(
-        field_name="lincense_expiration_date", lookup_expr="gte"
+        field_name="lincense_expiration_date",
+        lookup_expr="gte",
+        label="lincense_expiration_date_from",
+        help_text="Filter by lincense expiration date from example lincense_expiration_date_from=YYYY-MM-DD",
     )
     lincense_expiration_date__to = django_filters.DateFilter(
-        field_name="lincense_expiration_date", lookup_expr="lte"
+        field_name="lincense_expiration_date",
+        lookup_expr="lte",
+        label="lincense_expiration_date_to",
+        help_text="Filter by lincense expiration date to example lincense_expiration_date_to=YYYY-MM-DD",
     )
 
     class Meta:
