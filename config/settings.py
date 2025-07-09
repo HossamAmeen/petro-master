@@ -161,8 +161,6 @@ LANGUAGE_CODE = "en-us"
 
 TIME_ZONE = "Africa/Cairo"
 
-USE_I18N = True
-
 USE_TZ = True
 
 
@@ -193,6 +191,8 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "TIME_ZONE": "Africa/Cairo",
+    "USE_TZ": True,
 }
 
 CORS_ALLOW_ALL_ORIGINS = True

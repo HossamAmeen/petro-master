@@ -12,6 +12,7 @@ from drf_spectacular.utils import (
 )
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView, Response, status
 
 from apps.accounting.api.v1.serializers.company_transaction_serializer import (
@@ -78,11 +79,14 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "list":
-            return [EitherPermission([CompanyPermission, DashboardPermission])]
+            return [
+                IsAuthenticated(),
+                EitherPermission([CompanyPermission, DashboardPermission]),
+            ]
         if self.action == "assign_managers":
-            return [CompanyOwnerPermission()]
+            return [IsAuthenticated(), CompanyOwnerPermission()]
         if self.action == "update_balance":
-            return [CompanyOwnerPermission()]
+            return [IsAuthenticated(), CompanyOwnerPermission()]
         return super().get_permissions()
 
     def get_queryset(self):

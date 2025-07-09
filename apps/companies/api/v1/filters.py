@@ -65,10 +65,23 @@ class CarFilter(django_filters.FilterSet):
 
 class DriverFilter(django_filters.FilterSet):
     city = django_filters.NumberFilter(field_name="branch__district__city")
+    company = django_filters.NumberFilter(field_name="branch__company")
+    lincense_expiration_date__from = django_filters.DateFilter(
+        field_name="lincense_expiration_date", lookup_expr="gte"
+    )
+    lincense_expiration_date__to = django_filters.DateFilter(
+        field_name="lincense_expiration_date", lookup_expr="lte"
+    )
 
     class Meta:
         model = Driver
-        fields = ["branch", "city"]
+        fields = [
+            "branch",
+            "city",
+            "lincense_expiration_date__from",
+            "lincense_expiration_date__to",
+            "company",
+        ]
 
 
 class CompanyFilter(django_filters.FilterSet):
