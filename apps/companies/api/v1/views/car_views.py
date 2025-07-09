@@ -33,6 +33,7 @@ from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import COLOR_CHOICES_HEX
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import StationWorkerPermission
+from apps.stations.models.service_models import Service
 from apps.users.models import User
 
 
@@ -359,8 +360,12 @@ class VerifyDriverView(APIView):
                     status=CarOperation.OperationStatus.COMPLETED,
                     car=car,
                     created__date=timezone.now().date(),
+                    service__type__in=[
+                        Service.ServiceType.PETROL,
+                        Service.ServiceType.DIESEL,
+                    ],
                 ).count()
-                > car.number_of_fuelings_per_day
+                >= car.number_of_fuelings_per_day
             ):
                 raise CustomValidationError(
                     message="السيارة تجاوزت عدد عمليات البترولية اليومية المسموح بها",
