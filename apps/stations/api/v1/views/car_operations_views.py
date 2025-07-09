@@ -3,7 +3,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.db.transaction import atomic
-from django.utils.timezone import now
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.response import Response
@@ -64,7 +64,7 @@ class StationGasOperationAPIView(APIView):
                         {"error": "يجب تحديد الوقت البدء"},
                         code="not_found",
                     )
-                end_time = now()
+                end_time = timezone.localtime()
                 if end_time > car_opertion.start_time + timedelta(seconds=70):
                     raise CustomValidationError(
                         {"error": "الوقت الانتهاء يجب ان يكون اقل من 60 ثانية"},
@@ -190,7 +190,7 @@ class StationGasOperationAPIView(APIView):
 
                 return Response(serializer.data)
             elif "start_time" in serializer.validated_data:
-                car_opertion.start_time = now()
+                car_opertion.start_time = timezone.localtime()
                 car_opertion.save()
             return Response(serializer.data)
 

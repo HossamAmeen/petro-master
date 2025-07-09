@@ -1,8 +1,8 @@
 import os
-from datetime import datetime
 
 from django.conf import settings
 from django.http import FileResponse, Http404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from openpyxl import Workbook
@@ -104,7 +104,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         date_to = request.query_params.get("date_to")
         if date_from:
             try:
-                date_from = datetime.strptime(date_from, "%Y-%m-%d").date()
+                date_from = timezone.localtime().strptime(date_from, "%Y-%m-%d").date()
                 queryset = queryset.filter(start_time__date__gte=date_from)
             except ValueError:
                 raise CustomValidationError(
@@ -113,7 +113,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 )
         if date_to:
             try:
-                date_to = datetime.strptime(date_to, "%Y-%m-%d").date()
+                date_to = timezone.localtime().strptime(date_to, "%Y-%m-%d").date()
                 queryset = queryset.filter(start_time__date__lte=date_to)
             except ValueError:
                 raise CustomValidationError(
@@ -155,7 +155,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 ws.append(cleaned_row)
 
         # Generate filename with timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = timezone.localtime().strftime("%Y%m%d_%H%M%S")
         filename = f"export_{timestamp}.xlsx"
         excel_dir = os.path.join(settings.MEDIA_ROOT, "excel_exports")
         os.makedirs(excel_dir, exist_ok=True)

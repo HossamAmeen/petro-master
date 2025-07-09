@@ -359,7 +359,7 @@ class VerifyDriverView(APIView):
                 CarOperation.objects.filter(
                     status=CarOperation.OperationStatus.COMPLETED,
                     car=car,
-                    created__date=timezone.now().date(),
+                    created__date=timezone.localtime().date(),
                     service__type__in=[
                         Service.ServiceType.PETROL,
                         Service.ServiceType.DIESEL,

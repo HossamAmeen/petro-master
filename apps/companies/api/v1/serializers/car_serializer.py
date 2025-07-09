@@ -33,7 +33,7 @@ class ListCarSerializer(serializers.ModelSerializer):
     def get_is_license_expiring_soon(self, obj):
         if obj.license_expiration_date:
             expiry_date = obj.license_expiration_date
-            time_difference = expiry_date - timezone.now().date()
+            time_difference = expiry_date - timezone.localtime().date()
             return time_difference <= timedelta(days=30)
         return False
 

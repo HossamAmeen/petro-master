@@ -57,13 +57,15 @@ class User(AbstractUser, TimeStampedModel):
 
     def create_password_reset_token(self):
         self.reset_password_token = uuid.uuid4()
-        self.reset_password_token_created_at = timezone.now()
+        self.reset_password_token_created_at = timezone.localtime()
         self.save()
         return str(self.reset_password_token)
 
     def is_valid_password_reset_token(self, token, expiration_hours=24):
         if self.reset_password_token and str(self.reset_password_token) == token:
-            time_difference = timezone.now() - self.reset_password_token_created_at
+            time_difference = (
+                timezone.localtime() - self.reset_password_token_created_at
+            )
             return time_difference.total_seconds() / 3600 < expiration_hours
         return False
 

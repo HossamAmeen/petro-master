@@ -150,7 +150,7 @@ class Car(AbstractBaseModel):
         )
 
     def is_available_today(self):
-        today = timezone.now().date()
+        today = timezone.localtime().date()
         return today.strftime("%A") in self.fuel_allowed_days
 
     class Meta:

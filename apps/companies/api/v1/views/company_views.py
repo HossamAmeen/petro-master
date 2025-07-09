@@ -305,11 +305,11 @@ class CompanyHomeView(APIView):
             branches__id__in=branches_id,
         )
         drivers_lincense_expiration_date_filter = Q(
-            branches__drivers__lincense_expiration_date__lt=datetime.now(),
+            branches__drivers__lincense_expiration_date__lt=datetime.localtime(),
             branches__id__in=branches_id,
         )
         drivers_lincense_expiration_date_filter_30_days = Q(
-            branches__drivers__lincense_expiration_date__lt=datetime.now()
+            branches__drivers__lincense_expiration_date__lt=datetime.localtime()
             - timedelta(days=30),
             branches__id__in=branches_id,
         )
