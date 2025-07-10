@@ -1,7 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.db import transaction
 from django.db.models import Count, Q, Sum
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
@@ -34,7 +35,8 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
     ListCompanyHomeCarOperationSerializer,
 )
 from apps.companies.api.v1.serializers.company_serializer import (
-    CompanySerializer,
+    CompanyCreationSerializer,
+    CompanyUpdateSerializer,
     ListCompanyNameSerializer,
     ListCompanySerializer,
 )
@@ -61,7 +63,9 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
             if self.request.query_params.get("no_paginate", "").lower() == "true":
                 return ListCompanyNameSerializer
             return ListCompanySerializer
-        return CompanySerializer
+        if self.request.method == "POST":
+            return CompanyCreationSerializer
+        return CompanyUpdateSerializer
 
     filterset_class = CompanyFilter
     search_fields = ["name", "phone_number"]
@@ -310,11 +314,11 @@ class CompanyHomeView(APIView):
             branches__id__in=branches_id,
         )
         drivers_lincense_expiration_date_filter = Q(
-            branches__drivers__lincense_expiration_date__lt=datetime.localtime(),
+            branches__drivers__lincense_expiration_date__lt=timezone.localtime().date(),
             branches__id__in=branches_id,
         )
         drivers_lincense_expiration_date_filter_30_days = Q(
-            branches__drivers__lincense_expiration_date__lt=datetime.localtime()
+            branches__drivers__lincense_expiration_date__lt=timezone.localtime().date()
             - timedelta(days=30),
             branches__id__in=branches_id,
         )

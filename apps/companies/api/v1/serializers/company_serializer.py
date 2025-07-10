@@ -23,10 +23,16 @@ class ListCompanyNameSerializer(serializers.ModelSerializer):
         fields = ["id", "name"]
 
 
-class CompanySerializer(serializers.ModelSerializer):
+class CompanyCreationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = "__all__"
+        fields = ["name", "email", "phone_number", "address", "district", "is_active"]
+
+
+class CompanyUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ["name", "email", "phone_number", "address", "district", "is_active"]
 
 
 class CompanyNameSerializer(serializers.ModelSerializer):

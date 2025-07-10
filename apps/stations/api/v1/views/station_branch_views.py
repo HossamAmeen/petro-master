@@ -10,6 +10,10 @@ from apps.accounting.models import StationKhaznaTransaction
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.permissions import StationOwnerPermission
+from apps.stations.api.station_serializers.station_branch_serializers import (
+    StationBranchCreationSerializer,
+    StationBranchUpdateSerializer,
+)
 from apps.stations.api.v1.serializers import (
     AssignServicesSerializer,
     ListServiceSerializer,
@@ -55,6 +59,10 @@ class StationBranchViewSet(viewsets.ModelViewSet):
             return AssignServicesSerializer
         elif self.action == "assign_managers":
             return StationBranchAssignManagersSerializer
+        elif self.action == "update":
+            return StationBranchUpdateSerializer
+        elif self.action == "create":
+            return StationBranchCreationSerializer
         return super().get_serializer_class()
 
     def get_queryset(self):

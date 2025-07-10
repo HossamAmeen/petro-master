@@ -28,6 +28,10 @@ from apps.stations.api.station_serializers.car_operation_serializer import (
 from apps.stations.api.station_serializers.home_serializers import (
     ListStationReportsSerializer,
 )
+from apps.stations.api.station_serializers.station_serailizers import (
+    StationCreationSerializer,
+    StationUpdateSerializer,
+)
 from apps.stations.api.v1.serializers import ListStationSerializer
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import Station, StationBranch
@@ -35,8 +39,18 @@ from apps.users.models import StationBranchManager, StationOwner, User, Worker
 
 
 class StationViewSet(viewsets.ModelViewSet):
-    queryset = Station.objects.prefetch_related("station_services").order_by("-id")
-    serializer_class = ListStationSerializer
+    queryset = (
+        Station.objects.select_related("district")
+        .prefetch_related("station_services")
+        .order_by("-id")
+    )
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return StationCreationSerializer
+        if self.action == "update":
+            return StationUpdateSerializer
+        return ListStationSerializer
 
 
 class StationHomeAPIView(APIView):
