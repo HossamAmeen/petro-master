@@ -82,6 +82,8 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return [IsAuthenticated(), CompanyOwnerPermission()]
         if self.action == "update_balance":
             return [IsAuthenticated(), CompanyOwnerPermission()]
+        if self.action == "create":
+            return [IsAuthenticated(), DashboardPermission()]
         return super().get_permissions()
 
     def get_queryset(self):
