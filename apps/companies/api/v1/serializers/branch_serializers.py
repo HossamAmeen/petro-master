@@ -73,10 +73,36 @@ class CompanyBranchSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class CompanyBranchCreationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyBranch
+        fields = [
+            "name",
+            "email",
+            "phone_number",
+            "address",
+            "district",
+            "fees",
+            "other_service_fees",
+            "cash_request_fees",
+            "company",
+        ]
+
+
 class CompanyBranchUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyBranch
-        fields = ["name", "email", "phone_number", "address", "district"]
+        fields = [
+            "name",
+            "email",
+            "phone_number",
+            "address",
+            "district",
+            "fees",
+            "other_service_fees",
+            "cash_request_fees",
+            "company",
+        ]
 
 
 class CompanyBranchAssignManagersSerializer(serializers.Serializer):

@@ -24,6 +24,7 @@ from apps.companies.api.v1.filters import CompanyBranchFilter, CompanyFilter
 from apps.companies.api.v1.serializers.branch_serializers import (
     BranchBalanceUpdateSerializer,
     CompanyBranchAssignManagersSerializer,
+    CompanyBranchCreationSerializer,
     CompanyBranchSerializer,
     ListCompanyBranchNameSerializer,
     ListCompanyBranchSerializer,
@@ -101,6 +102,8 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return self.queryset.distinct()
 
     def get_serializer_class(self):
+        if self.action == "create":
+            return CompanyBranchCreationSerializer
         if self.action == "list":
             if self.request.query_params.get("no_paginate", "").lower() == "true":
                 return ListCompanyBranchNameSerializer

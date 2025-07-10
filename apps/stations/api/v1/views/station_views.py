@@ -157,16 +157,16 @@ class StationOperationsAPIView(ListAPIView):
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
-            queryset = self.queryset.filter(
+            self.queryset = self.queryset.filter(
                 station_branch__station_id=self.request.station_id
             )
         if self.request.user.role == User.UserRoles.StationBranchManager:
-            queryset = self.queryset.filter(
+            self.queryset = self.queryset.filter(
                 station_branch__managers__user=self.request.user
             )
         if self.request.user.role == User.UserRoles.StationWorker:
-            queryset = self.queryset.filter(worker=self.request.user)
-        return queryset
+            self.queryset = self.queryset.filter(worker=self.request.user)
+        return self.queryset
 
     def list(self, request):
         queryset = self.filter_queryset(self.get_queryset())
