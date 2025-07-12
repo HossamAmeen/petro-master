@@ -70,7 +70,6 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
         "code",
         "plate_number",
         "plate_character",
-        "lincense_number",
         "name",
         "branch__name",
         "branch__district__name",
