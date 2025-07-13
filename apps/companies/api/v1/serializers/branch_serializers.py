@@ -67,7 +67,7 @@ class RetrieveCompanyBranchSerializer(serializers.ModelSerializer):
 
 
 class CompanyBranchSerializer(serializers.ModelSerializer):
-    district = serializers.PrimaryKeyRelatedField(read_only=True, null=False)
+    district = serializers.PrimaryKeyRelatedField(read_only=True, allow_null=False)
 
     class Meta:
         model = CompanyBranch

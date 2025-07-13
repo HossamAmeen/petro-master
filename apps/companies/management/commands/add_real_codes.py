@@ -35,7 +35,9 @@ class Command(BaseCommand):
                 )
             )
             return
-        CarCode.objects.bulk_create([CarCode(code=code) for code in codes])
+        CarCode.objects.bulk_create(
+            [CarCode(code=code, created_by_id=4, updated_by_id=4) for code in codes]
+        )
         self.stdout.write(
             self.style.SUCCESS("Added real codes to database successfully.")
         )
