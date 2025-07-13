@@ -12,6 +12,7 @@ from apps.companies.models.company_models import Driver
 class ListDriverSerializer(serializers.ModelSerializer):
     branch = SingleBranchWithDistrictSerializer()
     is_license_expiring_soon = serializers.SerializerMethodField()
+    company_name = serializers.CharField(source="branch.company.name")
 
     class Meta:
         model = Driver
