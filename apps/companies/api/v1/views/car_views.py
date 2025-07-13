@@ -78,6 +78,8 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "GET":
             return ListCarSerializer
+        if self.request.method == "POST":
+            return CarSerializer
         return CarSerializer
 
     def get_queryset(self):

@@ -7,7 +7,7 @@ from apps.users.models import User
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
-    queryset = Service.objects.all().order_by("-id")
+    queryset = Service.objects.order_by("-id")
     serializer_class = ListServiceSerializer
     filterset_class = ServiceFilter
 

@@ -47,12 +47,22 @@ class ListCarSerializer(serializers.ModelSerializer):
         return data
 
 
+class CarCreationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Car
+        fields = "__all__"
+
+    def validate(self, attrs):
+        super().validate(attrs)
+
+
 class CarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
         fields = "__all__"
 
     def validate(self, attrs):
+        super().validate(attrs)
         permitted_fuel_amount = attrs.get(
             "permitted_fuel_amount",
             getattr(self.instance, "permitted_fuel_amount", None),
