@@ -9,7 +9,8 @@ from apps.accounting.helpers import generate_station_transaction
 from apps.accounting.models import StationKhaznaTransaction
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
-from apps.shared.permissions import StationOwnerPermission
+from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.shared.permissions import DashboardPermission, StationOwnerPermission
 from apps.stations.api.station_serializers.station_branch_serializers import (
     StationBranchCreationSerializer,
     StationBranchUpdateSerializer,
@@ -32,7 +33,7 @@ SERVICE_CATEGORY_CHOICES = {
 }
 
 
-class StationBranchViewSet(viewsets.ModelViewSet):
+class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = (
         StationBranch.objects.prefetch_related("station_branch_services")
         .annotate(
@@ -44,6 +45,8 @@ class StationBranchViewSet(viewsets.ModelViewSet):
     filterset_class = StationBranchFilter
 
     def get_permissions(self):
+        if self.action == "create":
+            return [DashboardPermission()]
         if self.action == "update_balance":
             return [StationOwnerPermission()]
         return super().get_permissions()

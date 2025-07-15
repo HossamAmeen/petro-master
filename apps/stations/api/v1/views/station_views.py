@@ -21,7 +21,8 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
 )
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.operation_model import CarOperation
-from apps.shared.permissions import StationPermission
+from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.shared.permissions import DashboardPermission, StationPermission
 from apps.stations.api.station_serializers.car_operation_serializer import (
     ListStationHomeCarOperationSerializer,
 )
@@ -38,12 +39,8 @@ from apps.stations.models.stations_models import Station, StationBranch
 from apps.users.models import StationBranchManager, StationOwner, User, Worker
 
 
-class StationViewSet(viewsets.ModelViewSet):
-    queryset = (
-        Station.objects.select_related("district")
-        .prefetch_related("station_services")
-        .order_by("-id")
-    )
+class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
+    queryset = Station.objects.select_related("district").order_by("-id")
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -51,6 +48,11 @@ class StationViewSet(viewsets.ModelViewSet):
         if self.action == "update":
             return StationUpdateSerializer
         return ListStationSerializer
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [DashboardPermission()]
+        return super().get_permissions()
 
 
 class StationHomeAPIView(APIView):
