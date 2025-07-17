@@ -19,6 +19,7 @@ from apps.accounting.models import CompanyKhaznaTransaction, KhaznaTransaction
 from apps.companies.api.v1.filters import CarFilter, DriverFilter
 from apps.companies.api.v1.serializers.car_serializer import (
     CarBalanceUpdateSerializer,
+    CarCreationSerializer,
     CarSerializer,
     ListCarSerializer,
 )
@@ -79,7 +80,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.request.method == "GET":
             return ListCarSerializer
         if self.request.method == "POST":
-            return CarSerializer
+            return CarCreationSerializer
         return CarSerializer
 
     def get_queryset(self):

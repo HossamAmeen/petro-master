@@ -6,7 +6,7 @@ from rest_framework import serializers
 from apps.companies.api.v1.serializers.branch_serializers import (
     SingleBranchWithDistrictSerializer,
 )
-from apps.companies.models.company_models import Car
+from apps.companies.models.company_models import Car, CarCode
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import COLOR_CHOICES_HEX
 from apps.stations.api.v1.serializers import ServiceNameSerializer
@@ -48,16 +48,8 @@ class ListCarSerializer(serializers.ModelSerializer):
         return data
 
 
-class CarCreationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Car
-        fields = "__all__"
-
-    def validate(self, attrs):
-        super().validate(attrs)
-
-
 class CarSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Car
         fields = "__all__"
@@ -78,8 +70,35 @@ class CarSerializer(serializers.ModelSerializer):
                     code="invalid",
                     errors=[],
                 )
+        if attrs.get("service") and attrs.get("backup_service"):
+            if attrs.get("service") == attrs.get("backup_service"):
+                raise CustomValidationError(
+                    message="لا يمكن أن يكون الخدمة الرئيسية والنسخة الاحتياطية نفس الخدمة",
+                    code="invalid",
+                    errors=[],
+                )
+        if attrs.get("code"):
+            if not CarCode.objects.filter(code=attrs["code"]).exists():
+                raise CustomValidationError(
+                    message="رقم الكود غير موجود في السستم",
+                    code="invalid",
+                    errors=[],
+                )
+            existing_car = Car.objects.filter(code=attrs["code"])
+            if self.instance:
+                existing_car = existing_car.exclude(id=self.instance.id)
+            if existing_car.exists():
+                raise CustomValidationError(
+                    message="رقم السيارة موجود بالفعل",
+                    code="invalid",
+                    errors=[],
+                )
 
         return attrs
+
+
+class CarCreationSerializer(CarSerializer):
+    pass
 
 
 class CarWithPlateInfoSerializer(serializers.ModelSerializer):
