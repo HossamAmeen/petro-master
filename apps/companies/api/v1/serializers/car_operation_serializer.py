@@ -5,7 +5,7 @@ from rest_framework import serializers
 from apps.companies.api.v1.serializers.car_serializer import CarWithPlateInfoSerializer
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.operation_model import CarOperation
-from apps.shared.constants import COLOR_CHOICES_HEX, SERVICE_UNIT_CHOICES
+from apps.shared.constants import SERVICE_UNIT_CHOICES
 from apps.stations.api.v1.serializers import (
     ServiceNameSerializer,
     SingleStationBranchSerializer,
@@ -156,7 +156,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
         return {
             "plate_number": car.plate_number,
             "plate_character": car.plate_character,
-            "plate_color": COLOR_CHOICES_HEX.get(car.plate_color),
+            "plate_color": car.plate_color,
             "fuel_type": car.fuel_type,
             "liter_count": available_liters,
             "cost": available_liters * liter_cost,

@@ -8,7 +8,6 @@ from apps.companies.api.v1.serializers.branch_serializers import (
 )
 from apps.companies.models.company_models import Car, CarCode
 from apps.shared.base_exception_class import CustomValidationError
-from apps.shared.constants import COLOR_CHOICES_HEX
 from apps.stations.api.v1.serializers import ServiceNameSerializer
 from apps.utilities.serializers import BalanceUpdateSerializer
 
@@ -41,9 +40,6 @@ class ListCarSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["plate_color"] = COLOR_CHOICES_HEX.get(
-            data["plate_color"], data["plate_color"]
-        )
         data["fuel_type"] = FUEL_TYPE_CHOICES.get(data["fuel_type"], data["fuel_type"])
         return data
 
@@ -108,9 +104,6 @@ class CarWithPlateInfoSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["plate_color"] = COLOR_CHOICES_HEX.get(
-            data["plate_color"], COLOR_CHOICES_HEX[Car.PlateColor.RED]
-        )
         return data
 
 
@@ -134,7 +127,4 @@ class RetrieveCarWithCompanySerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["plate_color"] = COLOR_CHOICES_HEX.get(
-            data["plate_color"], COLOR_CHOICES_HEX[Car.PlateColor.RED]
-        )
         return data

@@ -76,12 +76,12 @@ class Car(AbstractBaseModel):
         SUN = "Sunday"
 
     class PlateColor(models.TextChoices):
-        RED = "Red"
-        BLUE = "Blue"
-        ORANGE = "Orange"
-        YELLOW = "Yellow"
-        GREEN = "Green"
-        GOLD = "Gold"
+        RED = "#FF0000", "RED"
+        BLUE = "#0000FF", "BLUE"
+        ORANGE = "#FFA500", "ORANGE"
+        YELLOW = "#FFFF00", "YELLOW"
+        GREEN = "#008000", "GREEN"
+        GOLD = "#FFD700", "GOLD"
 
     code = models.CharField(max_length=10, unique=True, verbose_name="car code")
     plate_number = models.CharField(
