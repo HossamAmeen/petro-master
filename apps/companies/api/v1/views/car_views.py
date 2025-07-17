@@ -63,7 +63,7 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = Car.objects.select_related(
-        "branch__district", "branch__company"
+        "branch__district", "branch__company", "service", "backup_service"
     ).order_by("-id")
     filterset_class = CarFilter
     search_fields = [

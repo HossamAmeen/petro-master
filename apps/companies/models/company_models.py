@@ -112,6 +112,13 @@ class Car(AbstractBaseModel):
     service = models.ForeignKey(
         "stations.Service", on_delete=models.SET_NULL, null=True, blank=True
     )
+    backup_service = models.ForeignKey(
+        "stations.Service",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="backup_service",
+    )
     oil_type = models.CharField(max_length=20, null=True, blank=True)
     last_meter = models.IntegerField(null=True, blank=True, default=0)
     fuel_consumption_rate = models.IntegerField(default=0)

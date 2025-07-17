@@ -23,6 +23,7 @@ FUEL_TYPE_CHOICES = {
 
 class ListCarSerializer(serializers.ModelSerializer):
     service = ServiceNameSerializer()
+    backup_service = ServiceNameSerializer()
     branch = SingleBranchWithDistrictSerializer()
     is_license_expiring_soon = serializers.SerializerMethodField()
     company_name = serializers.CharField(source="branch.company.name")
