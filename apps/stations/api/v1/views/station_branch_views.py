@@ -62,7 +62,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return AssignServicesSerializer
         elif self.action == "assign_managers":
             return StationBranchAssignManagersSerializer
-        elif self.action == "update":
+        elif self.action == "partial_update":
             return StationBranchUpdateSerializer
         elif self.action == "create":
             return StationBranchCreationSerializer

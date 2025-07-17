@@ -45,7 +45,7 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "create":
             return StationCreationSerializer
-        if self.action == "update":
+        if self.action == "partial_update":
             return StationUpdateSerializer
         return ListStationSerializer
 
