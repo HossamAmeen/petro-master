@@ -21,6 +21,7 @@ from apps.companies.api.v1.serializers.car_serializer import (
     CarBalanceUpdateSerializer,
     CarCreationSerializer,
     CarSerializer,
+    CarUpdateWithCompanySerializer,
     ListCarSerializer,
 )
 from apps.companies.api.v1.serializers.driver_serializer import (
@@ -31,6 +32,7 @@ from apps.companies.models.company_models import Car, Driver
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import StationWorkerPermission
 from apps.stations.models.service_models import Service
@@ -80,6 +82,11 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return ListCarSerializer
         if self.request.method == "POST":
             return CarCreationSerializer
+        if self.request.method == "PATCH":
+            if self.request.user.role in COMPANY_ROLES:
+                return CarUpdateWithCompanySerializer
+            if self.request.user.role in DASHBOARD_ROLES:
+                return CarSerializer
         return CarSerializer
 
     def get_queryset(self):

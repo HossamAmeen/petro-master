@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from apps.companies.api.v1.serializers.branch_serializers import (
@@ -95,6 +96,20 @@ class CarSerializer(serializers.ModelSerializer):
 
 class CarCreationSerializer(CarSerializer):
     pass
+
+
+@extend_schema_serializer(
+    exclude_fields=["updated_at", "created_at", "created_by", "updated_by"]
+)
+class CarUpdateWithCompanySerializer(CarSerializer):
+    class Meta:
+        model = Car
+        exclude = [
+            "code",
+            "balance",
+            "is_blocked_balance_update",
+            "created_by",
+        ]
 
 
 class CarWithPlateInfoSerializer(serializers.ModelSerializer):
