@@ -7,7 +7,6 @@ from rest_framework import serializers
 from apps.companies.api.v1.serializers.branch_serializers import (
     SingleBranchWithDistrictSerializer,
 )
-from apps.companies.api.v1.serializers.company_serializer import CompanyNameSerializer
 from apps.companies.models.company_models import Car, CarCode
 from apps.shared.base_exception_class import CustomValidationError
 from apps.stations.api.v1.serializers import ServiceNameSerializer
@@ -28,7 +27,6 @@ class ListCarSerializer(serializers.ModelSerializer):
     branch = SingleBranchWithDistrictSerializer()
     is_license_expiring_soon = serializers.SerializerMethodField()
     company_name = serializers.CharField(source="branch.company.name")
-    company = CompanyNameSerializer()
 
     class Meta:
         model = Car
