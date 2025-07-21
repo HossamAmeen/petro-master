@@ -3,6 +3,7 @@ from django.db.models.base import transaction
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import Response
 
 from apps.accounting.helpers import generate_station_transaction
@@ -46,9 +47,9 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "create":
-            return [DashboardPermission()]
+            return [IsAuthenticated(), DashboardPermission()]
         if self.action == "update_balance":
-            return [StationOwnerPermission()]
+            return [IsAuthenticated(), StationOwnerPermission()]
         return super().get_permissions()
 
     def get_serializer_class(self):

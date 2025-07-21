@@ -51,7 +51,7 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "create":
-            return [DashboardPermission()]
+            return [IsAuthenticated(), DashboardPermission()]
         return super().get_permissions()
 
 

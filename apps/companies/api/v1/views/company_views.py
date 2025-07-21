@@ -292,7 +292,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 
 class CompanyHomeView(APIView):
-    permission_classes = [CompanyPermission]
+    permission_classes = [IsAuthenticated, CompanyPermission]
 
     def get(self, request, *args, **kwargs):
         if self.request.user.role == User.UserRoles.CompanyOwner:
@@ -352,6 +352,10 @@ class CompanyHomeView(APIView):
             )
             .first()
         )
+        if not company:
+            return Response(
+                {"message": "Company not found"}, status=status.HTTP_404_NOT_FOUND
+            )
         cash_requests_balance = (
             CompanyCashRequest.objects.filter(
                 driver__branch__in=branches_id,
