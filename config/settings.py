@@ -61,6 +61,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_extensions",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "polymorphic",
     "gunicorn",
     "psycopg2",
@@ -215,6 +216,7 @@ SIMPLE_JWT = {
         minutes=env("ACCESS_TOKEN_LIFETIME", default=60)
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=env("REFRESH_TOKEN_LIFETIME", default=10)),
+    "ROTATE_REFRESH_TOKENS": env("ROTATE_REFRESH_TOKENS", default=True),
 }
 
 

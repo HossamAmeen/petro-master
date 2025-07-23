@@ -11,6 +11,7 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import DASHBOARD_ROLES
@@ -18,11 +19,16 @@ from apps.users.models import User
 from apps.utilities.serializers import MessageErrorsSerializer
 
 from .serializers import (
+    CompanyTokenRefreshSerializer,
     LoginSerializer,
     PasswordResetRequestSerializer,
     ProfileSerializer,
     SetNewPasswordSerializer,
 )
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    serializer_class = CompanyTokenRefreshSerializer
 
 
 class CompanyLoginAPIView(APIView):
@@ -70,6 +76,10 @@ class CompanyLoginAPIView(APIView):
             and user.role in company_roles
         ):
             refresh = RefreshToken.for_user(user)
+            refresh["user_name"] = user.name
+            refresh["role"] = user.role
+            refresh["company_id"] = user.companyuser.company.id
+
             access_token = refresh.access_token
             access_token["user_name"] = user.name
             access_token["role"] = user.role
@@ -144,14 +154,19 @@ class StationLoginAPIView(APIView):
             and user.check_password(serializer.validated_data["password"])
             and user.role in station_roles
         ):
-            refresh = RefreshToken.for_user(user)
-            access_token = refresh.access_token
-            access_token["user_name"] = user.name
-            access_token["role"] = user.role
             if user.role == User.UserRoles.StationWorker:
                 station_id = user.worker.station_branch.station_id
             else:
                 station_id = user.stationowner.station.id
+
+            refresh = RefreshToken.for_user(user)
+            refresh["user_name"] = user.name
+            refresh["role"] = user.role
+            refresh["station_id"] = station_id
+
+            access_token = refresh.access_token
+            access_token["user_name"] = user.name
+            access_token["role"] = user.role
             access_token["station_id"] = station_id
             data = {
                 "refresh": str(refresh),
