@@ -347,8 +347,12 @@ class CompanyHomeView(APIView):
                 total_branches_count=Count(
                     "branches", distinct=True, filter=branches_filter
                 ),
-                cars_balance=Sum("branches__cars__balance", filter=branches_filter),
-                branches_balance=Sum("branches__balance", filter=branches_filter),
+                cars_balance=Sum(
+                    "branches__cars__balance", filter=branches_filter, distinct=True
+                ),
+                branches_balance=Sum(
+                    "branches__balance", filter=branches_filter, distinct=True
+                ),
             )
             .first()
         )

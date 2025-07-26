@@ -92,16 +92,15 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request, *args, **kwargs):
-        car = request.query_params.get("car")
+
         queryset = (
             CarOperation.objects.filter(car__branch__company=request.company_id)
             .select_related("car", "driver", "station_branch", "worker", "service")
             .order_by("-id")
         )
-        if car:
-            queryset = queryset.filter(car_id=car)
+        if request.query_params.get("car"):
+            queryset = queryset.filter(car_id=request.query_params.get("car"))
         date_from = request.query_params.get("date_from")
-        date_to = request.query_params.get("date_to")
         if date_from:
             try:
                 date_from = timezone.localtime().strptime(date_from, "%Y-%m-%d").date()
@@ -111,6 +110,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                     message="Invalid date from format",
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
+        date_to = request.query_params.get("date_to")
         if date_to:
             try:
                 date_to = timezone.localtime().strptime(date_to, "%Y-%m-%d").date()
@@ -122,8 +122,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 )
 
         queryset = queryset[:100]
-        serializer = ListCarOperationSerializer(queryset, many=True)
-        data = serializer.data
+        data = ListCarOperationSerializer(queryset, many=True).data
 
         if not data:
             raise CustomValidationError(
@@ -136,23 +135,22 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         ws.title = "Data Export"
 
         # Write headers (first row)
-        if data:
-            headers = list(data[0].keys())
-            cleaned_headers = [str(header) for header in headers]
-            ws.append(cleaned_headers)
+        headers = list(data[0].keys())
+        cleaned_headers = [str(header) for header in headers]
+        ws.append(cleaned_headers)
 
-            # Write data rows
-            for row in data:
-                cleaned_row = []
-                for value in row.values():
-                    if value is None:
-                        cleaned_value = ""
-                    elif isinstance(value, (dict, list)):
-                        cleaned_value = str(value)
-                    else:
-                        cleaned_value = str(value)
-                    cleaned_row.append(cleaned_value)
-                ws.append(cleaned_row)
+        # Write data rows
+        for row in data:
+            cleaned_row = []
+            for value in row.values():
+                if value is None:
+                    cleaned_value = ""
+                elif isinstance(value, (dict, list)):
+                    cleaned_value = str(value)
+                else:
+                    cleaned_value = str(value)
+                cleaned_row.append(cleaned_value)
+            ws.append(cleaned_row)
 
         # Generate filename with timestamp
         timestamp = timezone.localtime().strftime("%Y%m%d_%H%M%S")
