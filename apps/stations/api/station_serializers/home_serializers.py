@@ -16,11 +16,12 @@ class ListStationReportsSerializer(serializers.ModelSerializer):
     total_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
     count = serializers.IntegerField()
     amount = serializers.DecimalField(max_digits=10, decimal_places=2)
-    unit = serializers.SerializerMethodField()
 
     class Meta:
         model = CarOperation
         fields = ["service", "service_name", "total_balance", "count", "amount", "unit"]
 
-    def get_unit(self, obj):
-        return SERVICE_UNIT_CHOICES.get(obj["unit"])
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"])
+        return data

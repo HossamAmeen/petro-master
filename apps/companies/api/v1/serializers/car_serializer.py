@@ -1,14 +1,14 @@
 from datetime import timedelta
 
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from apps.companies.api.v1.serializers.branch_serializers import (
     SingleBranchWithDistrictSerializer,
 )
-from apps.companies.models.company_models import Car
+from apps.companies.models.company_models import Car, CarCode
 from apps.shared.base_exception_class import CustomValidationError
-from apps.shared.constants import COLOR_CHOICES_HEX
 from apps.stations.api.v1.serializers import ServiceNameSerializer
 from apps.utilities.serializers import BalanceUpdateSerializer
 
@@ -23,8 +23,10 @@ FUEL_TYPE_CHOICES = {
 
 class ListCarSerializer(serializers.ModelSerializer):
     service = ServiceNameSerializer()
+    backup_service = ServiceNameSerializer()
     branch = SingleBranchWithDistrictSerializer()
     is_license_expiring_soon = serializers.SerializerMethodField()
+    company_name = serializers.CharField(source="branch.company.name")
 
     class Meta:
         model = Car
@@ -32,27 +34,25 @@ class ListCarSerializer(serializers.ModelSerializer):
 
     def get_is_license_expiring_soon(self, obj):
         if obj.license_expiration_date:
-            today = timezone.now().date()
             expiry_date = obj.license_expiration_date
-            time_difference = expiry_date - today
+            time_difference = expiry_date - timezone.localtime().date()
             return time_difference <= timedelta(days=30)
         return False
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["plate_color"] = COLOR_CHOICES_HEX.get(
-            data["plate_color"], data["plate_color"]
-        )
         data["fuel_type"] = FUEL_TYPE_CHOICES.get(data["fuel_type"], data["fuel_type"])
         return data
 
 
 class CarSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Car
         fields = "__all__"
 
     def validate(self, attrs):
+        super().validate(attrs)
         permitted_fuel_amount = attrs.get(
             "permitted_fuel_amount",
             getattr(self.instance, "permitted_fuel_amount", None),
@@ -67,8 +67,49 @@ class CarSerializer(serializers.ModelSerializer):
                     code="invalid",
                     errors=[],
                 )
+        if attrs.get("service") and attrs.get("backup_service"):
+            if attrs.get("service") == attrs.get("backup_service"):
+                raise CustomValidationError(
+                    message="لا يمكن أن يكون الخدمة الرئيسية والنسخة الاحتياطية نفس الخدمة",
+                    code="invalid",
+                    errors=[],
+                )
+        if attrs.get("code"):
+            if not CarCode.objects.filter(code=attrs["code"]).exists():
+                raise CustomValidationError(
+                    message="رقم الكود غير موجود في السستم",
+                    code="invalid",
+                    errors=[],
+                )
+            existing_car = Car.objects.filter(code=attrs["code"])
+            if self.instance:
+                existing_car = existing_car.exclude(id=self.instance.id)
+            if existing_car.exists():
+                raise CustomValidationError(
+                    message="رقم السيارة موجود بالفعل",
+                    code="invalid",
+                    errors=[],
+                )
 
         return attrs
+
+
+class CarCreationSerializer(CarSerializer):
+    pass
+
+
+@extend_schema_serializer(
+    exclude_fields=["updated_at", "created_at", "created_by", "updated_by"]
+)
+class CarUpdateWithCompanySerializer(CarSerializer):
+    class Meta:
+        model = Car
+        exclude = [
+            "code",
+            "balance",
+            "is_blocked_balance_update",
+            "created_by",
+        ]
 
 
 class CarWithPlateInfoSerializer(serializers.ModelSerializer):
@@ -78,11 +119,27 @@ class CarWithPlateInfoSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["plate_color"] = COLOR_CHOICES_HEX.get(
-            data["plate_color"], COLOR_CHOICES_HEX[Car.PlateColor.RED]
-        )
         return data
 
 
 class CarBalanceUpdateSerializer(BalanceUpdateSerializer):
     pass
+
+
+class RetrieveCarWithCompanySerializer(serializers.ModelSerializer):
+    company = serializers.CharField(source="branch.company.name")
+
+    class Meta:
+        model = Car
+        fields = [
+            "id",
+            "code",
+            "plate_number",
+            "plate_character",
+            "plate_color",
+            "company",
+        ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return data

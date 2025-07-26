@@ -19,6 +19,20 @@ class CompanyCashRequest(AbstractBaseModel):
     amount = models.DecimalField(
         max_digits=10, decimal_places=2, validators=[MinValueValidator(1)]
     )
+    company_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+    )
+    station_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+    )
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.IN_PROGRESS
     )

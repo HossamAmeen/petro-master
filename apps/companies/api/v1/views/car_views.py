@@ -1,4 +1,7 @@
+import math
+
 from django.db import transaction
+from django.utils import timezone
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -16,7 +19,9 @@ from apps.accounting.models import CompanyKhaznaTransaction, KhaznaTransaction
 from apps.companies.api.v1.filters import CarFilter, DriverFilter
 from apps.companies.api.v1.serializers.car_serializer import (
     CarBalanceUpdateSerializer,
+    CarCreationSerializer,
     CarSerializer,
+    CarUpdateWithCompanySerializer,
     ListCarSerializer,
 )
 from apps.companies.api.v1.serializers.driver_serializer import (
@@ -27,15 +32,18 @@ from apps.companies.models.company_models import Car, Driver
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
-from apps.shared.constants import COLOR_CHOICES_HEX
+from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import StationWorkerPermission
+from apps.stations.models.service_models import Service
 from apps.users.models import User
 
 
 class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
     filterset_class = DriverFilter
-    queryset = Driver.objects.select_related("branch__district").order_by("-id")
+    queryset = Driver.objects.select_related(
+        "branch__district", "branch__company"
+    ).order_by("-id")
     search_fields = [
         "name",
         "branch__name",
@@ -56,13 +64,14 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 
 class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    queryset = Car.objects.select_related("branch__district").order_by("-id")
+    queryset = Car.objects.select_related(
+        "branch__district", "branch__company", "service", "backup_service"
+    ).order_by("-id")
     filterset_class = CarFilter
     search_fields = [
         "code",
         "plate_number",
         "plate_character",
-        "lincense_number",
         "name",
         "branch__name",
         "branch__district__name",
@@ -71,6 +80,13 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "GET":
             return ListCarSerializer
+        if self.request.method == "POST":
+            return CarCreationSerializer
+        if self.request.method == "PATCH":
+            if self.request.user.role in COMPANY_ROLES:
+                return CarUpdateWithCompanySerializer
+            if self.request.user.role in DASHBOARD_ROLES:
+                return CarSerializer
         return CarSerializer
 
     def get_queryset(self):
@@ -139,7 +155,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 )
             )
             notification_users.extend(
-                car.branch.company.owners.values_list("user_id", flat=True)
+                car.branch.company.owners.values_list("id", flat=True)
             )
 
         with transaction.atomic():
@@ -172,14 +188,14 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
                 else:
                     raise CustomValidationError(
-                        message="السيارة لا تمتلك كافٍ من المال",
+                        message="الرصيد غير كافٍ",
                         code="not_enough_balance",
                         errors=[],
                         status_code=status.HTTP_400_BAD_REQUEST,
                     )
             elif serializer.validated_data["type"] == "subtract":
                 car.refresh_from_db()
-                if parent_object.balance >= serializer.validated_data["amount"]:
+                if car.balance >= serializer.validated_data["amount"]:
                     car.balance -= serializer.validated_data["amount"]
                     car.save()
 
@@ -265,11 +281,24 @@ class VerifyDriverView(APIView):
     )
     @transaction.atomic
     def post(self, request, driver_code, car_code, service_type):
-        car = Car.objects.filter(code=car_code.strip()).first()
+        car = (
+            Car.objects.filter(code=car_code.strip())
+            .select_related("branch__company")
+            .first()
+        )
         if not car:
             raise CustomValidationError(
                 message="كود السيارة هذا لا يعمل او غير مفعل الان.",
                 code="car_code_not_found",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        company_branch = car.branch
+        if not company_branch.company.is_active:
+            raise CustomValidationError(
+                message="حساب الشركه معلق مؤقتا",
+                code="company_not_active",
                 errors=[],
                 status_code=status.HTTP_404_NOT_FOUND,
             )
@@ -283,25 +312,13 @@ class VerifyDriverView(APIView):
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
-        if not car.is_available_today():
-            raise CustomValidationError(
-                message="السيبارة غير مصرح لها هذا اليوم",
-                code="car_not_active",
-                errors=[],
-                status_code=status.HTTP_404_NOT_FOUND,
-            )
-        if driver.branch.company_id != car.branch.company_id:
+        if driver.branch.company_id != company_branch.company_id:
             raise CustomValidationError(
                 message="السائق لا ينتمي للشركة",
                 code="driver_not_belongs_to_company",
                 errors=[],
                 status_code=status.HTTP_404_NOT_FOUND,
             )
-
-        if service_type == "petrol":
-            service = car.service
-        else:
-            service = None
 
         if CarOperation.objects.filter(
             status__in=[
@@ -317,11 +334,64 @@ class VerifyDriverView(APIView):
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
+        if not car.is_available_today():
+            raise CustomValidationError(
+                message="السيبارة غير مصرح لها هذا اليوم",
+                code="car_not_active",
+                errors=[],
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        if service_type == "petrol":
+            car_service = car.service
+            liter_cost = (
+                car_service.cost * company_branch.fees / 100
+            ) + car_service.cost
+            if car.balance < liter_cost:
+                raise CustomValidationError(
+                    message="السيارة لا تمتلك كافٍ من المال",
+                    code="not_enough_balance",
+                    errors=[],
+                    status_code=status.HTTP_404_NOT_FOUND,
+                )
+
+            liters_count = (
+                car.permitted_fuel_amount
+                if car.permitted_fuel_amount
+                else car.tank_capacity
+            )
+            available_liters = math.floor(car.balance / liter_cost)
+            available_liters = min(liters_count, available_liters)
+            available_cost = available_liters * liter_cost
+            if (
+                CarOperation.objects.filter(
+                    status=CarOperation.OperationStatus.COMPLETED,
+                    car=car,
+                    created__date=timezone.localtime().date(),
+                    service__type__in=[
+                        Service.ServiceType.PETROL,
+                        Service.ServiceType.DIESEL,
+                    ],
+                ).count()
+                >= car.number_of_fuelings_per_day
+            ):
+                raise CustomValidationError(
+                    message="السيارة تجاوزت عدد عمليات البترولية اليومية المسموح بها",
+                    code="car_in_progress",
+                    errors=[],
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            car_service = None
+            available_liters = 0
+            liter_cost = 0
+            available_cost = car.balance
+
         station_branch = request.user.worker.station_branch
         car_operation = CarOperation.objects.create(
             car=car,
             driver=driver,
-            service=service,
+            service=car_service,
             worker_id=request.user.id,
             station_branch_id=station_branch.id,
             status=CarOperation.OperationStatus.PENDING,
@@ -331,33 +401,20 @@ class VerifyDriverView(APIView):
         car.is_blocked_balance_update = True
         car.save()
 
-        liters_count = (
-            car.permitted_fuel_amount
-            if car.permitted_fuel_amount
-            else car.tank_capacity
-        )
-        car_service = car.service
-        service_cost = car_service.cost if car_service else 0
-        if car.balance < liters_count * service_cost:
-            raise CustomValidationError(
-                message="السيارة لا تمتلك كافٍ من المال",
-                code="not_enough_balance",
-                errors=[],
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
         return Response(
             {
                 "message": "تم التحقق من السائق بنجاح",
                 "car": {
                     "plate_number": car.plate_number,
                     "plate_character": car.plate_character,
-                    "plate_color": COLOR_CHOICES_HEX.get(car.plate_color),
+                    "plate_color": car.plate_color,
                     "fuel_type": car.fuel_type,
-                    "liter_count": liters_count,
-                    "cost": (liters_count * service_cost)
-                    + (liters_count * station_branch.fees),
+                    "liter_count": available_liters,
+                    "cost": available_cost,
                     "code": car.code,
-                    "car_service": car_service.name if car_service else None,
+                    "service": {
+                        "name": car_service.name if car_service else "-",
+                    },
                 },
                 "operation_id": car_operation.id,
             },

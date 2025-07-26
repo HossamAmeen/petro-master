@@ -29,3 +29,9 @@ COLOR_CHOICES_HEX = {
     Car.PlateColor.GREEN: "#008000",
     Car.PlateColor.GOLD: "#FFD700",
 }
+
+DASHBOARD_ROLES = [
+    User.UserRoles.Admin,
+    User.UserRoles.Finance,
+    User.UserRoles.CustomerSupport,
+]

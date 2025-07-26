@@ -29,18 +29,11 @@ class SingleStationServiceSerializer(serializers.ModelSerializer):
 
 
 class ListStationSerializer(serializers.ModelSerializer):
-    services = serializers.SerializerMethodField()
     district = DistrictWithcitynameSerializer()
 
     class Meta:
         model = Station
         fields = "__all__"
-
-    def get_services(self, instance):
-        services = Service.objects.filter(
-            station_branch_services__station_branch__station=instance
-        ).values("id", "name")
-        return list(services)
 
 
 class StationNameSerializer(serializers.ModelSerializer):

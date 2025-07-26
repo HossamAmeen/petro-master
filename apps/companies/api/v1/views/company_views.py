@@ -1,11 +1,19 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.db import transaction
 from django.db.models import Count, Q, Sum
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView, Response, status
 
 from apps.accounting.api.v1.serializers.company_transaction_serializer import (
@@ -17,7 +25,9 @@ from apps.companies.api.v1.filters import CompanyBranchFilter, CompanyFilter
 from apps.companies.api.v1.serializers.branch_serializers import (
     BranchBalanceUpdateSerializer,
     CompanyBranchAssignManagersSerializer,
+    CompanyBranchCreationSerializer,
     CompanyBranchSerializer,
+    ListCompanyBranchNameSerializer,
     ListCompanyBranchSerializer,
     RetrieveCompanyBranchSerializer,
 )
@@ -25,7 +35,9 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
     ListCompanyHomeCarOperationSerializer,
 )
 from apps.companies.api.v1.serializers.company_serializer import (
-    CompanySerializer,
+    CompanyCreationSerializer,
+    CompanyUpdateSerializer,
+    ListCompanyNameSerializer,
     ListCompanySerializer,
 )
 from apps.companies.models.company_cash_models import CompanyCashRequest
@@ -34,7 +46,12 @@ from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
-from apps.shared.permissions import CompanyOwnerPermission, CompanyPermission
+from apps.shared.permissions import (
+    CompanyOwnerPermission,
+    CompanyPermission,
+    DashboardPermission,
+    EitherPermission,
+)
 from apps.users.models import CompanyBranchManager, User
 
 
@@ -43,37 +60,47 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.request.method == "GET":
+            if self.request.query_params.get("no_paginate", "").lower() == "true":
+                return ListCompanyNameSerializer
             return ListCompanySerializer
-        return CompanySerializer
+        if self.request.method == "POST":
+            return CompanyCreationSerializer
+        return CompanyUpdateSerializer
 
     filterset_class = CompanyFilter
     search_fields = ["name", "phone_number"]
 
 
 class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    queryset = (
-        CompanyBranch.objects.select_related("district__city", "company")
-        .prefetch_related("managers")
-        .annotate(
-            cars_count=Count("cars", distinct=True),
-            drivers_count=Count("drivers", distinct=True),
-            managers_count=Count("managers", distinct=True),
-        )
-        .order_by("-id")
-    )
+    queryset = CompanyBranch.objects.order_by("-id")
     filter_backends = [DjangoFilterBackend]
     filterset_class = CompanyBranchFilter
 
     def get_permissions(self):
         if self.action == "list":
-            return [CompanyPermission()]
+            return [
+                IsAuthenticated(),
+                EitherPermission([CompanyPermission, DashboardPermission]),
+            ]
         if self.action == "assign_managers":
-            return [CompanyOwnerPermission()]
+            return [IsAuthenticated(), CompanyOwnerPermission()]
         if self.action == "update_balance":
-            return [CompanyOwnerPermission()]
+            return [IsAuthenticated(), CompanyOwnerPermission()]
+        if self.action == "create":
+            return [IsAuthenticated(), DashboardPermission()]
         return super().get_permissions()
 
     def get_queryset(self):
+        if self.request.query_params.get("no_paginate", "").lower() != "true":
+            self.queryset = (
+                self.queryset.select_related("district__city", "company")
+                .prefetch_related("managers")
+                .annotate(
+                    cars_count=Count("cars", distinct=True),
+                    drivers_count=Count("drivers", distinct=True),
+                    managers_count=Count("managers", distinct=True),
+                )
+            )
         if self.request.user.role == User.UserRoles.CompanyOwner:
             self.queryset = self.queryset.filter(company=self.request.company_id)
         if self.request.user.role == User.UserRoles.CompanyBranchManager:
@@ -81,7 +108,11 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return self.queryset.distinct()
 
     def get_serializer_class(self):
+        if self.action == "create":
+            return CompanyBranchCreationSerializer
         if self.action == "list":
+            if self.request.query_params.get("no_paginate", "").lower() == "true":
+                return ListCompanyBranchNameSerializer
             return ListCompanyBranchSerializer
         if self.action == "retrieve":
             return RetrieveCompanyBranchSerializer
@@ -90,6 +121,24 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.action == "update_balance":
             return BranchBalanceUpdateSerializer
         return CompanyBranchSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="no_paginate",
+                type=OpenApiTypes.BOOL,
+                description="if true will return all data without pagination",
+            )
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=ListCompanyBranchSerializer(many=True),
+                description="List of company branches.",
+            )
+        },
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=["post"], url_name="assign-managers")
     def assign_managers(self, request, *args, **kwargs):
@@ -243,7 +292,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 
 class CompanyHomeView(APIView):
-    permission_classes = [CompanyPermission]
+    permission_classes = [IsAuthenticated, CompanyPermission]
 
     def get(self, request, *args, **kwargs):
         if self.request.user.role == User.UserRoles.CompanyOwner:
@@ -265,11 +314,11 @@ class CompanyHomeView(APIView):
             branches__id__in=branches_id,
         )
         drivers_lincense_expiration_date_filter = Q(
-            branches__drivers__lincense_expiration_date__lt=datetime.now(),
+            branches__drivers__lincense_expiration_date__lt=timezone.localtime().date(),
             branches__id__in=branches_id,
         )
         drivers_lincense_expiration_date_filter_30_days = Q(
-            branches__drivers__lincense_expiration_date__lt=datetime.now()
+            branches__drivers__lincense_expiration_date__lt=timezone.localtime().date()
             - timedelta(days=30),
             branches__id__in=branches_id,
         )
@@ -298,11 +347,19 @@ class CompanyHomeView(APIView):
                 total_branches_count=Count(
                     "branches", distinct=True, filter=branches_filter
                 ),
-                cars_balance=Sum("branches__cars__balance", filter=branches_filter),
-                branches_balance=Sum("branches__balance", filter=branches_filter),
+                cars_balance=Sum(
+                    "branches__cars__balance", filter=branches_filter, distinct=True
+                ),
+                branches_balance=Sum(
+                    "branches__balance", filter=branches_filter, distinct=True
+                ),
             )
             .first()
         )
+        if not company:
+            return Response(
+                {"message": "Company not found"}, status=status.HTTP_404_NOT_FOUND
+            )
         cash_requests_balance = (
             CompanyCashRequest.objects.filter(
                 driver__branch__in=branches_id,

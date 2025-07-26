@@ -16,16 +16,29 @@ class ListCompanySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class CompanySerializer(serializers.ModelSerializer):
+class ListCompanyNameSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Company
-        fields = "__all__"
+        fields = ["id", "name"]
+
+
+class CompanyCreationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ["name", "email", "phone_number", "address", "district", "is_active"]
+
+
+class CompanyUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ["name", "email", "phone_number", "address", "district", "is_active"]
 
 
 class CompanyNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = ["name"]
+        fields = ["id", "name"]
 
 
 class CompanyWalletSerializer(serializers.ModelSerializer):

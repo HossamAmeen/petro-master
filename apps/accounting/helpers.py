@@ -23,8 +23,7 @@ def generate_company_transaction(
     reference_code = (
         str("INT-" + str(reference_code)) if is_internal else str(reference_code)
     )
-    if not approved_at:
-        approved_at = timezone.now()
+    approved_at = timezone.localtime() if not approved_at else approved_at
     CompanyKhaznaTransaction.objects.create(
         company_id=company_id,
         amount=amount,
@@ -54,10 +53,7 @@ def generate_station_transaction(
         min_value=10**8,
         max_value=10**9,
     )
-
-    if not approved_at:
-        approved_at = timezone.now()
-
+    approved_at = timezone.localtime() if not approved_at else approved_at
     StationKhaznaTransaction.objects.create(
         station_id=station_id,
         station_branch_id=station_branch_id,

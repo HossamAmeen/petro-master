@@ -61,6 +61,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_extensions",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "polymorphic",
     "gunicorn",
     "psycopg2",
@@ -82,6 +83,7 @@ INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -112,31 +114,28 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+ENVIRONMENT = env("ENVIRONMENT", default="local")
+print(
+    f"############################ ENVIRONMENT {ENVIRONMENT} ############################"
+)
 
-if env("ENVIRONMENT", default="local") != "PRODUCTION":
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("DB_NAME", default="defaultdb"),
+        "USER": env("DB_USER", default="doadmin"),
+        "PASSWORD": env("DB_PASSWORD", default="password"),
+        "HOST": env(
+            "DB_HOST",
+            default="db-postgresql-fra1-63337-do-user-21327337-0.k.db.ondigitalocean.com",
+        ),
+        "PORT": env("DB_PORT", default="25060"),
+        "OPTIONS": {
+            "sslmode": env("DB_SSL_MODE", default="require"),
+        },
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": env("DB_NAME", default="defaultdb"),
-            "USER": env("DB_USER", default="doadmin"),
-            "PASSWORD": env("DB_PASSWORD", default="password"),
-            "HOST": env(
-                "DB_HOST",
-                default="db-postgresql-fra1-63337-do-user-21327337-0.k.db.ondigitalocean.com",
-            ),
-            "PORT": env("DB_PORT", default="25060"),
-            "OPTIONS": {
-                "sslmode": env("DB_SSL_MODE", default="require"),
-            },
-        }
-    }
+}
+print("Database Configured", DATABASES)
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -161,9 +160,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
-
-USE_I18N = True
+TIME_ZONE = "Africa/Cairo"
 
 USE_TZ = True
 
@@ -183,7 +180,7 @@ CSRF_TRUSTED_ORIGINS = ["https://api.petro-master.org", "https://petro-master.or
 REST_FRAMEWORK = {
     # "EXCEPTION_HANDLER": "drf_standardized_errors.handler.exception_handler",
     "EXCEPTION_HANDLER": "apps.shared.exceptions.custom_exception_handler",
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
+    "DEFAULT_PAGINATION_CLASS": "apps.shared.pagination_class.CustomLimitOffsetPagination",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "PAGE_SIZE": 100,
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -195,16 +192,21 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "TIME_ZONE": "Africa/Cairo",
+    "USE_TZ": True,
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
 
 # API needs credentials like cookies or authorization headers
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080",
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost(:\d+)?$",  # localhost + any port
+    r"^http://127.0.0.1(:\d+)?$",  # 127.0.0.1 + any port
+    r"^https://api.petro-master.org$",
+    r"^https://petro-master.org$",
 ]
-
 
 AUTH_USER_MODEL = "users.User"
 
@@ -214,6 +216,7 @@ SIMPLE_JWT = {
         minutes=env("ACCESS_TOKEN_LIFETIME", default=60)
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=env("REFRESH_TOKEN_LIFETIME", default=10)),
+    "ROTATE_REFRESH_TOKENS": env("ROTATE_REFRESH_TOKENS", default=True),
 }
 
 
@@ -285,6 +288,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 if not env("ENVIRONMENT", default="local") == "local":
+    print("############################ Sentry Init ############################")
     sentry_sdk.init(
         dsn=env("SENTRY_DNS"),
         # Add data like request headers and IP for users,

@@ -1,6 +1,5 @@
 import base64
 import os
-import uuid
 from io import BytesIO
 
 import qrcode
@@ -16,13 +15,13 @@ from apps.utilities.models.abstract_base_model import AbstractBaseModel
 class Company(AbstractBaseModel):
     name = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
-    balance = models.DecimalField(max_digits=10, decimal_places=2)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     email = models.EmailField(max_length=255, null=True, blank=True)
     phone_number = models.CharField(max_length=11, null=True, blank=True)
     district = models.ForeignKey(
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
-    fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -45,6 +44,10 @@ class CompanyBranch(AbstractBaseModel):
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
     fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    other_service_fees = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0.0
+    )
+    cash_request_fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
 
     def __str__(self):
         return self.name + " - " + self.company.name
@@ -73,12 +76,12 @@ class Car(AbstractBaseModel):
         SUN = "Sunday"
 
     class PlateColor(models.TextChoices):
-        RED = "Red"
-        BLUE = "Blue"
-        ORANGE = "Orange"
-        YELLOW = "Yellow"
-        GREEN = "Green"
-        GOLD = "Gold"
+        RED = "#FF0000", "RED"
+        BLUE = "#0000FF", "BLUE"
+        ORANGE = "#FFA500", "ORANGE"
+        YELLOW = "#FFFF00", "YELLOW"
+        GREEN = "#008000", "GREEN"
+        GOLD = "#FFD700", "GOLD"
 
     code = models.CharField(max_length=10, unique=True, verbose_name="car code")
     plate_number = models.CharField(
@@ -99,11 +102,25 @@ class Car(AbstractBaseModel):
     is_with_odometer = models.BooleanField()
     tank_capacity = models.IntegerField()
     permitted_fuel_amount = models.IntegerField()
-    fuel_type = models.CharField(max_length=20, choices=FuelType.choices)
+    fuel_type = models.CharField(
+        max_length=20,
+        choices=FuelType.choices,
+        null=True,
+        blank=True,
+        default=FuelType.DIESEL,
+    )
     service = models.ForeignKey(
         "stations.Service", on_delete=models.SET_NULL, null=True, blank=True
     )
+    backup_service = models.ForeignKey(
+        "stations.Service",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="backup_service",
+    )
     oil_type = models.CharField(max_length=20, null=True, blank=True)
+    last_meter = models.IntegerField(null=True, blank=True, default=0)
     fuel_consumption_rate = models.IntegerField(default=0)
     number_of_fuelings_per_day = models.IntegerField()
     number_of_washes_per_month = models.IntegerField()
@@ -118,7 +135,11 @@ class Car(AbstractBaseModel):
     )
 
     def __str__(self):
-        return self.code + " - " + self.plate_number if self.plate_number else self.code
+        return (
+            self.plate_character + " - " + self.plate_number
+            if self.plate_number
+            else self.code
+        )
 
     def clean(self):
         if self.permitted_fuel_amount > self.tank_capacity:
@@ -136,7 +157,7 @@ class Car(AbstractBaseModel):
         )
 
     def is_available_today(self):
-        today = timezone.now().date()
+        today = timezone.localtime().date()
         return today.strftime("%A") in self.fuel_allowed_days
 
     class Meta:
@@ -188,16 +209,9 @@ class Driver(AbstractBaseModel):
     def __str__(self):
         return self.name
 
-    def generate_unique_code(self):
-        """Generate a unique alphanumeric code."""
-        while True:
-            new_code = f"DR-{uuid.uuid4().hex[:10].upper()}"  # Example: DR-ABC123
-            if not Driver.objects.filter(code=new_code).exists():
-                return new_code
-
     def save(self, *args, **kwargs):
         if not self.code:
-            self.code = self.generate_unique_code()
+            self.code = generate_unique_code(Driver)
         super().save(*args, **kwargs)
 
     class Meta:

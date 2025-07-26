@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin, messages
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.urls import path, reverse
 from django.utils.html import format_html
 
@@ -24,7 +24,7 @@ class CompanyAdmin(admin.ModelAdmin):
         "name",
         "address",
         "phone_number",
-        "balance",
+        "total_balance",
         "branches_link",
         "cars_link",
         "drivers_link",
@@ -33,9 +33,27 @@ class CompanyAdmin(admin.ModelAdmin):
         "updated_by",
     )
     search_fields = ("name", "address", "phone_number")
+    list_filter = ("district", "is_active")
     readonly_fields = ["created_by", "updated_by"]
-    list_per_page = 20
-    # inlines = [BranchInline]
+    list_per_page = 10
+
+    def total_balance(self, obj):
+        total_balance = (
+            obj.balance
+            + (
+                obj.branches.aggregate(total_balance=Sum("balance"))["total_balance"]
+                or 0
+            )
+            + (
+                obj.branches.aggregate(total_balance=Sum("cars__balance"))[
+                    "total_balance"
+                ]
+                or 0
+            )
+        )
+        return total_balance
+
+    total_balance.short_description = "Total Balance"
 
     def cars_link(self, obj):
         count = obj.branches.aggregate(total_cars=Count("cars"))["total_cars"] or 0
@@ -62,6 +80,19 @@ class CompanyAdmin(admin.ModelAdmin):
             + f"?company__id__exact={obj.id}"
         )
         return format_html('<a class="button" href="{}">Branches ({})</a>', url, count)
+
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new Driver.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+            obj.balance = 0
+        else:
+            obj.balance = form.cleaned_data.get("balance", obj.balance)
+        obj.updated_by = request.user
+        obj.save()
 
     drivers_link.short_description = "Drivers"
     cars_link.short_description = "Cars"
@@ -140,7 +171,6 @@ class CarForm(forms.ModelForm):
                 choices=Car.FuelAllowedDay.choices
             ),
             "plate_color": forms.RadioSelect(choices=Car.PlateColor.choices),
-            "color": forms.TextInput(attrs={"type": "color"}),
         }
 
     def clean_fuel_allowed_days(self):
@@ -212,6 +242,11 @@ class CarAdmin(admin.ModelAdmin):
         if not obj.pk:  # Only set created_by on creation, not updates
             obj.created_by = request.user
             obj.balance = 0
+            obj.fuel_consumption_rate = 0
+            obj.number_of_fuelings_per_day = 0
+            obj.number_of_washes_per_month = 0
+            obj.fuel_allowed_days = []
+            obj.is_blocked_balance_update = False
         if obj.code:
             car_code = CarCode.objects.filter(code=obj.code).first()
             if car_code:
@@ -219,6 +254,7 @@ class CarAdmin(admin.ModelAdmin):
                     if car_code.car != obj:
                         raise forms.ValidationError("Car code is busy")
                 else:
+                    obj.save()
                     car_code.car = obj
                     car_code.save()
             else:
@@ -226,6 +262,22 @@ class CarAdmin(admin.ModelAdmin):
 
         obj.updated_by = request.user
         obj.save()
+
+    def get_fields(self, request, obj=None):
+        fields = super().get_fields(request, obj)
+        fields_not_in_creation_form = [
+            "last_meter",
+            "fuel_consumption_rate",
+            "number_of_fuelings_per_day",
+            "number_of_washes_per_month",
+            "fuel_allowed_days",
+            "fuel_type",
+        ]
+        if not obj:
+            fields = [
+                field for field in fields if field not in fields_not_in_creation_form
+            ]
+        return fields
 
 
 class CarCodeForm(forms.ModelForm):
@@ -248,6 +300,7 @@ class CarCodeAdmin(admin.ModelAdmin):
     list_display = (
         "code",
         "car",
+        "car_company_name",
         "created",
     )
     search_fields = (
@@ -257,8 +310,11 @@ class CarCodeAdmin(admin.ModelAdmin):
     )
     list_filter = ("car__branch__company", "created")
     actions = ["print_qr_codes"]
-
-    list_per_page = 4395
+    list_select_related = ("car__branch__company",)
+    list_per_page = 10
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 1000
 
     def save_model(self, request, obj, form, change):
         generate_count = form.cleaned_data.get("generate_count", 1)
@@ -329,8 +385,20 @@ class CarCodeAdmin(admin.ModelAdmin):
         queryset = self.get_queryset(request).filter(id__in=selected_ids)
         return self.print_qr_codes(request, queryset)
 
+    def car_company_name(self, obj):
+        if not obj.car:
+            return ""
+        return obj.car.branch.company.name
+
+    car_company_name.short_description = "Company"
+
     def get_queryset(self, request):
-        return super().get_queryset(request).order_by("-created")
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("car__branch__company")
+            .order_by("-created")
+        )
 
 
 @admin.register(Driver)
@@ -366,6 +434,7 @@ class DriverAdmin(admin.ModelAdmin):
         "branch__company",
     )
     readonly_fields = ("code", "created_by", "updated_by")
+    list_per_page = 10
 
     def company_name(self, obj):
         return obj.branch.company.name
@@ -413,6 +482,7 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
         "otp",
         "driver",
         "station",
+        "station_branch",
         "created_by",
         "updated_by",
         "created",
@@ -424,12 +494,26 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
         "status",
         "driver__name",
         "station__name",
+        "station_branch__name",
     )
     list_filter = ("company", "status", "driver", "station", "driver__branch")
     readonly_fields = ("created_by", "updated_by")
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("driver__branch")
+
+    def has_add_permission(self, request):
+        pass
+
+    def has_change_permission(self, request, obj=None):
+        if obj and obj.status == "in_progress":
+            return True
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.status == "in_progress":
+            return True
+        return False
 
     def save_model(self, request, obj, form, change):
         """
@@ -462,9 +546,11 @@ class CarOperationAdmin(admin.ModelAdmin):
         "end_time",
         "duration",
         "cost",
+        "station_cost",
+        "company_cost",
+        "profits",
         "amount",
         "unit",
-        "fuel_type",
         "car",
         "driver",
         "station_branch",
@@ -477,7 +563,6 @@ class CarOperationAdmin(admin.ModelAdmin):
         "status",
         "start_time",
         "end_time",
-        "fuel_type",
         "car",
         "car__branch__company",
         "driver",

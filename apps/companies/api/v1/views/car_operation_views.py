@@ -1,8 +1,8 @@
 import os
-from datetime import datetime
 
 from django.conf import settings
 from django.http import FileResponse, Http404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from openpyxl import Workbook
@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from apps.companies.api.v1.filters import CarOperationFilter
 from apps.companies.api.v1.serializers.car_operation_serializer import (
     ListCarOperationSerializer,
+    SingleCarOperationSerializer,
 )
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
@@ -24,7 +25,11 @@ from apps.users.models import User
 
 class CarOperationViewSet(viewsets.ModelViewSet):
     queryset = CarOperation.objects.select_related(
-        "car", "driver", "station_branch", "worker", "service"
+        "car",
+        "driver",
+        "station_branch",
+        "worker__station_branch__district__city",
+        "service",
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CarOperationFilter
@@ -38,6 +43,10 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     ]
 
     def get_serializer_class(self):
+        if self.action == "list":
+            return ListCarOperationSerializer
+        if self.action == "retrieve":
+            return SingleCarOperationSerializer
         return ListCarOperationSerializer
 
     def get_queryset(self):
@@ -83,28 +92,28 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request, *args, **kwargs):
-        car = request.query_params.get("car")
+
         queryset = (
             CarOperation.objects.filter(car__branch__company=request.company_id)
             .select_related("car", "driver", "station_branch", "worker", "service")
             .order_by("-id")
         )
-        if car:
-            queryset = queryset.filter(car_id=car)
+        if request.query_params.get("car"):
+            queryset = queryset.filter(car_id=request.query_params.get("car"))
         date_from = request.query_params.get("date_from")
-        date_to = request.query_params.get("date_to")
         if date_from:
             try:
-                date_from = datetime.strptime(date_from, "%Y-%m-%d").date()
+                date_from = timezone.localtime().strptime(date_from, "%Y-%m-%d").date()
                 queryset = queryset.filter(start_time__date__gte=date_from)
             except ValueError:
                 raise CustomValidationError(
                     message="Invalid date from format",
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
+        date_to = request.query_params.get("date_to")
         if date_to:
             try:
-                date_to = datetime.strptime(date_to, "%Y-%m-%d").date()
+                date_to = timezone.localtime().strptime(date_to, "%Y-%m-%d").date()
                 queryset = queryset.filter(start_time__date__lte=date_to)
             except ValueError:
                 raise CustomValidationError(
@@ -113,8 +122,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 )
 
         queryset = queryset[:100]
-        serializer = ListCarOperationSerializer(queryset, many=True)
-        data = serializer.data
+        data = ListCarOperationSerializer(queryset, many=True).data
 
         if not data:
             raise CustomValidationError(
@@ -127,26 +135,25 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         ws.title = "Data Export"
 
         # Write headers (first row)
-        if data:
-            headers = list(data[0].keys())
-            cleaned_headers = [str(header) for header in headers]
-            ws.append(cleaned_headers)
+        headers = list(data[0].keys())
+        cleaned_headers = [str(header) for header in headers]
+        ws.append(cleaned_headers)
 
-            # Write data rows
-            for row in data:
-                cleaned_row = []
-                for value in row.values():
-                    if value is None:
-                        cleaned_value = ""
-                    elif isinstance(value, (dict, list)):
-                        cleaned_value = str(value)
-                    else:
-                        cleaned_value = str(value)
-                    cleaned_row.append(cleaned_value)
-                ws.append(cleaned_row)
+        # Write data rows
+        for row in data:
+            cleaned_row = []
+            for value in row.values():
+                if value is None:
+                    cleaned_value = ""
+                elif isinstance(value, (dict, list)):
+                    cleaned_value = str(value)
+                else:
+                    cleaned_value = str(value)
+                cleaned_row.append(cleaned_value)
+            ws.append(cleaned_row)
 
         # Generate filename with timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = timezone.localtime().strftime("%Y%m%d_%H%M%S")
         filename = f"export_{timestamp}.xlsx"
         excel_dir = os.path.join(settings.MEDIA_ROOT, "excel_exports")
         os.makedirs(excel_dir, exist_ok=True)

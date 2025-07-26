@@ -12,18 +12,26 @@ from drf_spectacular.utils import (
 from rest_framework import viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView, Response
 
 from apps.companies.api.v1.filters import CarOperationFilter
 from apps.companies.api.v1.serializers.car_operation_serializer import (
-    ListCarOperationSerializer,
     ListStationCarOperationSerializer,
 )
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.operation_model import CarOperation
-from apps.shared.permissions import StationPermission
+from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.shared.permissions import DashboardPermission, StationPermission
+from apps.stations.api.station_serializers.car_operation_serializer import (
+    ListStationHomeCarOperationSerializer,
+)
 from apps.stations.api.station_serializers.home_serializers import (
     ListStationReportsSerializer,
+)
+from apps.stations.api.station_serializers.station_serailizers import (
+    StationCreationSerializer,
+    StationUpdateSerializer,
 )
 from apps.stations.api.v1.serializers import ListStationSerializer
 from apps.stations.models.service_models import Service
@@ -31,39 +39,25 @@ from apps.stations.models.stations_models import Station, StationBranch
 from apps.users.models import StationBranchManager, StationOwner, User, Worker
 
 
-class StationViewSet(viewsets.ModelViewSet):
-    queryset = Station.objects.prefetch_related("station_services").order_by("-id")
-    serializer_class = ListStationSerializer
+class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
+    queryset = Station.objects.select_related("district").order_by("-id")
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return StationCreationSerializer
+        if self.action == "partial_update":
+            return StationUpdateSerializer
+        return ListStationSerializer
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsAuthenticated(), DashboardPermission()]
+        return super().get_permissions()
 
 
 class StationHomeAPIView(APIView):
-    permission_classes = [StationPermission]
+    permission_classes = [IsAuthenticated, StationPermission]
 
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(
-                response={
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "station_branch_id": {"type": "integer"},
-                        "name": {"type": "string"},
-                        "station_name": {"type": "string"},
-                        "user_name": {"type": "string"},
-                        "address": {"type": "string"},
-                        "balance": {"type": "number"},
-                        "branches_balance": {"type": "number"},
-                        "distributed_balance": {"type": "number"},
-                        "total_balance": {"type": "number"},
-                        "workers_count": {"type": "integer"},
-                        "managers_count": {"type": "integer"},
-                        "branches_count": {"type": "integer"},
-                        "last_operations": {"type": "array", "items": "object"},
-                    },
-                }
-            )
-        }
-    )
     def get(self, request):
         operation_filter = Q()
         manager_count = 0
@@ -108,7 +102,7 @@ class StationHomeAPIView(APIView):
                 .get("balance")
             )
 
-            distributed_balance = branches_balance
+            distributed_balance = branches_balance or 0
 
         if request.user.role == User.UserRoles.StationBranchManager:
             branches_balance = (
@@ -117,9 +111,9 @@ class StationHomeAPIView(APIView):
                 .get("balance")
             )
 
-            base_balance = branches_balance
+            base_balance = branches_balance or 0
 
-            distributed_balance = branches_balance
+            distributed_balance = branches_balance or 0
         if request.user.role == User.UserRoles.StationWorker:
             base_balance = 0
             distributed_balance = 0
@@ -127,7 +121,11 @@ class StationHomeAPIView(APIView):
 
         last_operations = (
             CarOperation.objects.select_related(
-                "car", "driver", "station_branch", "worker__station_branch", "service"
+                "car__branch__company",
+                "driver",
+                "station_branch",
+                "worker__station_branch",
+                "service",
             )
             .filter(operation_filter)
             .order_by("-id")[:5]
@@ -151,8 +149,8 @@ class StationHomeAPIView(APIView):
             "workers_count": workers_count,
             "managers_count": manager_count,
             "branches_count": branch_count,
-            "last_operations": ListCarOperationSerializer(
-                last_operations, many=True
+            "last_operations": ListStationHomeCarOperationSerializer(
+                last_operations, many=True, context={"request": request}
             ).data,
         }
         return Response(response_data)
@@ -160,7 +158,7 @@ class StationHomeAPIView(APIView):
 
 class StationOperationsAPIView(ListAPIView):
     queryset = CarOperation.objects.select_related(
-        "car", "driver", "station_branch", "worker__station_branch", "service"
+        "car__branch", "driver", "station_branch", "worker__station_branch", "service"
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CarOperationFilter
@@ -175,16 +173,16 @@ class StationOperationsAPIView(ListAPIView):
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
-            queryset = self.queryset.filter(
+            self.queryset = self.queryset.filter(
                 station_branch__station_id=self.request.station_id
             )
         if self.request.user.role == User.UserRoles.StationBranchManager:
-            queryset = self.queryset.filter(
+            self.queryset = self.queryset.filter(
                 station_branch__managers__user=self.request.user
             )
         if self.request.user.role == User.UserRoles.StationWorker:
-            queryset = self.queryset.filter(worker=self.request.user)
-        return queryset
+            self.queryset = self.queryset.filter(worker=self.request.user)
+        return self.queryset
 
     def list(self, request):
         queryset = self.filter_queryset(self.get_queryset())
@@ -215,6 +213,8 @@ class StationOperationsAPIView(ListAPIView):
 
 
 class StationReportsAPIView(APIView):
+    permission_classes = [IsAuthenticated, StationPermission]
+
     @extend_schema(
         parameters=[
             OpenApiParameter(
@@ -228,6 +228,18 @@ class StationReportsAPIView(APIView):
                 type=OpenApiTypes.DATE,
                 location=OpenApiParameter.QUERY,
                 description="Filter by date to example date_to=YYYY-MM-DD",
+            ),
+            OpenApiParameter(
+                name="time_from",
+                type=OpenApiTypes.TIME,
+                location=OpenApiParameter.QUERY,
+                description="Filter by time from example time_from=HH:MM:SS",
+            ),
+            OpenApiParameter(
+                name="time_to",
+                type=OpenApiTypes.TIME,
+                location=OpenApiParameter.QUERY,
+                description="Filter by time to example time_to=HH:MM:SS",
             ),
         ],
         responses={
@@ -269,17 +281,27 @@ class StationReportsAPIView(APIView):
         today = date.today()
         date_from = request.query_params.get("date_from", today)
         date_to = request.query_params.get("date_to", None)
+        time_from = request.query_params.get("time_from", "00:00:00")
+        time_to = request.query_params.get("time_to", "23:59:59")
         if date_from:
             station_branch_filter &= Q(modified__date__gte=date_from)
+            cash_request_filter &= Q(modified__date__gte=date_from)
         if date_to:
             station_branch_filter &= Q(modified__date__lte=date_to)
+            cash_request_filter &= Q(modified__date__lte=date_to)
+        if time_from:
+            station_branch_filter &= Q(modified__time__gte=time_from)
+            cash_request_filter &= Q(modified__time__gte=time_from)
+        if time_to:
+            station_branch_filter &= Q(modified__time__lte=time_to)
+            cash_request_filter &= Q(modified__time__lte=time_to)
 
         operations = (
             CarOperation.objects.filter(station_branch_filter)
             .select_related("service")
             .values("service")
             .annotate(
-                total_balance=Sum("cost"),
+                total_balance=Sum("station_cost"),
                 count=Count("id"),
                 amount=Sum("amount"),
                 service_name=F("service__name"),
@@ -289,7 +311,7 @@ class StationReportsAPIView(APIView):
         )
         operations = ListStationReportsSerializer(operations, many=True).data
 
-        cash_request_balance_balance = (
+        cash_request_balance = (
             CompanyCashRequest.objects.filter(
                 cash_request_filter,
                 status=CompanyCashRequest.Status.APPROVED,
@@ -300,7 +322,7 @@ class StationReportsAPIView(APIView):
         response_data = {
             "station_branch_filter": str(station_branch_filter),
             "station_id": request.station_id,
-            "cash_request_balance": cash_request_balance_balance,
+            "cash_request_balance": cash_request_balance,
             "operations": operations,
         }
         return Response(response_data)

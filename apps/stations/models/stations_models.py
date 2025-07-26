@@ -13,7 +13,6 @@ class Station(AbstractBaseModel):
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
 
     def __str__(self):
         return self.name
@@ -36,6 +35,10 @@ class StationBranch(AbstractBaseModel):
     )
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    other_service_fees = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0.0
+    )
+    cash_request_fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
 
     class Meta:
         verbose_name = "Station Branch"

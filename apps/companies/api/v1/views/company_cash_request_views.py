@@ -1,10 +1,21 @@
+from django.db import transaction
 from django.db.models import F
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiTypes,
+    extend_schema,
+)
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import Response, status
 
+from apps.accounting.helpers import (
+    generate_company_transaction,
+    generate_station_transaction,
+)
+from apps.accounting.models import CompanyKhaznaTransaction, KhaznaTransaction
 from apps.companies.api.filters.cash_request_filter import CashRequestFilter
 from apps.companies.api.v1.permissions import CashRequestPermission
 from apps.companies.api.v1.serializers.company_cash_request_serializers import (
@@ -14,9 +25,17 @@ from apps.companies.api.v1.serializers.company_cash_request_serializers import (
 )
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Company, CompanyBranch
+from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectCompanyUserMixin
-from apps.users.models import User
+from apps.stations.models.stations_models import Station
+from apps.users.models import (
+    CompanyBranchManager,
+    CompanyUser,
+    StationBranchManager,
+    StationOwner,
+    User,
+)
 
 
 class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
@@ -91,6 +110,16 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
+    @extend_schema(
+        description="Create a new cash request",
+        request=CompanyCashRequestSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=CompanyCashRequestSerializer,
+                description="Cash request created successfully.",
+            )
+        },
+    )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
             data=request.data, context={"request": request}
@@ -104,19 +133,25 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 message="السائق لديه طلب بالفعل",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
+        cash_request = self.perform_create(serializer)
+
+        company_branch = cash_request.driver.branch
+        company_cost = (
+            cash_request.amount * company_branch.cash_request_fees / 100
+        ) + cash_request.amount
         if request.user.role == User.UserRoles.CompanyOwner:
             Company.objects.filter(id=request.company_id).update(
-                balance=F("balance") - serializer.validated_data["amount"]
+                balance=F("balance") - company_cost
             )
         else:
             CompanyBranch.objects.select_for_update().filter(
                 drivers__id=request.data["driver"]
-            ).update(balance=F("balance") - serializer.validated_data["amount"])
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
+            ).update(balance=F("balance") - company_cost)
+
+        cash_request.company_cost = company_cost
+        cash_request.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
         item = self.get_object()
@@ -137,6 +172,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
+    @transaction.atomic
     def partial_update(self, request, *args, **kwargs):
         cash_request = CompanyCashRequest.objects.filter(id=kwargs["pk"]).first()
         if not cash_request:
@@ -148,10 +184,80 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
 
+        company_branch = cash_request.driver.branch
+
+        station_branch = request.user.worker.station_branch
         cash_request.status = CompanyCashRequest.Status.APPROVED
+        cash_request.station_branch = station_branch
+        cash_request.station_id = station_branch.station_id
         cash_request.approved_by_id = request.user.id
         cash_request.save()
-        Company.objects.select_for_update().filter(id=cash_request.company.id).update(
-            balance=F("balance") - cash_request.amount
+
+        # company
+        message = f"تم تسليم طلب نقدي بقيمة {cash_request.company_cost:.2f} للسائق {cash_request.driver.name}"  # noqa
+        generate_company_transaction(
+            company_id=company_branch.company_id,
+            amount=cash_request.company_cost,
+            status=KhaznaTransaction.TransactionStatus.APPROVED,
+            description=message,
+            is_internal=False,
+            for_what=CompanyKhaznaTransaction.ForWhat.DRIVER,
+            created_by_id=request.user.id,
         )
+        notification_users = list(
+            CompanyBranchManager.objects.filter(
+                company_branch_id=company_branch.id
+            ).values_list("user", flat=True)
+        )
+        company_owner = CompanyUser.objects.filter(
+            company_id=company_branch.company_id
+        ).first()
+        notification_users.append(company_owner.id)
+        for user_id in notification_users:
+            Notification.objects.create(
+                user_id=user_id,
+                title=message,
+                description=message,
+                type=Notification.NotificationType.MONEY,
+            )
+
+        # station
+        station_cost = (
+            cash_request.amount * station_branch.cash_request_fees / 100
+        ) + cash_request.amount
+        message = f"تم تسليم طلب نقدي بقيمة {station_cost:.2f} للسائق {cash_request.driver.name}"  # noqa
+        generate_station_transaction(
+            station_id=station_branch.station_id,
+            station_branch_id=station_branch.id,
+            amount=station_cost,
+            status=KhaznaTransaction.TransactionStatus.APPROVED,
+            description=message,
+            created_by_id=request.user.id,
+            is_internal=False,
+        )
+        notification_users = list(
+            StationBranchManager.objects.filter(
+                station_branch_id=station_branch.id
+            ).values_list("user", flat=True)
+        )
+        station_owner = StationOwner.objects.filter(
+            station_id=station_branch.station_id
+        ).first()
+        notification_users.append(station_owner.id)
+        notification_users.append(request.user.id)
+        notification_users = list(set(notification_users))
+        for user_id in notification_users:
+            Notification.objects.create(
+                user_id=user_id,
+                title=message,
+                description=message,
+                type=Notification.NotificationType.MONEY,
+            )
+        Station.objects.select_for_update().filter(id=cash_request.station_id).update(
+            balance=F("balance") - station_cost
+        )
+
+        cash_request.station_cost = station_cost
+        cash_request.save(update_fields=["station_cost"])
+
         return Response({"message": "تم تأكيد طلبك"})

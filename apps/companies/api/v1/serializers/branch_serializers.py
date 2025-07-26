@@ -26,6 +26,12 @@ class SingleBranchWithDistrictSerializer(serializers.ModelSerializer):
         ]
 
 
+class ListCompanyBranchNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyBranch
+        fields = ["id", "name"]
+
+
 class ListCompanyBranchSerializer(serializers.ModelSerializer):
     district = ListDistrictSerializer()
     company = CompanyNameSerializer()
@@ -61,15 +67,43 @@ class RetrieveCompanyBranchSerializer(serializers.ModelSerializer):
 
 
 class CompanyBranchSerializer(serializers.ModelSerializer):
+    district = serializers.PrimaryKeyRelatedField(read_only=True, allow_null=False)
+
     class Meta:
         model = CompanyBranch
         fields = "__all__"
 
 
+class CompanyBranchCreationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyBranch
+        fields = [
+            "name",
+            "email",
+            "phone_number",
+            "address",
+            "district",
+            "fees",
+            "other_service_fees",
+            "cash_request_fees",
+            "company",
+        ]
+
+
 class CompanyBranchUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyBranch
-        fields = ["name", "email", "phone_number", "address", "district"]
+        fields = [
+            "name",
+            "email",
+            "phone_number",
+            "address",
+            "district",
+            "fees",
+            "other_service_fees",
+            "cash_request_fees",
+            "company",
+        ]
 
 
 class CompanyBranchAssignManagersSerializer(serializers.Serializer):

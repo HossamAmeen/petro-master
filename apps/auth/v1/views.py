@@ -11,17 +11,24 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import DASHBOARD_ROLES
 from apps.users.models import User
 from apps.utilities.serializers import MessageErrorsSerializer
 
 from .serializers import (
+    CompanyTokenRefreshSerializer,
     LoginSerializer,
     PasswordResetRequestSerializer,
     ProfileSerializer,
     SetNewPasswordSerializer,
 )
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    serializer_class = CompanyTokenRefreshSerializer
 
 
 class CompanyLoginAPIView(APIView):
@@ -69,6 +76,10 @@ class CompanyLoginAPIView(APIView):
             and user.role in company_roles
         ):
             refresh = RefreshToken.for_user(user)
+            refresh["user_name"] = user.name
+            refresh["role"] = user.role
+            refresh["company_id"] = user.companyuser.company.id
+
             access_token = refresh.access_token
             access_token["user_name"] = user.name
             access_token["role"] = user.role
@@ -143,14 +154,19 @@ class StationLoginAPIView(APIView):
             and user.check_password(serializer.validated_data["password"])
             and user.role in station_roles
         ):
-            refresh = RefreshToken.for_user(user)
-            access_token = refresh.access_token
-            access_token["user_name"] = user.name
-            access_token["role"] = user.role
             if user.role == User.UserRoles.StationWorker:
                 station_id = user.worker.station_branch.station_id
             else:
                 station_id = user.stationowner.station.id
+
+            refresh = RefreshToken.for_user(user)
+            refresh["user_name"] = user.name
+            refresh["role"] = user.role
+            refresh["station_id"] = station_id
+
+            access_token = refresh.access_token
+            access_token["user_name"] = user.name
+            access_token["role"] = user.role
             access_token["station_id"] = station_id
             data = {
                 "refresh": str(refresh),
@@ -295,4 +311,66 @@ class PasswordResetConfirmAPIView(APIView):
         except User.DoesNotExist:
             return Response(
                 {"detail": "Invalid reset link."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class DashboardLoginAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = LoginSerializer
+
+    @extend_schema(
+        request=LoginSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="login successfully",
+                response=OpenApiTypes.OBJECT,
+                examples=[
+                    OpenApiExample(
+                        "Success Response",
+                        value={
+                            "message": "login successfully",
+                            "refresh": "<refresh_token>",
+                            "access": "<access_token>",
+                            "user_name": "<user_name>",
+                            "role": "<role>",
+                        },
+                    )
+                ],
+            ),
+            400: MessageErrorsSerializer,
+        },
+    )
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = User.objects.filter(
+            Q(phone_number=serializer.validated_data["identifier"])
+            | Q(email=serializer.validated_data["identifier"]),
+            is_active=True,
+        ).first()
+
+        if (
+            user
+            and user.check_password(serializer.validated_data["password"])
+            and user.role in DASHBOARD_ROLES
+        ):
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
+            access_token["user_name"] = user.name
+            access_token["role"] = user.role
+            data = {
+                "refresh": str(refresh),
+                "access": str(access_token),
+                "user_name": user.name,
+                "role": user.role,
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        else:
+            raise CustomValidationError(
+                message="Invalid credentials",
+                code="invalid_credentials",
+                errors=[],
+                status_code=status.HTTP_401_UNAUTHORIZED,
             )

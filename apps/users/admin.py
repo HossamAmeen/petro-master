@@ -1,3 +1,5 @@
+from typing import override
+
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -102,6 +104,7 @@ class CustomUserAdmin(UserAdmin):
         return super().get_queryset(request).filter(role=User.UserRoles.Admin)
 
 
+# Company Users
 class CompanyUserForm(forms.ModelForm):
     password1 = forms.CharField(
         label=_("Password"),
@@ -165,7 +168,6 @@ class CompanyUserInterface(admin.ModelAdmin):
         "phone_number",
         "role",
         "is_active",
-        "is_staff",
         "company",
         "created",
     )
@@ -254,6 +256,7 @@ class CompanyBranchManagerInterface(admin.ModelAdmin):
         obj.save()
 
 
+# Station Users
 class StationOwnerForm(forms.ModelForm):
     password1 = forms.CharField(
         label=_("Password"),
@@ -323,6 +326,10 @@ class StationOwnerInterface(admin.ModelAdmin):
     list_filter = ("is_active", "station")
     ordering = ("-created",)
     list_per_page = 10
+
+    @override
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 class StationManagerForm(forms.ModelForm):
@@ -443,9 +450,7 @@ class WorkerInterface(admin.ModelAdmin):
         obj.save()
 
 
-admin.site.register(
-    FirebaseToken,
-)
+admin.site.register(FirebaseToken)
 
 
 admin.site.unregister(Group)
