@@ -39,10 +39,10 @@ def generate_company_transaction(
 
 def generate_station_transaction(
     station_id,
-    station_branch_id,
     amount,
     status,
     description,
+    station_branch_id=None,
     approved_at=None,
     is_internal=False,
     created_by_id=None,
