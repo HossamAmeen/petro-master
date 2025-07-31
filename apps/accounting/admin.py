@@ -43,7 +43,7 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
         "is_incoming",
         "status",
         "company",
-        "company_branch",
+        "company__branches",
     )
 
     def has_change_permission(self, request, obj=None):
@@ -68,6 +68,9 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
                 min_value=10**8,
                 max_value=10**9,
             )
+            super().save_model(request, obj, form, change)
+        else:
+            obj.updated_by = request.user
             super().save_model(request, obj, form, change)
 
         company_branch = form.cleaned_data.get("company_branch")
@@ -106,9 +109,6 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
                     description=notification_message,
                     type=Notification.NotificationType.MONEY,
                 )
-
-        obj.updated_by = request.user
-        super().save_model(request, obj, form, change)
 
 
 @admin.register(StationKhaznaTransaction)
