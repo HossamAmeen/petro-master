@@ -81,12 +81,12 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
         verbose_name = "Company Khazna Transaction"
         verbose_name_plural = "Company Khazna Transactions"
 
-    def update_company_balance(self, client_balance):
+    def update_company_balance(self, destination):
         if self.is_incoming:
-            client_balance.balance -= self.amount
+            destination.balance -= self.amount
         else:
-            client_balance.balance += self.amount
-        client_balance.save()
+            destination.balance += self.amount
+        destination.save()
 
 
 class StationKhaznaTransaction(KhaznaTransaction):
@@ -102,9 +102,9 @@ class StationKhaznaTransaction(KhaznaTransaction):
         verbose_name = "Station Khazna Transaction"
         verbose_name_plural = "Station Khazna Transactions"
 
-    def update_station_balance(self):
+    def update_station_balance(self, destination):
         if self.is_incoming:
-            self.station.balance -= self.amount
+            destination.balance -= self.amount
         else:
-            self.station.balance += self.amount
-        self.station.save()
+            destination.balance += self.amount
+        destination.save()

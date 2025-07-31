@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 
@@ -8,8 +9,30 @@ from apps.users.models import CompanyUser, StationOwner
 from .models import CompanyKhaznaTransaction, StationKhaznaTransaction
 
 
+class CompanyKhaznaTransactionForm(forms.ModelForm):
+    class Meta:
+        model = CompanyKhaznaTransaction
+        fields = "__all__"  # or specify your fields
+
+    def clean(self):
+        cleaned_data = super().clean()
+        company_branch = cleaned_data.get("company_branch")
+
+        if company_branch and "company" in cleaned_data:
+            company = cleaned_data["company"]
+            company_branches = list(company.branches.values_list("id", flat=True))
+
+            if company_branch.id not in company_branches:
+                raise ValidationError(
+                    {"company_branch": "هذا الفرع لا ينمتي لهذه الشركة"}
+                )
+
+        return cleaned_data
+
+
 @admin.register(CompanyKhaznaTransaction)
 class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
+    form = CompanyKhaznaTransactionForm
     list_display = (
         "id",
         "amount",
@@ -41,6 +64,7 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "is_incoming",
+        "is_internal",
         "status",
         "company",
         "company__branches",
@@ -111,8 +135,30 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
                 )
 
 
+class StationKhaznaTransactionForm(forms.ModelForm):
+    class Meta:
+        model = StationKhaznaTransaction
+        fields = "__all__"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        station_branch = cleaned_data.get("station_branch")
+
+        if station_branch and "station" in cleaned_data:
+            station = cleaned_data["station"]
+            station_branches = list(station.branches.values_list("id", flat=True))
+
+            if station_branch.id not in station_branches:
+                raise ValidationError(
+                    {"station_branch": "هذا الفرع لا ينتمي لهذه المحطة"}
+                )
+
+        return cleaned_data
+
+
 @admin.register(StationKhaznaTransaction)
 class StationKhaznaTransactionAdmin(admin.ModelAdmin):
+    form = StationKhaznaTransactionForm
     list_display = (
         "id",
         "amount",
@@ -166,25 +212,45 @@ class StationKhaznaTransactionAdmin(admin.ModelAdmin):
 
         if not obj.pk:  # Only set created_by on creation, not updates
             obj.created_by = request.user
+            obj.reference_code = generate_unique_code(
+                model=StationKhaznaTransaction,
+                look_up="reference_code",
+                min_value=10**8,
+                max_value=10**9,
+            )
+            super().save_model(request, obj, form, change)
+        else:
+            obj.updated_by = request.user
             super().save_model(request, obj, form, change)
 
-        station_branch = form.cleaned_data.get("station_branch")
-        if station_branch:
-            obj.station = station_branch.station
         if obj.status == StationKhaznaTransaction.TransactionStatus.APPROVED:
-            obj.update_station_balance()
-            station_owner = StationOwner.objects.filter(
-                station=obj.station, role=StationOwner.UserRoles.StationOwner
-            ).first()
-            message = f"تم شحن رصيد محطة {obj.station.name} برصيد {obj.amount}"
-            if station_owner:
+            users_to_notify = []
+            if obj.station_branch:
+                obj.update_station_balance(obj.station_branch)
+                users_to_notify = list(
+                    StationOwner.objects.filter(
+                        station=obj.station,
+                        role=StationOwner.UserRoles.StationBranchManager,
+                    ).values_list("id", flat=True)
+                )
+                message = (
+                    f"تم شحن رصيد الفرع {obj.station_branch.name} برصيد {obj.amount}"
+                )
+            else:
+                obj.update_station_balance(obj.station)
+                users_to_notify = list(
+                    StationOwner.objects.filter(
+                        station=obj.station, role=StationOwner.UserRoles.StationOwner
+                    ).values_list("id", flat=True)
+                )
+                message = f"تم شحن رصيد محطة {obj.station.name} برصيد {obj.amount}"
+            for user_id in users_to_notify:
                 Notification.objects.create(
-                    user_id=station_owner.id,
+                    user_id=user_id,
                     title=message,
                     description=message,
                     type=Notification.NotificationType.MONEY,
                 )
-        obj.updated_by = request.user
         super().save_model(request, obj, form, change)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
