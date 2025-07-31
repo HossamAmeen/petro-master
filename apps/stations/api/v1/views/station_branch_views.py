@@ -95,6 +95,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     message = f"تم شحن رصيد فرع {station_branch.name} برصيد {serializer.validated_data['amount']}"
                     generate_station_transaction(
                         station_id=station_branch.station_id,
+                        station_branch_id=station_branch.id,
                         amount=serializer.validated_data["amount"],
                         status=StationKhaznaTransaction.TransactionStatus.APPROVED,
                         description=message,

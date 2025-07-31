@@ -48,13 +48,6 @@ class KhaznaTransaction(AbstractBaseModel):
     def __str__(self):
         return f"{'IN' if self.is_incoming else 'OUT'} | {self.amount} | {self.reference_code}"  # noqa
 
-    def update_company_balance(self):
-        if self.is_incoming:
-            self.company.balance -= self.amount
-        else:
-            self.company.balance += self.amount
-        self.company.save()
-
 
 class CompanyKhaznaTransaction(KhaznaTransaction):
     class ForWhat(models.TextChoices):
@@ -81,6 +74,13 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
         verbose_name = "Company Khazna Transaction"
         verbose_name_plural = "Company Khazna Transactions"
 
+    def update_company_balance(self, client_balance):
+        if self.is_incoming:
+            client_balance.balance -= self.amount
+        else:
+            client_balance.balance += self.amount
+        client_balance.save()
+
 
 class StationKhaznaTransaction(KhaznaTransaction):
     station = models.ForeignKey("stations.Station", on_delete=models.CASCADE)
@@ -97,7 +97,7 @@ class StationKhaznaTransaction(KhaznaTransaction):
 
     def update_station_balance(self):
         if self.is_incoming:
-            self.station.balance += self.amount
-        else:
             self.station.balance -= self.amount
+        else:
+            self.station.balance += self.amount
         self.station.save()
