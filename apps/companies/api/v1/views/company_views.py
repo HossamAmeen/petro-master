@@ -329,8 +329,12 @@ class CompanyHomeView(APIView):
                 total_cars_count=Count(
                     "branches__cars", distinct=True, filter=branches_filter
                 ),
-                diesel_cars_count=Count("branches__cars", filter=diesel_car_filter),
-                gasoline_cars_count=Count("branches__cars", filter=gasoline_car_filter),
+                diesel_cars_count=Count(
+                    "branches__cars", filter=diesel_car_filter, distinct=True
+                ),
+                gasoline_cars_count=Count(
+                    "branches__cars", filter=gasoline_car_filter, distinct=True
+                ),
                 total_drivers_count=Count(
                     "branches__drivers", distinct=True, filter=branches_filter
                 ),
