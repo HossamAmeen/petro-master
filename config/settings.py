@@ -215,7 +215,9 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
         minutes=env("ACCESS_TOKEN_LIFETIME", default=60)
     ),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=env("REFRESH_TOKEN_LIFETIME", default=10)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        minutes=env("REFRESH_TOKEN_LIFETIME", default=10)
+    ),
     "ROTATE_REFRESH_TOKENS": env("ROTATE_REFRESH_TOKENS", default=True),
 }
 

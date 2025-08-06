@@ -8,6 +8,7 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from rest_framework import viewsets
+from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import Response, status
 
@@ -42,8 +43,9 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
     queryset = CompanyCashRequest.objects.select_related(
         "driver", "station", "station_branch__district__city", "approved_by"
     ).order_by("-id")
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CashRequestFilter
+    search_fields = ["driver__code", "driver__name", "driver__phone_number"]
     http_method_names = ["get", "post", "patch", "delete"]
 
     def get_permissions(self):
@@ -104,6 +106,13 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 type=OpenApiTypes.DATE,
                 location=OpenApiParameter.QUERY,
                 description="when filter by approved_to as date in format YYYY-MM-DD",
+            ),
+            OpenApiParameter(
+                name="status",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="when filter by status as string example status=in_progress,approved,rejected",
+                enum=["in_progress", "approved", "rejected"],
             ),
         ],
     )
