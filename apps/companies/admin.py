@@ -258,7 +258,7 @@ class CarAdmin(admin.ModelAdmin):
                     car_code.car = obj
                     car_code.save()
             else:
-                raise forms.ValidationError("Invalid car code")
+                raise forms.ValidationError("كود العربيه لا يوجد في النظام")
 
         obj.updated_by = request.user
         obj.save()
