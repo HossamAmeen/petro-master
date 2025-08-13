@@ -413,11 +413,15 @@ class CompanyHomeView(APIView):
             ],
             many=True,
         ).data
-        response_data["company_transactions"] = ListCompanyKhaznaTransactionSerializer(
+        company_transactions = (
             CompanyKhaznaTransaction.objects.filter(company__branches__in=branches_id)
             .distinct()
-            .order_by("-id")[:3],
+            .order_by("-id")[:3]
+        )
+        response_data["company_transactions"] = ListCompanyKhaznaTransactionSerializer(
+            company_transactions,
             many=True,
         ).data
 
+        response_data["branches"] = branches_id
         return Response(response_data)
