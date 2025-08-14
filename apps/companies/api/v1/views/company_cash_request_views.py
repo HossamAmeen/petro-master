@@ -179,12 +179,12 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             item.save()
             if request.user.role == User.UserRoles.CompanyOwner:
                 Company.objects.filter(id=request.company_id).update(
-                    balance=F("balance") + item.amount
+                    balance=F("balance") + item.company_cost
                 )
             else:
                 CompanyBranch.objects.select_for_update().filter(
                     drivers__id=item.driver_id
-                ).update(balance=F("balance") + item.amount)
+                ).update(balance=F("balance") + item.company_cost)
             return Response(status=status.HTTP_204_NO_CONTENT)
         raise CustomValidationError(
             message="لا يمكنك الغاء العمليه وهيا بالحالة " + item.status,

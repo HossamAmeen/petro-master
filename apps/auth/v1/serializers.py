@@ -47,8 +47,6 @@ class LoginSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    balance = serializers.SerializerMethodField()
-    available_balance = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -59,10 +57,8 @@ class ProfileSerializer(serializers.ModelSerializer):
             "phone_number",
             "role",
             "password",
-            "balance",
-            "available_balance",
         ]
-        read_only_fields = ["id", "phone_number", "role", "balance"]
+        read_only_fields = ["id", "phone_number", "role"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def update(self, instance, validated_data):
