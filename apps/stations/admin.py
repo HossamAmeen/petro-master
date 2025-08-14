@@ -61,8 +61,8 @@ class StationAdmin(admin.ModelAdmin):
             station_branch__station_id=obj.id
         ).count()
         url = (
-            reverse("admin:users_stationbranchmanager_changelist")
-            + f"?station_branch__station_id__exact={obj.id}"
+            reverse("admin:users_stationowner_changelist")
+            + f"?station_id__exact={obj.id}"
         )
         return format_html('<a class="button" href="{}">Managers ({})</a>', url, count)
 

@@ -129,6 +129,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             )
         },
     )
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
             data=request.data, context={"request": request}
@@ -150,7 +151,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         ) + cash_request.amount
         if request.user.role == User.UserRoles.CompanyOwner:
             company_owner_id = request.user.id
-            Company.objects.filter(id=request.company_id).update(
+            Company.objects.select_for_update().filter(id=request.company_id).update(
                 balance=F("balance") - company_cost
             )
         else:
