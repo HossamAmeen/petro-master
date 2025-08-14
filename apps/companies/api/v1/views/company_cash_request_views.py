@@ -129,6 +129,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             )
         },
     )
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
             data=request.data, context={"request": request}
@@ -148,9 +149,10 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         company_cost = (
             cash_request.amount * company_branch.cash_request_fees / 100
         ) + cash_request.amount
+        company_owner_id = None
         if request.user.role == User.UserRoles.CompanyOwner:
             company_owner_id = request.user.id
-            Company.objects.filter(id=request.company_id).update(
+            Company.objects.select_for_update().filter(id=request.company_id).update(
                 balance=F("balance") - company_cost
             )
         else:
@@ -177,12 +179,12 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             item.save()
             if request.user.role == User.UserRoles.CompanyOwner:
                 Company.objects.filter(id=request.company_id).update(
-                    balance=F("balance") + item.amount
+                    balance=F("balance") + item.company_cost
                 )
             else:
                 CompanyBranch.objects.select_for_update().filter(
                     drivers__id=item.driver_id
-                ).update(balance=F("balance") + item.amount)
+                ).update(balance=F("balance") + item.company_cost)
             return Response(status=status.HTTP_204_NO_CONTENT)
         raise CustomValidationError(
             message="لا يمكنك الغاء العمليه وهيا بالحالة " + item.status,
