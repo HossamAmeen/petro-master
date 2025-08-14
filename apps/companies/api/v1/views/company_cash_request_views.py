@@ -149,6 +149,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         company_cost = (
             cash_request.amount * company_branch.cash_request_fees / 100
         ) + cash_request.amount
+        company_owner_id = None
         if request.user.role == User.UserRoles.CompanyOwner:
             company_owner_id = request.user.id
             Company.objects.select_for_update().filter(id=request.company_id).update(

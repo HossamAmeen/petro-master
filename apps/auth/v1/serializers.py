@@ -48,10 +48,20 @@ class LoginSerializer(serializers.Serializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     balance = serializers.SerializerMethodField()
+    available_balance = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "name", "email", "phone_number", "role", "password", "balance"]
+        fields = [
+            "id",
+            "name",
+            "email",
+            "phone_number",
+            "role",
+            "password",
+            "balance",
+            "available_balance",
+        ]
         read_only_fields = ["id", "phone_number", "role", "balance"]
         extra_kwargs = {"password": {"write_only": True}}
 
@@ -60,28 +70,30 @@ class ProfileSerializer(serializers.ModelSerializer):
             validated_data["password"] = make_password(validated_data["password"])
         return super().update(instance, validated_data)
 
-    def get_balance(self, obj):
-        if obj.role == User.UserRoles.CompanyOwner:
-            return obj.companyuser.company.balance
-        elif obj.role == User.UserRoles.CompanyBranchManager:
-            return (
-                CompanyBranch.objects.filter(managers__user=obj).aggregate(
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.role == User.UserRoles.CompanyOwner:
+            data["balance"] = instance.companyuser.company.balance
+        elif instance.role == User.UserRoles.CompanyBranchManager:
+            data["balance"] = (
+                CompanyBranch.objects.filter(managers__user=instance).aggregate(
                     Sum("balance")
                 )["balance__sum"]
                 or 0
             )
-        elif obj.role == User.UserRoles.StationOwner:
-            return obj.stationowner.station.balance
-        elif obj.role == User.UserRoles.StationBranchManager:
-            return (
-                obj.stationowner.station.branches.filter(managers__user=obj).aggregate(
-                    Sum("balance")
-                )["balance__sum"]
+        elif instance.role == User.UserRoles.StationOwner:
+            data["balance"] = instance.stationowner.station.balance
+        elif instance.role == User.UserRoles.StationBranchManager:
+            data["balance"] = (
+                instance.stationowner.station.branches.filter(
+                    managers__user=instance
+                ).aggregate(Sum("balance"))["balance__sum"]
                 or 0
             )
-        elif obj.role == User.UserRoles.StationWorker:
-            return 0
-        return 0
+        elif instance.role == User.UserRoles.StationWorker:
+            data["balance"] = 0
+        data["available_balance"] = self.get_available_balance(instance)
+        return data
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
