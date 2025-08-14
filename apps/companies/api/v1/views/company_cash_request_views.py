@@ -149,6 +149,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             cash_request.amount * company_branch.cash_request_fees / 100
         ) + cash_request.amount
         if request.user.role == User.UserRoles.CompanyOwner:
+            company_owner_id = request.user.id
             Company.objects.filter(id=request.company_id).update(
                 balance=F("balance") - company_cost
             )
@@ -160,6 +161,13 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         cash_request.company_cost = company_cost
         cash_request.save()
 
+        if company_owner_id:
+            Notification.objects.create(
+                user_id=company_owner_id,
+                title=f"تم ارسال طلب نقدي الي السائق {cash_request.driver.name} ورمز التفعيل {cash_request.otp}",
+                description=f"تم ارسال طلب نقدي الي السائق {cash_request.driver.name} ورمز التفعيل {cash_request.otp}",
+                type=Notification.NotificationType.GENERAL,
+            )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):

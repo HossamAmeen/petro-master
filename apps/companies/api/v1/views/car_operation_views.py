@@ -5,7 +5,6 @@ from django.http import FileResponse, Http404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
-from openpyxl import Workbook
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
@@ -16,6 +15,7 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
     ListCarOperationSerializer,
     SingleCarOperationSerializer,
 )
+from apps.companies.helper import export_car_operations
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
@@ -92,7 +92,6 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request, *args, **kwargs):
-
         queryset = (
             CarOperation.objects.filter(car__branch__company=request.company_id)
             .select_related("car", "driver", "station_branch", "worker", "service")
@@ -122,45 +121,14 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 )
 
         queryset = queryset[:100]
-        data = ListCarOperationSerializer(queryset, many=True).data
-
-        if not data:
+        if not queryset:
             raise CustomValidationError(
                 message="No data to export", status_code=status.HTTP_400_BAD_REQUEST
             )
 
-        # Create the Excel workbook and sheet
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Data Export"
+        sheet_data = ListCarOperationSerializer(queryset, many=True).data
 
-        # Write headers (first row)
-        headers = list(data[0].keys())
-        cleaned_headers = [str(header) for header in headers]
-        ws.append(cleaned_headers)
-
-        # Write data rows
-        for row in data:
-            cleaned_row = []
-            for value in row.values():
-                if value is None:
-                    cleaned_value = ""
-                elif isinstance(value, (dict, list)):
-                    cleaned_value = str(value)
-                else:
-                    cleaned_value = str(value)
-                cleaned_row.append(cleaned_value)
-            ws.append(cleaned_row)
-
-        # Generate filename with timestamp
-        timestamp = timezone.localtime().strftime("%Y%m%d_%H%M%S")
-        filename = f"export_{timestamp}.xlsx"
-        excel_dir = os.path.join(settings.MEDIA_ROOT, "excel_exports")
-        os.makedirs(excel_dir, exist_ok=True)
-        filepath = os.path.join(excel_dir, filename)
-
-        # Save workbook to media folder
-        wb.save(filepath)
+        filename = export_car_operations(sheet_data)
 
         # Create download URL
         base_url = request.build_absolute_uri("/")[:-1]
