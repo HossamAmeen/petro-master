@@ -88,7 +88,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             )
         elif instance.role == User.UserRoles.StationWorker:
             data["balance"] = 0
-        data["available_balance"] = self.get_available_balance(instance)
+        data["available_balance"] = 0
         return data
 
 
