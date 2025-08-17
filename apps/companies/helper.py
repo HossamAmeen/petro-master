@@ -4,6 +4,8 @@ from django.conf import settings
 from django.utils import timezone
 from openpyxl import Workbook
 
+from apps.shared.send_sms import send_sms
+
 
 def export_car_operations(data):
     # Create the Excel workbook and sheet
@@ -39,3 +41,10 @@ def export_car_operations(data):
     # Save workbook to media folder
     wb.save(filepath)
     return filename
+
+
+def send_cash_request_otp(instance):
+    message = "كود استلام طلبك النقدي بمقدار {} هو {}".format(
+        instance.amount, instance.otp
+    )
+    send_sms(message, instance.driver.phone_number)

@@ -289,7 +289,7 @@ else:
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-if not env("ENVIRONMENT", default="local") == "local":
+if not ENVIRONMENT == "local":
     print("############################ Sentry Init ############################")
     sentry_sdk.init(
         dsn=env("SENTRY_DNS"),
@@ -309,3 +309,8 @@ if not env("ENVIRONMENT", default="local") == "local":
 
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000  # Increase as needed
+
+
+SMS_SMART_EGYPT_SENDER_NAME = env("SMS_SMART_EGYPT_SENDER_NAME")
+SMS_SMART_EGYPT_USERNAME = env("SMS_SMART_EGYPT_USERNAME")
+SMS_SMART_EGYPT_PASSWORD = env("SMS_SMART_EGYPT_PASSWORD")
