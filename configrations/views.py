@@ -51,3 +51,5 @@ class ConfigrationsView(APIView):
 class SliderView(ListAPIView):
     queryset = Slider.objects.filter()
     serializer_class = SliderSerializer
+    pagination_class = []
+    authentication_classes = []
