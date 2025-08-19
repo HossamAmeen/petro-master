@@ -15,3 +15,8 @@ class ConfigrationsModel(models.Model):
     station_support_phone = models.CharField(max_length=255, null=True, blank=True)
     station_support_address = models.TextField(null=True, blank=True)
     station_support_name = models.CharField(max_length=255, null=True, blank=True)
+
+
+class Slider(models.Model):
+    image = models.FileField()
+    order = models.IntegerField(default=0)

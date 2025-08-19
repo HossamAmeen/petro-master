@@ -1,8 +1,11 @@
 from drf_spectacular.utils import extend_schema
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import ConfigrationsModel
+from configrations.serializers import SliderSerializer
+
+from .models import ConfigrationsModel, Slider
 
 
 class ConfigrationsView(APIView):
@@ -43,3 +46,8 @@ class ConfigrationsView(APIView):
                 "station_support_name": configrations.station_support_name,
             }
         )
+
+
+class SliderView(ListAPIView):
+    queryset = Slider.objects.filter()
+    serializer_class = SliderSerializer
