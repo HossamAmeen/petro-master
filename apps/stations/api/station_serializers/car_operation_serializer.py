@@ -26,6 +26,9 @@ class updateStationGasCarOperationSerializer(serializers.Serializer):
     fuel_image = serializers.ImageField(required=False)
     amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
     start_time = serializers.DateTimeField(required=False, allow_null=True)
+    car_last_meter = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False
+    )
 
     def validate(self, attrs):
         if "amount" in attrs and attrs["amount"] <= 0:
@@ -62,6 +65,9 @@ class updateStationGasCarOperationSerializer(serializers.Serializer):
         instance.profits = validated_data.get("profits", instance.profits)
         instance.fuel_consumption_rate = validated_data.get(
             "fuel_consumption_rate", instance.fuel_consumption_rate
+        )
+        instance.car_last_meter = validated_data.get(
+            "car_last_meter", instance.car_last_meter
         )
         instance.save()
 
