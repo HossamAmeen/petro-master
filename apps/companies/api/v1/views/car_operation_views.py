@@ -2,9 +2,13 @@ import os
 
 from django.conf import settings
 from django.http import FileResponse, Http404
-from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiTypes,
+    extend_schema,
+)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
@@ -15,7 +19,7 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
     ListCarOperationSerializer,
     SingleCarOperationSerializer,
 )
-from apps.companies.helper import export_car_operations
+from apps.companies.helper import export_car_operations, get_car_operations_data
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
@@ -89,46 +93,34 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 description="Filter operations to this date (YYYY-MM-DD)",
             ),
         ],
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string"},
+                        "download_url": {"type": "string"},
+                    },
+                },
+                description="Current car balance after the update.",
+            )
+        },
     )
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request, *args, **kwargs):
-        queryset = (
-            CarOperation.objects.filter(car__branch__company=request.company_id)
-            .select_related("car", "driver", "station_branch", "worker", "service")
-            .order_by("-id")
+        queryset = get_car_operations_data(
+            company_id=request.company_id,
+            car=request.query_params.get("car"),
+            date_from=request.query_params.get("date_from"),
+            date_to=request.query_params.get("date_to"),
         )
-        if request.query_params.get("car"):
-            queryset = queryset.filter(car_id=request.query_params.get("car"))
-        date_from = request.query_params.get("date_from")
-        if date_from:
-            try:
-                date_from = timezone.localtime().strptime(date_from, "%Y-%m-%d").date()
-                queryset = queryset.filter(start_time__date__gte=date_from)
-            except ValueError:
-                raise CustomValidationError(
-                    message="Invalid date from format",
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                )
-        date_to = request.query_params.get("date_to")
-        if date_to:
-            try:
-                date_to = timezone.localtime().strptime(date_to, "%Y-%m-%d").date()
-                queryset = queryset.filter(start_time__date__lte=date_to)
-            except ValueError:
-                raise CustomValidationError(
-                    message="Invalid date to format",
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                )
 
-        queryset = queryset[:100]
         if not queryset:
             raise CustomValidationError(
                 message="No data to export", status_code=status.HTTP_400_BAD_REQUEST
             )
 
-        sheet_data = ListCarOperationSerializer(queryset, many=True).data
-
-        filename = export_car_operations(sheet_data)
+        filename = export_car_operations(company_id=request.company_id)
 
         # Create download URL
         base_url = request.build_absolute_uri("/")[:-1]
@@ -150,6 +142,19 @@ class CarOperationViewSet(viewsets.ModelViewSet):
             }
         )
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="file",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Filename to download",
+                required=True,
+            )
+        ],
+        responses={200: OpenApiTypes.BINARY, 404: OpenApiTypes.OBJECT},
+        description="Download Excel file by filename",
+    )
     @action(detail=False, methods=["get"], url_path="download-excel")
     def download_excel(self, request):
         filename = request.GET.get("file")
