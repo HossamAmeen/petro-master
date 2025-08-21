@@ -7,14 +7,14 @@ from apps.accounting.models import StationKhaznaTransaction
 
 class StationKhaznaTransactionFilter(FilterSet):
     created_from = DateFilter(
-        field_name="created_at__date",
+        field_name="created__date",
         lookup_expr="gte",
         label="Created From",
         widget=DateInput(attrs={"type": "date"}),
         help_text="Filter transactions created on or after this date. Format: YYYY-MM-DD",
     )
     created_to = DateFilter(
-        field_name="created_at__date",
+        field_name="created__date",
         lookup_expr="lte",
         label="Created To",
         widget=DateInput(attrs={"type": "date"}),
