@@ -40,6 +40,7 @@ class CarOperation(AbstractBaseModel):
         blank=True,
     )
     car_meter = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    car_first_meter = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     fuel_consumption_rate = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True
     )

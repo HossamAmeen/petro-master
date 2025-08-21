@@ -10,7 +10,7 @@ class CashRequestPermission(BasePermission):
         if request.method in ["POST", "DELETE"]:
             return request.user.role in COMPANY_ROLES + DASHBOARD_ROLES
         if request.method == "PATCH":
-            return request.user.role in STATION_ROLES
+            return request.user.role == User.UserRoles.StationWorker
         return True
 
     def has_object_permission(self, request, view, obj):

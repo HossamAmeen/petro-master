@@ -99,7 +99,7 @@ class CarCreationSerializer(CarSerializer):
 
 
 @extend_schema_serializer(
-    exclude_fields=["updated_at", "created_at", "created_by", "updated_by"]
+    exclude_fields=["updated_at", "created", "created_by", "updated_by"]
 )
 class CarUpdateWithCompanySerializer(CarSerializer):
     class Meta:

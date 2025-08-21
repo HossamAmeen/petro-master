@@ -118,6 +118,7 @@ class StationGasOperationAPIView(APIView):
                     status=status,
                     duration=duration,
                     cost=cost,
+                    car_first_meter=car.last_meter,
                     company_cost=company_cost,
                     station_cost=station_cost,
                     profits=profits,
