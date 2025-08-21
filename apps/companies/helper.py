@@ -15,7 +15,10 @@ from apps.shared.send_sms import send_sms
 def get_car_operations_data(*args, **kwargs):
     if not kwargs.get("branches"):
         raise CustomValidationError(
-            message="Branches are required", status_code=status.HTTP_400_BAD_REQUEST
+            message="Branches are required for this operation with company id {}".format(
+                kwargs.get("company_id")
+            ),
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     queryset = (
         CarOperation.objects.filter(
