@@ -39,6 +39,7 @@ class StationBranch(AbstractBaseModel):
         max_digits=5, decimal_places=2, default=0.0
     )
     cash_request_fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    is_for_landing_page = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Station Branch"
