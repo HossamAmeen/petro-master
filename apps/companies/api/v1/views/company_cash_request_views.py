@@ -172,6 +172,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @transaction.atomic
     def destroy(self, request, *args, **kwargs):
         item = self.get_object()
         if item.status == CompanyCashRequest.Status.IN_PROGRESS:
