@@ -50,11 +50,15 @@ class StationGasOperationAPIView(APIView):
         if serializer.is_valid():
             status = CarOperation.OperationStatus.PENDING
             if "car_meter" in serializer.validated_data:
-                if serializer.validated_data["car_meter"] < car_opertion.car.last_meter:
-                    raise CustomValidationError(
-                        {"error": "العداد الحالي يجب ان يكون اكبر من العداد السابق"},
-                        code="not_found",
-                    )
+                car = car_opertion.car
+                if car.is_with_odometer:
+                    if serializer.validated_data["car_meter"] < car.last_meter:
+                        raise CustomValidationError(
+                            {
+                                "error": "العداد الحالي يجب ان يكون اكبر من العداد السابق"
+                            },
+                            code="not_found",
+                        )
                 status = CarOperation.OperationStatus.IN_PROGRESS
                 serializer.save(status=status)
 
