@@ -14,7 +14,10 @@ from apps.shared.send_sms import send_sms
 
 def get_car_operations_data(*args, **kwargs):
     queryset = (
-        CarOperation.objects.filter(car__branch__company=kwargs.get("company_id"))
+        CarOperation.objects.filter(
+            car__branch__company=kwargs.get("company_id"),
+            status=CarOperation.OperationStatus.COMPLETED,
+        )
         .select_related("car", "driver", "station_branch", "worker", "service")
         .order_by("-id")
     )
@@ -56,6 +59,8 @@ def export_car_operations(*args, **kwargs):
     ws.title = "Data Export"
     center_alignment = Alignment(horizontal="center", vertical="center")
     cars = Car.objects.filter(branch__company=kwargs.get("company_id"))
+    if kwargs.get("car"):
+        cars = cars.filter(id=kwargs.get("car"))
     is_first_car = True
 
     for car in cars:
