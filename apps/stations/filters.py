@@ -9,7 +9,7 @@ class StationBranchFilter(django_filters.FilterSet):
 
     class Meta:
         model = StationBranch
-        fields = ["station", "city"]
+        fields = ["station", "city", "is_for_landing_page"]
 
 
 class ServiceFilter(django_filters.FilterSet):

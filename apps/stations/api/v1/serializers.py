@@ -73,6 +73,15 @@ class ListStationBranchSerializer(serializers.ModelSerializer):
         return list(services)
 
 
+class ListStationBranchForLandingpageSerializer(serializers.ModelSerializer):
+    district = DistrictWithcitynameSerializer()
+    station = StationNameSerializer()
+
+    class Meta:
+        model = StationBranch
+        fields = ["id", "name", "address", "district", "station"]
+
+
 class UpdateStationBranchBalanceSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=[("add", "Add"), ("subtract", "Subtract")])
     amount = serializers.DecimalField(

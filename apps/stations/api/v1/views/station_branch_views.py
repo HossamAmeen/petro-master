@@ -3,7 +3,7 @@ from django.db.models.base import transaction
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import Response
 
 from apps.accounting.helpers import generate_station_transaction
@@ -19,6 +19,7 @@ from apps.stations.api.station_serializers.station_branch_serializers import (
 from apps.stations.api.v1.serializers import (
     AssignServicesSerializer,
     ListServiceSerializer,
+    ListStationBranchForLandingpageSerializer,
     ListStationBranchSerializer,
     StationBranchAssignManagersSerializer,
     UpdateStationBranchBalanceSerializer,
@@ -46,6 +47,8 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     filterset_class = StationBranchFilter
 
     def get_permissions(self):
+        if self.action == "list":
+            return [AllowAny()]
         if self.action == "create":
             return [IsAuthenticated(), DashboardPermission()]
         if self.action == "update_balance":
@@ -53,6 +56,8 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return super().get_permissions()
 
     def get_serializer_class(self):
+        if not self.request.user.is_authenticated:
+            return ListStationBranchForLandingpageSerializer
         if self.action == "update_balance":
             return UpdateStationBranchBalanceSerializer
         elif self.action == "services":
@@ -70,6 +75,8 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return super().get_serializer_class()
 
     def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return self.queryset.distinct()
         if self.request.user.role == User.UserRoles.StationOwner:
             return self.queryset.filter(station__owners=self.request.user)
         if self.request.user.role == User.UserRoles.StationBranchManager:
