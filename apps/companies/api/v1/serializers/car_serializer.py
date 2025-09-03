@@ -109,6 +109,7 @@ class CarUpdateWithCompanySerializer(CarSerializer):
             "balance",
             "is_blocked_balance_update",
             "created_by",
+            "last_meter",
         ]
 
 

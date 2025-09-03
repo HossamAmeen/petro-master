@@ -192,13 +192,13 @@ class StationOperationsAPIView(ListAPIView):
                     Service.ServiceType.PETROL,
                     Service.ServiceType.DIESEL,
                 ]
-            ).aggregate(total_balance=Sum("cost"))["total_balance"]
+            ).aggregate(total_balance=Sum("station_cost"))["total_balance"]
             or 0
         )
         other_service_balance = (
             queryset.filter(
                 service__type__in=[Service.ServiceType.WASH, Service.ServiceType.OTHER]
-            ).aggregate(total_balance=Sum("cost"))["total_balance"]
+            ).aggregate(total_balance=Sum("station_cost"))["total_balance"]
             or 0
         )
         page = self.paginate_queryset(queryset)
