@@ -3,7 +3,7 @@ import os
 from django.conf import settings
 from django.utils import timezone
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from rest_framework import status
 
@@ -19,8 +19,8 @@ def get_car_operations_data(*args, **kwargs):
             status=CarOperation.OperationStatus.COMPLETED,
         )
         .select_related("car", "driver", "station_branch", "worker", "service")
-        .order_by("-id")
-    )
+        .order_by("id")
+    ).distinct()
     if kwargs.get("car"):
         queryset = queryset.filter(car_id=kwargs.get("car"))
     date_from = kwargs.get("date_from")
@@ -58,7 +58,10 @@ def export_car_operations(*args, **kwargs):
     ws = wb.active
     ws.title = "Data Export"
     center_alignment = Alignment(horizontal="center", vertical="center")
-    cars = Car.objects.filter(branch__company=kwargs.get("company_id"))
+    cars = Car.objects.filter(
+        branch__company=kwargs.get("company_id"),
+        operations__status=CarOperation.OperationStatus.COMPLETED,
+    ).distinct()
     if kwargs.get("car"):
         cars = cars.filter(id=kwargs.get("car"))
     is_first_car = True
@@ -91,7 +94,7 @@ def export_car_operations(*args, **kwargs):
             "التكلفة",
             "rate of fuel cons",
             "الوقود المستهلك",
-            "العداد اليومي",
+            "عدد كيلو مترات المطروحة",
             "آخر عداد",
             "أول عداد",
             "التاريخ",
@@ -119,20 +122,24 @@ def export_car_operations(*args, **kwargs):
         light_fill2 = PatternFill(
             start_color="FFFDE7", end_color="FFFDE7", fill_type="solid"
         )  # light yellow
-
+        tota_amount = 0
+        total_rate = 0
+        total_cost = 0
         for idx, row in enumerate(car_operations):
-            company_cost = row.company_cost
             cleaned_row = [
-                f"{company_cost} جنيه",
-                "-",
+                f"{row.company_cost} جنيه",
+                row.fuel_consumption_rate or 0,
                 row.amount,
-                row.fuel_consumption_rate,
+                (row.car_meter - row.car_first_meter) or 0,
                 row.car_meter,
                 row.car_first_meter,
                 row.created.date(),
             ]
             ws.append(cleaned_row)
-
+            tota_amount += row.amount
+            if row.fuel_consumption_rate:
+                total_rate += row.fuel_consumption_rate
+            total_cost += row.company_cost
             # Apply alternating colors
             row_index = ws.max_row
             fill = light_fill1 if idx % 2 == 0 else light_fill2
@@ -148,6 +155,51 @@ def export_car_operations(*args, **kwargs):
                     length = len(str(cell.value)) + 2  # Add small padding
                     if length > current_width:
                         ws.column_dimensions[col_letter].width = length
+
+        # total row
+        total_row = [
+            f"{total_cost} جنيه",
+            total_rate,
+            tota_amount,
+            "",
+            "",
+            "",
+            "الاجمالي",
+        ]
+        ws.append(total_row)
+        row_index = ws.max_row
+        fill = light_fill1
+        for col in range(1, ws.max_column + 1):
+            cell = ws.cell(row=row_index, column=col)
+            cell.fill = fill
+            cell.font = bold_font
+            cell.alignment = center_alignment
+            cell.border = Border(
+                left=Side(border_style="thin", color="000000"),
+                right=Side(border_style="thin", color="000000"),
+                top=Side(border_style="thin", color="000000"),
+                bottom=Side(border_style="thin", color="000000"),
+            )
+            col_letter = get_column_letter(col)
+            current_width = ws.column_dimensions[col_letter].width or 0
+
+            # Check length of current cell value
+            if cell.value:
+                length = len(str(cell.value)) + 2  # Add small padding
+                if length > current_width:
+                    ws.column_dimensions[col_letter].width = length
+            cell = ws.cell(row=row_index, column=col)
+            cell.fill = fill
+            cell.font = bold_font
+            cell.alignment = center_alignment
+            col_letter = get_column_letter(col)
+            current_width = ws.column_dimensions[col_letter].width or 0
+
+            # Check length of current cell value
+            if cell.value:
+                length = len(str(cell.value)) + 2  # Add small padding
+                if length > current_width:
+                    ws.column_dimensions[col_letter].width = length
 
     # Generate filename with timestamp
     timestamp = timezone.localtime().strftime("%Y%m%d_%H%M%S")
