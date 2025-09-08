@@ -283,6 +283,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     @extend_schema(
         description="add service to station branch",
+        request=AssignServicesSerializer,
     )
     @action(detail=True, methods=["POST"], url_path="add-service")
     def add_service(self, request, *args, **kwargs):
