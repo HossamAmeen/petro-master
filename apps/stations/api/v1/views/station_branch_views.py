@@ -299,3 +299,20 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 updated_by=self.request.user,
             )
         return Response({"message": "تم إضافة الخدمة بنجاح"})
+
+    @extend_schema(
+        description="delete service to station branch",
+        request=AssignServicesSerializer,
+    )
+    @action(detail=True, methods=["POST"], url_path="delete-service")
+    def delete_service(self, request, *args, **kwargs):
+        station_branch = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = serializer.validated_data.get("service", None)
+        if service:
+            StationBranchService.objects.filter(
+                station_branch=station_branch,
+                service_id=service,
+            ).delete()
+        return Response({"message": "تم إزالة الخدمة بنجاح"})
