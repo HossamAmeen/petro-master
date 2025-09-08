@@ -28,6 +28,9 @@ from apps.users.models import User
 
 
 class CarOperationViewSet(viewsets.ModelViewSet):
+    def destroy(self, request, *args, **kwargs):
+        raise CustomValidationError("disallowed delete method")
+
     queryset = CarOperation.objects.select_related(
         "car",
         "driver",

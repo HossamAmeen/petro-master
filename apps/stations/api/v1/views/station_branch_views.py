@@ -166,6 +166,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return Response({"balance": station_branch.balance})
 
     @extend_schema(
+        description="show station branch services",
         parameters=[
             OpenApiParameter(
                 name="types",
@@ -179,7 +180,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 location=OpenApiParameter.QUERY,
                 description="Filter by service category exampe service_category=petrol,other",
             ),
-        ]
+        ],
     )
     @action(detail=True, methods=["GET"], url_path="services")
     def services(self, request, pk=None, *args, **kwargs):
@@ -208,6 +209,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return self.get_paginated_response(serializer.data)
 
     @extend_schema(
+        description="show available station branch services to choose from them to assign to station branch",
         parameters=[
             OpenApiParameter(
                 name="service_category",
@@ -221,7 +223,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 location=OpenApiParameter.QUERY,
                 description="search by name",
             ),
-        ]
+        ],
     )
     @action(detail=True, methods=["GET"], url_path="available-services")
     def available_services(self, request, pk=None, *args, **kwargs):
