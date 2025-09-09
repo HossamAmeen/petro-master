@@ -188,7 +188,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     )
     @action(detail=True, methods=["GET"], url_path="services")
     def services(self, request, pk=None, *args, **kwargs):
-        services = Service.objects.all().order_by("-id")
+        services = Service.objects.order_by("-id")
         if self.request.user.role == User.UserRoles.StationOwner:
             services = services.filter(station_branch_services__station_branch_id=pk)
         if self.request.user.role == User.UserRoles.StationBranchManager:
@@ -292,10 +292,19 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["POST"], url_path="add-service")
     def add_service(self, request, *args, **kwargs):
         station_branch = self.get_object()
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         services = serializer.validated_data.get("services", None)
+        if station_branch.station_branch_services.filter(
+            service_id__in=services,
+        ).exists():
+            raise CustomValidationError(
+                message="بعض الخدمة موجودة بالفعل",
+                code="service_exists",
+                errors=[],
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
         StationBranchService.objects.bulk_create(
             [
                 StationBranchService(
