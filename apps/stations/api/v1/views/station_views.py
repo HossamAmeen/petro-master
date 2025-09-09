@@ -321,7 +321,6 @@ class StationReportsAPIView(APIView):
         )
 
         response_data = {
-            "station_branch_filter": str(station_branch_filter),
             "station_id": request.station_id,
             "cash_request_balance": cash_request_balance,
             "operations": operations,

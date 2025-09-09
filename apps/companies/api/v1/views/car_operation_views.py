@@ -143,7 +143,9 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 message=error_message, status_code=status.HTTP_400_BAD_REQUEST
             )
 
-        filename = export_car_operations(company_id=request.company_id)
+        filename = export_car_operations(
+            company_id=request.company_id, branches=branches
+        )
 
         # Create download URL
         base_url = request.build_absolute_uri("/")[:-1]
