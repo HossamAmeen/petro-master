@@ -20,6 +20,7 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
     SingleCarOperationSerializer,
 )
 from apps.companies.helper import export_car_operations, get_car_operations_data
+from apps.companies.models.company_models import CompanyBranch
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
@@ -111,16 +112,35 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request, *args, **kwargs):
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+
+        branches = []
+        if request.user.role == User.UserRoles.CompanyOwner:
+            branches = CompanyBranch.objects.filter(company_id=request.company_id)
+        elif request.user.role == User.UserRoles.CompanyBranchManager:
+            branches = CompanyBranch.objects.filter(
+                managers__user=request.user, company_id=request.company_id
+            )
+        branches = branches.values_list("id", flat=True)
+        branches = set(branches)
         queryset = get_car_operations_data(
             company_id=request.company_id,
+            branches=branches,
             car=request.query_params.get("car"),
-            date_from=request.query_params.get("date_from"),
-            date_to=request.query_params.get("date_to"),
+            date_from=date_from,
+            date_to=date_to,
         )
+
+        error_message = "لا توجد بيانات للاستخراج"
+        if date_from:
+            error_message = "لا توجد بيانات للاستخراج من تاريخ {}".format(date_from)
+        if date_to:
+            error_message = "لا توجد بيانات للاستخراج ل {}".format(date_to)
 
         if not queryset:
             raise CustomValidationError(
-                message="No data to export", status_code=status.HTTP_400_BAD_REQUEST
+                message=error_message, status_code=status.HTTP_400_BAD_REQUEST
             )
 
         filename = export_car_operations(company_id=request.company_id)
