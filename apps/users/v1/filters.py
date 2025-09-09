@@ -23,7 +23,10 @@ class StationBranchManagerFilter(django_filters.FilterSet):
     city = django_filters.NumberFilter(
         field_name="station_branch_managers__station_branch__district__city"
     )
+    branch = django_filters.NumberFilter(
+        field_name="station_branch_managers__station_branch__branch"
+    )
 
     class Meta:
         model = StationOwner
-        fields = ["station", "city"]
+        fields = ["station", "city", "branch"]
