@@ -24,7 +24,7 @@ class StationBranchManagerFilter(django_filters.FilterSet):
         field_name="station_branch_managers__station_branch__district__city"
     )
     branch = django_filters.NumberFilter(
-        field_name="station_branch_managers__station_branch_managers__station_branch"
+        field_name="station_branch_managers__station_branch"
     )
 
     class Meta:
