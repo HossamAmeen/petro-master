@@ -205,7 +205,8 @@ class StationOperationsAPIView(ListAPIView):
 
         serializer = self.get_serializer(page, many=True)
         response = self.get_paginated_response(serializer.data)
-
+        station = Station.objects.filter(id=self.request.station_id).first()
+        response.data["current_balance"] = station.balance
         response.data["petrol_balance"] = petrol_service_balance
         response.data["other_balance"] = other_service_balance
         response.data["total_balance"] = petrol_service_balance + other_service_balance

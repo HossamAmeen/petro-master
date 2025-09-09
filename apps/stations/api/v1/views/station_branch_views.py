@@ -66,6 +66,10 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return ListServiceSerializer
         elif self.action == "assign_services":
             return AssignServicesSerializer
+        elif self.action == "add_service":
+            return AssignServicesSerializer
+        elif self.action == "delete_service":
+            return AssignServicesSerializer
         elif self.action == "assign_managers":
             return StationBranchAssignManagersSerializer
         elif self.action == "partial_update":
@@ -166,6 +170,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return Response({"balance": station_branch.balance})
 
     @extend_schema(
+        description="show station branch services",
         parameters=[
             OpenApiParameter(
                 name="types",
@@ -179,11 +184,11 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 location=OpenApiParameter.QUERY,
                 description="Filter by service category exampe service_category=petrol,other",
             ),
-        ]
+        ],
     )
     @action(detail=True, methods=["GET"], url_path="services")
     def services(self, request, pk=None, *args, **kwargs):
-        services = Service.objects.all().order_by("-id")
+        services = Service.objects.order_by("-id")
         if self.request.user.role == User.UserRoles.StationOwner:
             services = services.filter(station_branch_services__station_branch_id=pk)
         if self.request.user.role == User.UserRoles.StationBranchManager:
@@ -208,6 +213,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return self.get_paginated_response(serializer.data)
 
     @extend_schema(
+        description="show available station branch services to choose from them to assign to station branch",
         parameters=[
             OpenApiParameter(
                 name="service_category",
@@ -221,7 +227,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 location=OpenApiParameter.QUERY,
                 description="search by name",
             ),
-        ]
+        ],
     )
     @action(detail=True, methods=["GET"], url_path="available-services")
     def available_services(self, request, pk=None, *args, **kwargs):
@@ -241,6 +247,10 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
 
+    @extend_schema(
+        description="assign services to station branch",
+        request=AssignServicesSerializer,
+    )
     @action(detail=True, methods=["POST"], url_path="assign-services")
     def assign_services(self, request, *args, **kwargs):
         station_branch = self.get_object()
@@ -274,3 +284,53 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 updated_by=self.request.user,
             )
         return Response({"message": "تم تعيين المديرين بنجاح"})
+
+    @extend_schema(
+        description="add service to station branch",
+        request=AssignServicesSerializer,
+    )
+    @action(detail=True, methods=["POST"], url_path="add-service")
+    def add_service(self, request, *args, **kwargs):
+        station_branch = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services = serializer.validated_data.get("services", None)
+        if station_branch.station_branch_services.filter(
+            service_id__in=services,
+        ).exists():
+            raise CustomValidationError(
+                message="بعض الخدمة موجودة بالفعل",
+                code="service_exists",
+                errors=[],
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        StationBranchService.objects.bulk_create(
+            [
+                StationBranchService(
+                    station_branch=station_branch,
+                    service_id=service,
+                    created_by=self.request.user,
+                    updated_by=self.request.user,
+                )
+                for service in services
+            ]
+        )
+        return Response({"message": "تم إضافة الخدمة بنجاح"})
+
+    @extend_schema(
+        description="delete service to station branch",
+        request=AssignServicesSerializer,
+    )
+    @action(detail=True, methods=["POST"], url_path="delete-service")
+    def delete_service(self, request, *args, **kwargs):
+        station_branch = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services = serializer.validated_data.get("services", None)
+        if services:
+            StationBranchService.objects.filter(
+                station_branch=station_branch,
+                service_id__in=services,
+            ).delete()
+        return Response({"message": "تم إزالة الخدمة بنجاح"})
