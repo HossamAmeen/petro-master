@@ -292,16 +292,21 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["POST"], url_path="add-service")
     def add_service(self, request, *args, **kwargs):
         station_branch = self.get_object()
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        service = serializer.validated_data.get("service", None)
-        if service:
-            StationBranchService.objects.create(
-                station_branch=station_branch,
-                service_id=service,
-                created_by=self.request.user,
-                updated_by=self.request.user,
-            )
+        services = serializer.validated_data.get("services", None)
+        StationBranchService.objects.bulk_create(
+            [
+                StationBranchService(
+                    station_branch=station_branch,
+                    service_id=service,
+                    created_by=self.request.user,
+                    updated_by=self.request.user,
+                )
+                for service in services
+            ]
+        )
         return Response({"message": "تم إضافة الخدمة بنجاح"})
 
     @extend_schema(
@@ -313,10 +318,10 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         station_branch = self.get_object()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        service = serializer.validated_data.get("service", None)
-        if service:
+        services = serializer.validated_data.get("services", None)
+        if services:
             StationBranchService.objects.filter(
                 station_branch=station_branch,
-                service_id=service,
+                service_id__in=services,
             ).delete()
         return Response({"message": "تم إزالة الخدمة بنجاح"})
