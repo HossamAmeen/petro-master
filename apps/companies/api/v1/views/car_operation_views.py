@@ -24,6 +24,7 @@ from apps.companies.models.company_models import CompanyBranch
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.permissions import CompanyPermission
 from apps.stations.models.service_models import Service
 from apps.users.models import User
 
@@ -49,6 +50,11 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         "station_branch__name",
         "worker__name",
     ]
+
+    def get_permissions(self):
+        if self.action == "export":
+            return [CompanyPermission]
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.action == "list":

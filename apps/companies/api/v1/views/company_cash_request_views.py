@@ -29,7 +29,7 @@ from apps.companies.models.company_models import Company, CompanyBranch
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectCompanyUserMixin
-from apps.stations.models.stations_models import Station
+from apps.stations.models.stations_models import StationBranch
 from apps.users.models import (
     CompanyBranchManager,
     CompanyUser,
@@ -273,9 +273,9 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 description=message,
                 type=Notification.NotificationType.MONEY,
             )
-        Station.objects.select_for_update().filter(id=cash_request.station_id).update(
-            balance=F("balance") - station_cost
-        )
+        StationBranch.objects.select_for_update().filter(
+            id=cash_request.station_branch_id
+        ).update(balance=F("balance") - station_cost)
 
         cash_request.station_cost = station_cost
         cash_request.save(update_fields=["station_cost"])

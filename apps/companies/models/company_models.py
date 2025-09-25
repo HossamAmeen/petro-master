@@ -120,7 +120,7 @@ class Car(AbstractBaseModel):
         related_name="backup_service",
     )
     oil_type = models.CharField(max_length=20, null=True, blank=True)
-    last_meter = models.IntegerField(null=True, blank=True, default=0)
+    last_meter = models.IntegerField(default=0)
     fuel_consumption_rate = models.IntegerField(default=0)
     number_of_fuelings_per_day = models.IntegerField()
     number_of_washes_per_month = models.IntegerField()
