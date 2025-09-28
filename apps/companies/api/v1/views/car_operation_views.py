@@ -53,7 +53,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "export":
-            return [CompanyPermission]
+            return [CompanyPermission()]
         return super().get_permissions()
 
     def get_serializer_class(self):
