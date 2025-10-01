@@ -80,7 +80,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                     Service.ServiceType.DIESEL,
                 ],
             )
-        return self.queryset.filter(car__branch__company=self.request.company_id)
+        return self.queryset.distinct()
 
     @extend_schema(
         parameters=[

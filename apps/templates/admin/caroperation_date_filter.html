@@ -1,0 +1,11 @@
+{% load i18n %}
+
+<div class="filter-{{ spec.parameter_name }}">
+  <label>{% trans "From" %}:</label>
+  <input type="date" name="created_from" value="{{ request.GET.created_from }}">
+
+  <label>{% trans "To" %}:</label>
+  <input type="date" name="created_to" value="{{ request.GET.created_to }}">
+
+  <button type="submit" class="button">{% trans 'Apply' %}</button>
+</div>
