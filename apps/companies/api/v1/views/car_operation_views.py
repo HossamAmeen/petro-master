@@ -24,15 +24,17 @@ from apps.companies.models.company_models import CompanyBranch
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
-from apps.shared.permissions import CompanyPermission
+from apps.shared.permissions import (
+    CompanyPermission,
+    DashboardPermission,
+    StationPermission,
+    StationWorkerPermission,
+)
 from apps.stations.models.service_models import Service
 from apps.users.models import User
 
 
 class CarOperationViewSet(viewsets.ModelViewSet):
-    def destroy(self, request, *args, **kwargs):
-        raise CustomValidationError("disallowed delete method")
-
     queryset = CarOperation.objects.select_related(
         "car",
         "driver",
@@ -54,7 +56,20 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "export":
             return [CompanyPermission()]
-        return super().get_permissions()
+        if self.action == "download_excel":
+            return [CompanyPermission()]
+        if self.action == "list":
+            return [CompanyPermission(), DashboardPermission(), StationPermission()]
+        if self.action == "retrieve":
+            return [CompanyPermission(), DashboardPermission(), StationPermission()]
+        if self.action == "create":
+            return [CompanyPermission(), DashboardPermission()]
+        if self.action == "partial_update":
+            return [
+                CompanyPermission(),
+                DashboardPermission(),
+                StationWorkerPermission(),
+            ]
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -81,6 +96,9 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 ],
             )
         return self.queryset.distinct()
+
+    def destroy(self, request, *args, **kwargs):
+        raise CustomValidationError("disallowed delete method")
 
     @extend_schema(
         parameters=[
