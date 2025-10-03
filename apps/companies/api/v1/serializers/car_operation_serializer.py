@@ -35,7 +35,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             "cost",
             "company_cost",
             "station_cost",
-            "profit",
+            "profits",
             "amount",
             "unit",
             "fuel_type",
