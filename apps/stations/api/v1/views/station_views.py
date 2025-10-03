@@ -43,11 +43,11 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = (
         Station.objects.select_related("district")
         .annotate(
-            branches_count=Count("station_branch"),
-            services_count=Count("services"),
-            managers_count=Count("station_branch__managers"),
-            workers_count=Count("station_branch__workers"),
-            total_balance=Sum("balance") + Sum("station_branch__balance"),
+            branches_count=Count("branches"),
+            services_count=Count("branches__station_branch_services"),
+            managers_count=Count("branches__managers"),
+            workers_count=Count("branches__workers"),
+            total_balance=Sum("balance") + Sum("branches__balance"),
         )
         .order_by("-id")
     )
