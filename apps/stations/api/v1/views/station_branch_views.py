@@ -39,6 +39,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = (
         StationBranch.objects.prefetch_related("station_branch_services")
         .annotate(
+            services_count=Count("station_branch_services", distinct=True),
             managers_count=Count("managers", distinct=True),
         )
         .order_by("-id")
@@ -76,6 +77,8 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return StationBranchUpdateSerializer
         elif self.action == "create":
             return StationBranchCreationSerializer
+        elif self.action == "list":
+            return ListStationBranchSerializer
         return super().get_serializer_class()
 
     def get_queryset(self):

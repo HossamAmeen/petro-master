@@ -66,6 +66,7 @@ class ListStationBranchSerializer(serializers.ModelSerializer):
     district = DistrictWithcitynameSerializer()
     station = StationNameSerializer()
     managers_count = serializers.IntegerField()
+    services_count = serializers.IntegerField()
 
     class Meta:
         model = StationBranch
