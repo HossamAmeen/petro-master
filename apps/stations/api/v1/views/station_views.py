@@ -40,7 +40,17 @@ from apps.users.models import StationBranchManager, StationOwner, User, Worker
 
 
 class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    queryset = Station.objects.select_related("district").order_by("-id")
+    queryset = (
+        Station.objects.select_related("district")
+        .annotate(
+            branches_count=Count("station_branch"),
+            services_count=Count("services"),
+            managers_count=Count("station_branch__managers"),
+            workers_count=Count("station_branch__workers"),
+            total_balance=Sum("balance") + Sum("station_branch__balance"),
+        )
+        .order_by("-id")
+    )
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -52,6 +62,12 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), DashboardPermission()]
+        if self.action == "partial_update":
+            return [IsAuthenticated(), DashboardPermission(), StationPermission()]
+        if self.action == "list":
+            return [IsAuthenticated(), DashboardPermission()]
+        if self.action == "retrieve":
+            return [IsAuthenticated(), DashboardPermission(), StationPermission()]
         return super().get_permissions()
 
 

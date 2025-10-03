@@ -30,6 +30,11 @@ class SingleStationServiceSerializer(serializers.ModelSerializer):
 
 class ListStationSerializer(serializers.ModelSerializer):
     district = DistrictWithcitynameSerializer()
+    branches_count = serializers.IntegerField()
+    services_count = serializers.IntegerField()
+    managers_count = serializers.IntegerField()
+    workers_count = serializers.IntegerField()
+    total_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
         model = Station

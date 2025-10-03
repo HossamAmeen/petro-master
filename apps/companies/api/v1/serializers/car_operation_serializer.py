@@ -65,6 +65,51 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
         return "خدمات أخرى"
 
 
+class ListCompanyCarOperationSerializer(ListCarOperationSerializer):
+    class Meta:
+        model = CarOperation
+        fields = [
+            "id",
+            "code",
+            "status",
+            "start_time",
+            "end_time",
+            "created",
+            "duration",
+            "cost",
+            "company_cost",
+            "station_cost",
+            "profit",
+            "amount",
+            "unit",
+            "fuel_type",
+            "car",
+            "driver",
+            "station_branch",
+            "worker",
+            "service",
+            "car_meter",
+            "motor_image",
+            "fuel_image",
+            "fuel_consumption_rate",
+            "service_category",
+        ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["unit"] = SERVICE_UNIT_CHOICES.get(data["unit"], data["unit"])
+        data["duration"] = math.ceil(instance.duration / 60)
+        return data
+
+    def get_service_category(self, obj):
+        if obj.service and obj.service.type in [
+            Service.ServiceType.PETROL,
+            Service.ServiceType.DIESEL,
+        ]:
+            return "خدمات بترولية"
+        return "خدمات أخرى"
+
+
 class SingleCarOperationSerializer(ListCarOperationSerializer):
     pass
 

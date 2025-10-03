@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from apps.companies.api.v1.filters import CarOperationFilter
 from apps.companies.api.v1.serializers.car_operation_serializer import (
     ListCarOperationSerializer,
+    ListCompanyCarOperationSerializer,
     SingleCarOperationSerializer,
 )
 from apps.companies.helper import export_car_operations, get_car_operations_data
@@ -24,6 +25,7 @@ from apps.companies.models.company_models import CompanyBranch
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
 from apps.shared.permissions import (
     CompanyPermission,
     DashboardPermission,
@@ -73,7 +75,10 @@ class CarOperationViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == "list":
-            return ListCarOperationSerializer
+            if self.request.user.role in COMPANY_ROLES:
+                return ListCompanyCarOperationSerializer
+            elif self.request.user.role in DASHBOARD_ROLES:
+                return ListCarOperationSerializer
         if self.action == "retrieve":
             return SingleCarOperationSerializer
         return ListCarOperationSerializer
