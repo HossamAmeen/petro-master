@@ -12,6 +12,7 @@ from drf_spectacular.utils import (
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.companies.api.v1.filters import CarOperationFilter
@@ -29,6 +30,7 @@ from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
 from apps.shared.permissions import (
     CompanyPermission,
     DashboardPermission,
+    EitherPermission,
     StationPermission,
     StationWorkerPermission,
 )
@@ -61,9 +63,19 @@ class CarOperationViewSet(viewsets.ModelViewSet):
         if self.action == "download_excel":
             return [CompanyPermission()]
         if self.action == "list":
-            return [CompanyPermission(), DashboardPermission(), StationPermission()]
+            return [
+                IsAuthenticated(),
+                EitherPermission(
+                    [CompanyPermission, DashboardPermission, StationPermission()]
+                ),
+            ]
         if self.action == "retrieve":
-            return [CompanyPermission(), DashboardPermission(), StationPermission()]
+            return [
+                IsAuthenticated(),
+                EitherPermission(
+                    [CompanyPermission, DashboardPermission, StationPermission()]
+                ),
+            ]
         if self.action == "create":
             return [CompanyPermission(), DashboardPermission()]
         if self.action == "partial_update":

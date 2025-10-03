@@ -22,7 +22,11 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.operation_model import CarOperation
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
-from apps.shared.permissions import DashboardPermission, StationPermission
+from apps.shared.permissions import (
+    DashboardPermission,
+    EitherPermission,
+    StationPermission,
+)
 from apps.stations.api.station_serializers.car_operation_serializer import (
     ListStationHomeCarOperationSerializer,
 )
@@ -65,7 +69,10 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.action == "partial_update":
             return [IsAuthenticated(), DashboardPermission(), StationPermission()]
         if self.action == "list":
-            return [IsAuthenticated(), DashboardPermission()]
+            return [
+                IsAuthenticated(),
+                EitherPermission(DashboardPermission),
+            ]
         if self.action == "retrieve":
             return [IsAuthenticated(), DashboardPermission(), StationPermission()]
         return super().get_permissions()
