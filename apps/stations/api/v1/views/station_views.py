@@ -71,7 +71,7 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.action == "list":
             return [
                 IsAuthenticated(),
-                EitherPermission(DashboardPermission()),
+                EitherPermission([DashboardPermission]),
             ]
         if self.action == "retrieve":
             return [IsAuthenticated(), DashboardPermission(), StationPermission()]
