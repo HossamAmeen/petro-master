@@ -84,6 +84,7 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 DashboardPermission(),
                 StationWorkerPermission(),
             ]
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.action == "list":
