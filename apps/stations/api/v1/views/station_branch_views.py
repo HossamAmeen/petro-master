@@ -38,7 +38,7 @@ SERVICE_CATEGORY_CHOICES = {
 
 class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = (
-        StationBranch.objects.prefetch_related("station_branch_services", "managers")
+        StationBranch.objects.prefetch_related("station_branch_services")
         .annotate(
             managers_count=Count("managers", distinct=True),
         )
