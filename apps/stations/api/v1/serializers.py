@@ -66,7 +66,6 @@ class ListStationBranchSerializer(serializers.ModelSerializer):
     district = DistrictWithcitynameSerializer()
     station = StationNameSerializer()
     managers_count = serializers.IntegerField()
-    services_count = serializers.IntegerField()
 
     class Meta:
         model = StationBranch
@@ -77,6 +76,19 @@ class ListStationBranchSerializer(serializers.ModelSerializer):
             station_branch_services__station_branch=instance
         ).values("id", "name")
         return list(services)
+
+
+class ListStationBranchForDashboardSerializer(serializers.ModelSerializer):
+    district = DistrictWithcitynameSerializer()
+    station = StationNameSerializer()
+    managers_count = serializers.IntegerField()
+    services_count = serializers.IntegerField()
+    workers_count = serializers.IntegerField()
+    total_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        model = StationBranch
+        fields = "__all__"
 
 
 class ListStationBranchForLandingpageSerializer(serializers.ModelSerializer):

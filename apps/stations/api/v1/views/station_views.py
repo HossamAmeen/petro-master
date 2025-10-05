@@ -46,6 +46,7 @@ from apps.users.models import StationBranchManager, StationOwner, User, Worker
 class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = (
         Station.objects.select_related("district")
+        .prefetch_related("branches")
         .annotate(
             branches_count=Count("branches"),
             services_count=Count("branches__station_branch_services"),

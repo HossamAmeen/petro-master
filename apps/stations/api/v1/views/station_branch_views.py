@@ -10,6 +10,7 @@ from apps.accounting.helpers import generate_station_transaction
 from apps.accounting.models import StationKhaznaTransaction
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import DASHBOARD_ROLES
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import DashboardPermission, StationOwnerPermission
 from apps.stations.api.station_serializers.station_branch_serializers import (
@@ -37,9 +38,8 @@ SERVICE_CATEGORY_CHOICES = {
 
 class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = (
-        StationBranch.objects.prefetch_related("station_branch_services")
+        StationBranch.objects.prefetch_related("station_branch_services", "managers")
         .annotate(
-            services_count=Count("station_branch_services", distinct=True),
             managers_count=Count("managers", distinct=True),
         )
         .order_by("-id")
@@ -88,6 +88,12 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return self.queryset.filter(station__owners=self.request.user)
         if self.request.user.role == User.UserRoles.StationBranchManager:
             return self.queryset.filter(managers__user=self.request.user)
+        if self.request.user.role in DASHBOARD_ROLES:
+            return self.queryset.annotate(
+                services_count=Count("station_branch_services", distinct=True),
+                managers_count=Count("managers", distinct=True),
+                workers_count=Count("workers", distinct=True),
+            )
         return self.queryset.distinct()
 
     @action(detail=True, methods=["post"], url_path="update-balance")
