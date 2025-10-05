@@ -20,6 +20,7 @@ from apps.stations.api.station_serializers.station_branch_serializers import (
 from apps.stations.api.v1.serializers import (
     AssignServicesSerializer,
     ListServiceSerializer,
+    ListStationBranchForDashboardSerializer,
     ListStationBranchForLandingpageSerializer,
     ListStationBranchSerializer,
     StationBranchAssignManagersSerializer,
@@ -78,6 +79,8 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         elif self.action == "create":
             return StationBranchCreationSerializer
         elif self.action == "list":
+            if self.request.user.role in DASHBOARD_ROLES:
+                return ListStationBranchForDashboardSerializer
             return ListStationBranchSerializer
         return super().get_serializer_class()
 
