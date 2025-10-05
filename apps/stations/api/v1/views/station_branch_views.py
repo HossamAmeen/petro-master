@@ -200,13 +200,12 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     )
     @action(detail=True, methods=["GET"], url_path="services")
     def services(self, request, pk=None, *args, **kwargs):
-        services = Service.objects.order_by("-id")
-        if self.request.user.role == User.UserRoles.StationOwner:
-            services = services.filter(station_branch_services__station_branch_id=pk)
+        services = Service.objects.filter(
+            station_branch_services__station_branch_id=pk
+        ).order_by("-id")
         if self.request.user.role == User.UserRoles.StationBranchManager:
             services = services.filter(
                 station_branch_services__station_branch__managers__user=self.request.user,
-                station_branch_services__station_branch_id=pk,
             )
         if request.query_params.get("types"):
             types = request.query_params.get("types").split(",")
