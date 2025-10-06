@@ -32,7 +32,6 @@ from apps.shared.permissions import (
     DashboardPermission,
     EitherPermission,
     StationPermission,
-    StationWorkerPermission,
 )
 from apps.stations.models.service_models import Service
 from apps.users.models import User
@@ -66,23 +65,24 @@ class CarOperationViewSet(viewsets.ModelViewSet):
             return [
                 IsAuthenticated(),
                 EitherPermission(
-                    [CompanyPermission, DashboardPermission, StationPermission()]
+                    [CompanyPermission, DashboardPermission, StationPermission]
                 ),
             ]
         if self.action == "retrieve":
             return [
                 IsAuthenticated(),
                 EitherPermission(
-                    [CompanyPermission, DashboardPermission, StationPermission()]
+                    [CompanyPermission, DashboardPermission, StationPermission]
                 ),
             ]
         if self.action == "create":
-            return [CompanyPermission(), DashboardPermission()]
+            return [DashboardPermission()]
         if self.action == "partial_update":
             return [
-                CompanyPermission(),
-                DashboardPermission(),
-                StationWorkerPermission(),
+                IsAuthenticated(),
+                EitherPermission(
+                    [CompanyPermission, DashboardPermission, StationPermission()]
+                ),
             ]
         return super().get_permissions()
 

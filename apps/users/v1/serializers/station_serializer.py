@@ -3,6 +3,7 @@ from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import STATION_ROLES
 from apps.stations.api.v1.serializers import (
     ListStationSerializer,
     SingleStationBranchSerializer,
@@ -68,14 +69,16 @@ class CreateWorkerSerializer(serializers.ModelSerializer):
         )
         validated_data["password"] = make_password(validated_data["password"])
         validated_data.pop("confirm_password")
-        # check station branch related to station
-        if (
-            validated_data["station_branch"].station_id
-            != self.context["request"].station_id
-        ):
-            raise CustomValidationError(
-                message="Station branch not related to your station."
-            )
+        if self.context["request"].user.role in STATION_ROLES:
+            validated_data["station_id"] = self.context["request"].user.station_id
+            # check station branch related to station
+            if (
+                validated_data["station_branch"].station_id
+                != self.context["request"].station_id
+            ):
+                raise CustomValidationError(
+                    message="Station branch not related to your station."
+                )
         return Worker.objects.create(**validated_data)
 
 

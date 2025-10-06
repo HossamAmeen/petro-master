@@ -9,8 +9,24 @@ from apps.stations.api.v1.serializers import StationBranchWithDistrictSerializer
 
 
 class ListCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
-    status = serializers.CharField(source="get_status_display", read_only=True)
 
+    class Meta:
+        model = CompanyKhaznaTransaction
+        fields = "__all__"
+
+
+class ListCompanyKhaznaTransactionForDashboardSerializer(serializers.ModelSerializer):
+    company_branch_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompanyKhaznaTransaction
+        fields = "__all__"
+
+    def get_company_branch_name(self, obj):
+        return obj.company_branch.name if obj.company_branch else None
+
+
+class CreateCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyKhaznaTransaction
         fields = "__all__"

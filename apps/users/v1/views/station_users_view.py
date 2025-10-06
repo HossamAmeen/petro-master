@@ -2,7 +2,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticated
 
-from apps.shared.permissions import StationOwnerPermission
+from apps.shared.permissions import (
+    DashboardPermission,
+    EitherPermission,
+    StationOwnerPermission,
+    StationPermission,
+)
 from apps.users.models import StationOwner, User, Worker
 from apps.users.v1.filters import StationBranchManagerFilter
 from apps.users.v1.serializers.station_serializer import (
@@ -53,6 +58,12 @@ class WorkerViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["station_branch"]
     search_fields = ["name", "phone_number", "email"]
+
+    def get_permissions(self):
+        return [
+            IsAuthenticated(),
+            EitherPermission([StationPermission, DashboardPermission]),
+        ]
 
     def get_serializer_class(self):
         if self.request.method == "GET":
