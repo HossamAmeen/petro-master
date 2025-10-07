@@ -69,7 +69,7 @@ class StationGasOperationAPIView(APIView):
                         code="not_found",
                     )
                 end_time = timezone.localtime()
-                if end_time > car_opertion.start_time + timedelta(seconds=70):
+                if end_time > car_opertion.start_time + timedelta(seconds=60):
                     raise CustomValidationError(
                         {"error": "الوقت الانتهاء يجب ان يكون اقل من 60 ثانية"},
                         code="not_found",

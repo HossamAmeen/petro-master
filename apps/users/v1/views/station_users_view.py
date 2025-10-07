@@ -9,7 +9,7 @@ from apps.shared.permissions import (
     StationPermission,
 )
 from apps.users.models import StationOwner, User, Worker
-from apps.users.v1.filters import StationBranchManagerFilter
+from apps.users.v1.filters import StationBranchManagerFilter, StationOwnerFilter
 from apps.users.v1.serializers.station_serializer import (
     CreateWorkerSerializer,
     ListStationBranchManagerSerializer,
@@ -24,8 +24,14 @@ from apps.users.v1.serializers.station_serializer import (
 class StationOwnerViewSet(viewsets.ModelViewSet):
     queryset = StationOwner.objects.select_related("station").order_by("-id")
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ["station"]
+    filterset_class = StationOwnerFilter
     search_fields = ["name", "phone_number", "email"]
+
+    def get_permissions(self):
+        return [
+            IsAuthenticated(),
+            EitherPermission([StationPermission, DashboardPermission]),
+        ]
 
     def get_serializer_class(self):
         if self.request.method == "GET":

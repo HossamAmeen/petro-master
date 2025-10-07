@@ -16,6 +16,14 @@ class CompanyBranchManagerFilter(django_filters.FilterSet):
         fields = ["branch", "city"]
 
 
+class StationOwnerFilter(django_filters.FilterSet):
+    city = django_filters.NumberFilter(field_name="district__city")
+
+    class Meta:
+        model = StationOwner
+        fields = ["station", "city", "role"]
+
+
 class StationBranchManagerFilter(django_filters.FilterSet):
     station = django_filters.NumberFilter(
         field_name="station_branch_managers__station_branch"
@@ -29,4 +37,4 @@ class StationBranchManagerFilter(django_filters.FilterSet):
 
     class Meta:
         model = StationOwner
-        fields = ["station", "city", "branch"]
+        fields = ["station", "city", "branch", "role"]

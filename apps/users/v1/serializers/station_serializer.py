@@ -5,9 +5,9 @@ from rest_framework import serializers
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import STATION_ROLES
 from apps.stations.api.v1.serializers import (
-    ListStationSerializer,
     SingleStationBranchSerializer,
     StationBranchWithDistrictSerializer,
+    StationNameSerializer,
 )
 from apps.stations.models.stations_models import StationBranch
 from apps.users.models import StationOwner, User, Worker
@@ -123,7 +123,7 @@ class StationOwnerSerializer(serializers.ModelSerializer):
 
 
 class ListStationOwnerSerializer(serializers.ModelSerializer):
-    station = ListStationSerializer()
+    station = StationNameSerializer()
 
     class Meta:
         model = StationOwner
