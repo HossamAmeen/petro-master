@@ -48,6 +48,12 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "phone_number", "email"]
     permission_classes = [IsAuthenticated, StationOwnerPermission]
 
+    def get_permissions(self):
+        return [
+            IsAuthenticated(),
+            EitherPermission([StationPermission, DashboardPermission]),
+        ]
+
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
             return self.queryset.filter(station=self.request.station_id)
