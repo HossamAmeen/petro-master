@@ -303,7 +303,7 @@ class CreateCarOperationSerializer(serializers.ModelSerializer):
             station_branch_id=worker.station_branch_id,
             amount=validated_data["station_cost"],
             status=KhaznaTransaction.TransactionStatus.APPROVED,
-            description="",
+            description=f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر",  # noqa
             created_by_id=worker.id,
             is_internal=False,
         )
@@ -312,7 +312,7 @@ class CreateCarOperationSerializer(serializers.ModelSerializer):
         station_branch.save()
 
         # send notifications for station users
-        message = ""
+        message = f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر"  # noqa
         notification_users = []
         notification_users.extend(
             list(
@@ -345,7 +345,7 @@ class CreateCarOperationSerializer(serializers.ModelSerializer):
             company_id=company_id,
             amount=validated_data["company_cost"],
             status=KhaznaTransaction.TransactionStatus.APPROVED,
-            description="",
+            description=f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر",  # noqa
             created_by_id=request.user.id,
             is_internal=True,
         )
