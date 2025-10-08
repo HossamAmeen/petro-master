@@ -10,7 +10,7 @@ from apps.stations.api.v1.serializers import (
     StationNameSerializer,
 )
 from apps.stations.models.stations_models import StationBranch
-from apps.users.models import StationOwner, User, Worker
+from apps.users.models import StationBranchManager, StationOwner, User, Worker
 
 
 class SingleWorkerSerializer(serializers.ModelSerializer):
@@ -178,11 +178,12 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
         if self.context["request"].user.role in DASHBOARD_ROLES:
             if "station_id" not in attrs:
                 raise CustomValidationError("لازم اختيار المحطة")
+
             if "station_branches" in attrs:
-                station_branches = StationBranch.objects.filter(
+                self.station_branches = StationBranch.objects.filter(
                     id__in=attrs["station_branches"], station_id=attrs["station_id"]
                 )
-                if station_branches.count() != len(attrs["station_branches"]):
+                if self.station_branches.count() != len(attrs["station_branches"]):
                     raise CustomValidationError("بعض الفروع غير موجودة في المحطة")
         return super().validate(attrs)
 
@@ -201,10 +202,21 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
         validated_data.pop("confirm_password")
         if self.context["request"].user.role == User.UserRoles.StationOwner:
             validated_data["station_id"] = self.context["request"].station_id
+
+        station_branches = validated_data.pop("station_branches")
+
         station_manger = StationOwner.objects.create(**validated_data)
-        if validated_data["station_branches"]:
-            station_manger.station_branch_managers.add(
-                *validated_data["station_branches"]
+        if station_branches:
+            StationBranchManager.objects.bulk_create(
+                [
+                    StationBranchManager(
+                        user=station_manger,
+                        station_branch_id=branch,
+                        created_by=self.context["request"].user,
+                        updated_by=self.context["request"].user,
+                    )
+                    for branch in station_branches
+                ]
             )
         return station_manger
 
@@ -224,6 +236,18 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
                 )
             validated_data["password"] = make_password(validated_data["password"])
             validated_data.pop("confirm_password")
+
         if "station_branches" in validated_data:
-            instance.station_branch_managers.set(validated_data["station_branches"])
+            instance.station_branch_managers.all().delete()
+            StationBranchManager.objects.bulk_create(
+                [
+                    StationBranchManager(
+                        user=instance,
+                        station_branch_id=branch,
+                        created_by=self.context["request"].user,
+                        updated_by=self.context["request"].user,
+                    )
+                    for branch in validated_data["station_branches"]
+                ]
+            )
         return super().update(instance, validated_data)
