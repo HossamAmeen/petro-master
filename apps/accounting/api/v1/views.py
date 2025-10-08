@@ -9,6 +9,7 @@ from apps.accounting.api.v1.filters import (
 )
 from apps.accounting.api.v1.serializers.company_transaction_serializer import (
     CreateCompanyKhaznaTransactionSerializer,
+    CreateStationKhaznaTransactionSerializer,
     KhaznaTransactionSerializer,
     ListCompanyKhaznaTransactionForDashboardSerializer,
     ListCompanyKhaznaTransactionSerializer,
@@ -77,6 +78,11 @@ class StationKhaznaTransactionViewSet(viewsets.ModelViewSet):
         "is_internal",
     ]
     serializer_class = ListStationKhaznaTransactionSerializer
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ListStationKhaznaTransactionSerializer
+        return CreateStationKhaznaTransactionSerializer
 
     def get_permissions(self):
         return [

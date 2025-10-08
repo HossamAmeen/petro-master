@@ -5,7 +5,6 @@ from rest_framework.permissions import IsAuthenticated
 from apps.shared.permissions import (
     DashboardPermission,
     EitherPermission,
-    StationOwnerPermission,
     StationPermission,
 )
 from apps.users.models import StationOwner, User, Worker
@@ -46,7 +45,6 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = StationBranchManagerFilter
     search_fields = ["name", "phone_number", "email"]
-    permission_classes = [IsAuthenticated, StationOwnerPermission]
 
     def get_permissions(self):
         return [

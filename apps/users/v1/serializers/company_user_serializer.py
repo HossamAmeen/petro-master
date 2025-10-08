@@ -6,6 +6,49 @@ from apps.users.models import CompanyUser, User
 from .user_serializers import SingleUserSerializer
 
 
+class CreateCompanyOwnerSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=False)
+    password = serializers.CharField(required=True, write_only=True)
+
+    class Meta:
+        model = CompanyUser
+        fields = ["id", "name", "email", "phone_number", "role", "password"]
+
+    def create(self, validated_data):
+        validated_data["role"] = User.UserRoles.CompanyOwner
+        validated_data["email"] = validated_data.get(
+            "email", validated_data["phone_number"] + "@petro.com"
+        )
+        validated_data["password"] = make_password(validated_data["password"])
+        return CompanyUser.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        if "password" in validated_data:
+            validated_data["password"] = make_password(validated_data["password"])
+        return super().update(instance, validated_data)
+
+
+class ListCompanyOwnerSerializer(serializers.ModelSerializer):
+    created_by = SingleUserSerializer()
+    updated_by = SingleUserSerializer()
+
+    class Meta:
+        model = CompanyUser
+        fields = [
+            "id",
+            "name",
+            "email",
+            "phone_number",
+            "role",
+            "password",
+            "created",
+            "modified",
+            "created_by",
+            "updated_by",
+            "company_id",
+        ]
+
+
 class ListCompanyBranchManagerSerializer(serializers.ModelSerializer):
     created_by = SingleUserSerializer()
     updated_by = SingleUserSerializer()

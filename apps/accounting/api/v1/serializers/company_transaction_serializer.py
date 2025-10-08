@@ -44,6 +44,12 @@ class KhaznaTransactionSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class CreateStationKhaznaTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StationKhaznaTransaction
+        exclude = ("created_by", "updated_by", "reference_code")
+
+
 class ListStationKhaznaTransactionSerializer(serializers.ModelSerializer):
     station_branch = StationBranchWithDistrictSerializer(read_only=True)
 
