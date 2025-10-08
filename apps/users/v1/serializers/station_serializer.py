@@ -3,7 +3,7 @@ from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from apps.shared.base_exception_class import CustomValidationError
-from apps.shared.constants import STATION_ROLES
+from apps.shared.constants import DASHBOARD_ROLES, STATION_ROLES
 from apps.stations.api.v1.serializers import (
     SingleStationBranchSerializer,
     StationBranchWithDistrictSerializer,
@@ -139,6 +139,7 @@ class StationBranchSerializer(serializers.ModelSerializer):
 
 class ListStationBranchManagerSerializer(serializers.ModelSerializer):
     station_branches = serializers.SerializerMethodField()
+    station = StationNameSerializer()
 
     class Meta:
         model = StationOwner
@@ -155,10 +156,34 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
+    station_branches = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+    station_id = serializers.IntegerField(required=False)
 
     class Meta:
         model = StationOwner
-        fields = ["id", "name", "phone_number", "email", "password", "confirm_password"]
+        fields = [
+            "id",
+            "name",
+            "phone_number",
+            "email",
+            "password",
+            "confirm_password",
+            "station_id",
+        ]
+
+    def validate(self, attrs):
+        if self.context["request"].user.role in DASHBOARD_ROLES:
+            if not attrs["station_id"]:
+                raise serializers.ValidationError("لازم اختيار المحطة")
+            if attrs["station_branches"]:
+                station_branches = StationBranch.objects.filter(
+                    id__in=attrs["station_branches"], station_id=attrs["station_id"]
+                )
+                if station_branches.count() != len(attrs["station_branches"]):
+                    raise serializers.ValidationError("بعض الفروع غير موجودة في المحطة")
+        return super().validate(attrs)
 
     def create(self, validated_data):
         validated_data["role"] = User.UserRoles.StationBranchManager
@@ -173,8 +198,14 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("كلمتا المرور غير متطابقة.")
         validated_data["password"] = make_password(validated_data["password"])
         validated_data.pop("confirm_password")
-        validated_data["station_id"] = self.context["request"].station_id
-        return StationOwner.objects.create(**validated_data)
+        if self.context["request"].user.role == User.UserRoles.StationOwner:
+            validated_data["station_id"] = self.context["request"].station_id
+        station_manger = StationOwner.objects.create(**validated_data)
+        if validated_data["station_branches"]:
+            station_manger.station_branch_managers.add(
+                *validated_data["station_branches"]
+            )
+        return station_manger
 
     def update(self, instance, validated_data):
         if "password" in validated_data:

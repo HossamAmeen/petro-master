@@ -39,9 +39,11 @@ class StationOwnerViewSet(viewsets.ModelViewSet):
 
 
 class StationBranchManagerViewSet(viewsets.ModelViewSet):
-    queryset = StationOwner.objects.filter(
-        role=User.UserRoles.StationBranchManager
-    ).order_by("-id")
+    queryset = (
+        StationOwner.objects.filter(role=User.UserRoles.StationBranchManager)
+        .select_related("station")
+        .order_by("-id")
+    )
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = StationBranchManagerFilter
     search_fields = ["name", "phone_number", "email"]
