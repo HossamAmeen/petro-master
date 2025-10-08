@@ -224,4 +224,6 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
                 )
             validated_data["password"] = make_password(validated_data["password"])
             validated_data.pop("confirm_password")
+        if "station_branches" in validated_data:
+            instance.station_branch_managers.set(validated_data["station_branches"])
         return super().update(instance, validated_data)
