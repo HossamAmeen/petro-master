@@ -21,6 +21,7 @@ from apps.accounting.models import (
     StationKhaznaTransaction,
 )
 from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
+from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
     CompanyPermission,
     DashboardPermission,
@@ -65,7 +66,7 @@ class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
         return self.queryset
 
 
-class StationKhaznaTransactionViewSet(viewsets.ModelViewSet):
+class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = StationKhaznaTransaction.objects.order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = StationKhaznaTransactionFilter
