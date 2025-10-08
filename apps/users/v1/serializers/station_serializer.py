@@ -170,6 +170,7 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
             "email",
             "password",
             "confirm_password",
+            "station_branches",
             "station_id",
         ]
 
