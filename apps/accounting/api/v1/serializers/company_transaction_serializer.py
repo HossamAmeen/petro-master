@@ -5,6 +5,7 @@ from apps.accounting.models import (
     KhaznaTransaction,
     StationKhaznaTransaction,
 )
+from apps.shared.generate_code import generate_unique_code
 from apps.stations.api.v1.serializers import StationBranchWithDistrictSerializer
 
 
@@ -48,6 +49,15 @@ class CreateStationKhaznaTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = StationKhaznaTransaction
         exclude = ("created_by", "updated_by", "reference_code")
+
+    def create(self, validated_data):
+        validated_data["reference_code"] = generate_unique_code(
+            model=StationKhaznaTransaction,
+            look_up="reference_code",
+            min_value=10**8,
+            max_value=10**9,
+        )
+        return super().create(validated_data)
 
 
 class ListStationKhaznaTransactionSerializer(serializers.ModelSerializer):
