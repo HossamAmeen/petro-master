@@ -14,7 +14,6 @@ def custom_exception_handler(exc, context):
     if response is not None and isinstance(exc, ValidationError):
         # Format other validation errors
         formatted_errors = []
-
         for field, errors in response.data.items():
             if isinstance(errors, dict):
                 errors = errors.values()

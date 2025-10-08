@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.companies.api.v1.serializers.company_serializer import CompanyNameSerializer
 from apps.companies.models.company_models import CompanyBranch
 from apps.geo.v1.serializers import ListDistrictSerializer
+from apps.shared.base_exception_class import CustomValidationError
 from apps.users.models import CompanyBranchManager, CompanyUser, User
 from apps.users.v1.serializers.company_user_serializer import SingleUserSerializer
 from apps.utilities.serializers import BalanceUpdateSerializer
@@ -111,9 +112,7 @@ class CompanyBranchAssignManagersSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not attrs["managers"]:
-            raise serializers.ValidationError(
-                {"message": "يجب إرسال قائمة بمعرفات المديرين"}
-            )
+            raise CustomValidationError({"message": "يجب إرسال قائمة بمعرفات المديرين"})
 
         manager_ids = attrs["managers"]
 
@@ -126,7 +125,7 @@ class CompanyBranchAssignManagersSerializer(serializers.Serializer):
 
         invalid_ids = set(manager_ids) - set(valid_managers)
         if invalid_ids:
-            raise serializers.ValidationError(
+            raise CustomValidationError(
                 {
                     "message": f"بعض المديرين لا ينتمون لشركتك (المعرفات غير الصالحة: {invalid_ids})",  # noqa
                     "errors": {"invalid_manager_ids": list(invalid_ids)},

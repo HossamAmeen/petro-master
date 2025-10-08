@@ -41,12 +41,12 @@ class CreateWorkerSerializer(serializers.ModelSerializer):
 
     def validate_phone_number(self, phone_number):
         if User.objects.filter(phone_number=phone_number).exists():
-            raise serializers.ValidationError("هذا الرقم موجود بالفعل.")
+            raise CustomValidationError("هذا الرقم موجود بالفعل.")
         return phone_number
 
     def validate(self, attrs):
         if attrs["password"] != attrs["confirm_password"]:
-            raise serializers.ValidationError("Passwords do not match.")
+            raise CustomValidationError("Passwords do not match.")
 
         return attrs
 
@@ -93,9 +93,9 @@ class UpdateWorkerSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if "password" in attrs:
             if "confirm_password" not in attrs:
-                raise serializers.ValidationError("Confirm password is required.")
+                raise CustomValidationError("Confirm password is required.")
             if attrs["password"] != attrs["confirm_password"]:
-                raise serializers.ValidationError("Passwords do not match.")
+                raise CustomValidationError("Passwords do not match.")
         return attrs
 
     def update(self, instance, validated_data):
@@ -176,14 +176,14 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if self.context["request"].user.role in DASHBOARD_ROLES:
-            if not attrs["station_id"]:
-                raise serializers.ValidationError("لازم اختيار المحطة")
-            if attrs["station_branches"]:
+            if "station_id" not in attrs:
+                raise CustomValidationError("لازم اختيار المحطة")
+            if "station_branches" in attrs:
                 station_branches = StationBranch.objects.filter(
                     id__in=attrs["station_branches"], station_id=attrs["station_id"]
                 )
                 if station_branches.count() != len(attrs["station_branches"]):
-                    raise serializers.ValidationError("بعض الفروع غير موجودة في المحطة")
+                    raise CustomValidationError("بعض الفروع غير موجودة في المحطة")
         return super().validate(attrs)
 
     def create(self, validated_data):
@@ -192,11 +192,11 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
             "email", validated_data["phone_number"] + "@petro.com"
         )
         if "password" not in validated_data:
-            raise serializers.ValidationError("كلمة المرور مطلوبة.")
+            raise CustomValidationError("كلمة المرور مطلوبة.")
         if "confirm_password" not in validated_data:
-            raise serializers.ValidationError("تاكيد كلمة المرور مطلوب.")
+            raise CustomValidationError("تاكيد كلمة المرور مطلوب.")
         if validated_data["password"] != validated_data.get("confirm_password"):
-            raise serializers.ValidationError("كلمتا المرور غير متطابقة.")
+            raise CustomValidationError("كلمتا المرور غير متطابقة.")
         validated_data["password"] = make_password(validated_data["password"])
         validated_data.pop("confirm_password")
         if self.context["request"].user.role == User.UserRoles.StationOwner:

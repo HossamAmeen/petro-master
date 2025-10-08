@@ -2,6 +2,7 @@ from django.core.validators import MinValueValidator
 from rest_framework import serializers
 
 from apps.geo.v1.serializers import DistrictWithcitynameSerializer
+from apps.shared.base_exception_class import CustomValidationError
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import Station, StationBranch, StationService
 from apps.users.models import StationOwner
@@ -124,7 +125,7 @@ class StationBranchAssignManagersSerializer(serializers.Serializer):
 
         invalid_ids = set(manager_ids) - set(valid_managers)
         if invalid_ids:
-            raise serializers.ValidationError(
+            raise CustomValidationError(
                 {
                     "message": f"بعض المديرين لا ينتمون لمحطتك (المديرين غير الصالحة: {invalid_ids})",  # noqa
                     "errors": {"invalid_manager_ids": list(invalid_ids)},

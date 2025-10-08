@@ -14,6 +14,7 @@ from apps.companies.api.v1.serializers.car_serializer import CarWithPlateInfoSer
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
+from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import SERVICE_UNIT_CHOICES
 from apps.stations.api.v1.serializers import (
     ServiceNameSerializer,
@@ -234,10 +235,10 @@ class CreateCarOperationSerializer(serializers.ModelSerializer):
 
         if service:
             if service not in station_branch.services.all():
-                raise serializers.ValidationError("Service not found in station branch")
+                raise CustomValidationError("Service not found in station branch")
         car = attrs.get("car")
         if attrs.get("car_meter") < car.last_meter:
-            raise serializers.ValidationError(
+            raise CustomValidationError(
                 "العداد الحالي يجب ان يكون اكبر من العداد السابق"
             )
 
@@ -261,7 +262,7 @@ class CreateCarOperationSerializer(serializers.ModelSerializer):
         available_liters = math.floor(car.balance / company_liter_cost)
         available_liters = min(car_tank_capacity, available_liters)
         if validated_data["amount"] > available_liters:
-            raise serializers.ValidationError(
+            raise CustomValidationError(
                 {"error": "الكمية المطلوبة اكبر من الحد الأقصى"},
                 code="not_found",
             )

@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Company, Driver
+from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import COMPANY_ROLES, STATION_ROLES
 from apps.stations.api.v1.serializers import StationBranchWithDistrictSerializer
 from apps.users.models import User
@@ -92,7 +93,7 @@ class CompanyCashRequestSerializer(serializers.ModelSerializer):
             driver = Driver.objects.filter(id=request.data["driver"]).first()
             parent_balance = driver.branch.balance
         if attrs["amount"] > parent_balance:
-            raise serializers.ValidationError({"amount": "الرصيد غير كافي"})
+            raise CustomValidationError({"amount": "الرصيد غير كافي"})
         return attrs
 
 
@@ -106,7 +107,7 @@ class CompanyCashRequestUpdateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         instance = self.instance
         if instance.status != CompanyCashRequest.Status.IN_PROGRESS:
-            raise serializers.ValidationError({"status": "الطلب غير قابل للتعديل"})
+            raise CustomValidationError({"status": "الطلب غير قابل للتعديل"})
         if instance.otp != attrs["otp"]:
-            raise serializers.ValidationError({"otp": "الكود غير صحيح"})
+            raise CustomValidationError({"otp": "الكود غير صحيح"})
         return attrs
