@@ -14,6 +14,8 @@ from apps.accounting.api.v1.serializers.company_transaction_serializer import (
     ListCompanyKhaznaTransactionForDashboardSerializer,
     ListCompanyKhaznaTransactionSerializer,
     ListStationKhaznaTransactionSerializer,
+    UpdateCompanyKhaznaTransactionSerializer,
+    UpdateStationKhaznaTransactionSerializer,
 )
 from apps.accounting.models import (
     CompanyKhaznaTransaction,
@@ -56,6 +58,10 @@ class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
                 return ListCompanyKhaznaTransactionSerializer
             if self.request.user.role in DASHBOARD_ROLES:
                 return ListCompanyKhaznaTransactionForDashboardSerializer
+        if self.action == "partial_update":
+            return UpdateCompanyKhaznaTransactionSerializer
+        if self.action == "post":
+            return CreateCompanyKhaznaTransactionSerializer
         return CreateCompanyKhaznaTransactionSerializer
 
     def get_queryset(self):
@@ -83,7 +89,11 @@ class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return ListStationKhaznaTransactionSerializer
-        return CreateStationKhaznaTransactionSerializer
+        if self.action == "partial_update":
+            return UpdateStationKhaznaTransactionSerializer
+        if self.action == "post":
+            return CreateStationKhaznaTransactionSerializer
+        return ListStationKhaznaTransactionSerializer
 
     def get_permissions(self):
         return [
