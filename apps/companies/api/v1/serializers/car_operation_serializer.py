@@ -1,8 +1,7 @@
 import math
-from datetime import timedelta
 from decimal import Decimal
 
-from django.utils import timezone
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.accounting.helpers import (
@@ -221,11 +220,14 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
         }
 
 
-class CreateCarOperationSerializer(serializers.ModelSerializer):
+class CarOperationSerializer(serializers.ModelSerializer):
+    service = serializers.PrimaryKeyRelatedField(
+        queryset=Service.objects.all(), write_only=True, required=True
+    )
 
     class Meta:
         model = CarOperation
-        fields = "__all__"
+        exclude = ["code", "duration", "created_by", "updated_by"]
 
     def validate(self, attrs):
         super().validate(attrs)
@@ -233,9 +235,8 @@ class CreateCarOperationSerializer(serializers.ModelSerializer):
         station_branch = attrs.get("station_branch")
         service = attrs.get("service")
 
-        if service:
-            if service not in station_branch.services.all():
-                raise CustomValidationError("Service not found in station branch")
+        if station_branch.station_branch_services.filter(id=service.id):
+            raise CustomValidationError("Service not found in station branch")
         car = attrs.get("car")
         if attrs.get("car_meter") < car.last_meter:
             raise CustomValidationError(
@@ -244,11 +245,17 @@ class CreateCarOperationSerializer(serializers.ModelSerializer):
 
         return attrs
 
+
+class CreateCarOperationSerializer(CarOperationSerializer):
+
     def create(self, validated_data):
-        validated_data["status"] = CarOperation.OperationStatus.COMPLETED
-        validated_data["start_time"] = timezone.localtime()
-        validated_data["end_time"] = timezone.localtime() + timedelta(seconds=5)
-        validated_data["duration"] = 5
+        # validated_data["status"] = CarOperation.OperationStatus.COMPLETED
+        # validated_data["start_time"] = timezone.localtime()
+        # validated_data["end_time"] = timezone.localtime() + timedelta(seconds=5)
+        validated_data["duration"] = (
+            validated_data["end_time"] - validated_data["start_time"]
+        )
+        validated_data["duration"] = validated_data["duration"].total_seconds()
         validated_data["unit"] = validated_data["service"].unit
 
         car = validated_data["car"]
@@ -263,7 +270,7 @@ class CreateCarOperationSerializer(serializers.ModelSerializer):
         available_liters = min(car_tank_capacity, available_liters)
         if validated_data["amount"] > available_liters:
             raise CustomValidationError(
-                {"error": "الكمية المطلوبة اكبر من الحد الأقصى"},
+                {"error": f"الكمية المطلوبة اكبر من الحد الأقصى {available_liters}"},
                 code="not_found",
             )
 
@@ -299,81 +306,188 @@ class CreateCarOperationSerializer(serializers.ModelSerializer):
         car.save()
         request = self.context["request"]
         station_id = worker.station_branch.station_id
-        generate_station_transaction(
-            station_id=station_id,
-            station_branch_id=worker.station_branch_id,
-            amount=validated_data["station_cost"],
-            status=KhaznaTransaction.TransactionStatus.APPROVED,
-            description=f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر",  # noqa
-            created_by_id=worker.id,
-            is_internal=False,
-        )
-        station_branch = worker.station_branch
-        station_branch.balance = station_branch.balance - validated_data["station_cost"]
-        station_branch.save()
-
-        # send notifications for station users
-        message = f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر"  # noqa
-        notification_users = []
-        notification_users.extend(
-            list(
-                StationOwner.objects.filter(
-                    station_id=station_id, role=StationOwner.UserRoles.StationOwner
-                ).values_list("id", flat=True)
+        if (
+            "status" in validated_data
+            and validated_data["status"] == CarOperation.OperationStatus.COMPLETED
+        ):
+            generate_station_transaction(
+                station_id=station_id,
+                station_branch_id=worker.station_branch_id,
+                amount=validated_data["station_cost"],
+                status=KhaznaTransaction.TransactionStatus.APPROVED,
+                description=f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر",  # noqa
+                created_by_id=worker.id,
+                is_internal=False,
             )
-        )
-        notification_users.extend(
-            list(
-                StationOwner.objects.filter(
-                    station_branch_id=worker.station_branch_id,
-                    role=User.UserRoles.StationBranchManager,
-                ).values_list("id", flat=True)
+            station_branch = worker.station_branch
+            station_branch.balance = (
+                station_branch.balance - validated_data["station_cost"]
             )
-        )
-        notification_users.append(worker.id)
+            station_branch.save()
 
-        for user_id in notification_users:
-            Notification.objects.create(
-                user_id=user_id,
-                title=message,
-                description=message,
-                type=Notification.NotificationType.MONEY,
+            # send notifications for station users
+            message = f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر"  # noqa
+            notification_users = []
+            notification_users.extend(
+                list(
+                    StationOwner.objects.filter(
+                        station_id=station_id, role=StationOwner.UserRoles.StationOwner
+                    ).values_list("id", flat=True)
+                )
             )
+            notification_users.extend(
+                list(
+                    StationOwner.objects.filter(
+                        station_id=station_id,
+                        role=User.UserRoles.StationBranchManager,
+                        station_branch_managers__station_branch=worker.station_branch_id,
+                    ).values_list("id", flat=True)
+                )
+            )
+            notification_users.append(worker.id)
 
-        # send notfication for company user
-        company_id = car.branch.company_id
-        generate_company_transaction(
-            company_id=company_id,
-            amount=validated_data["company_cost"],
-            status=KhaznaTransaction.TransactionStatus.APPROVED,
-            description=f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر",  # noqa
-            created_by_id=request.user.id,
-            is_internal=True,
-        )
-        message = (
-            f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر "  # noqa
-            f"وخصم مبلغ بمقدار {validated_data['company_cost']:.2f} جنية"  # noqa
-        )
-        notification_users = list(
-            CompanyUser.objects.filter(
-                company_id=company_id, role=CompanyUser.UserRoles.CompanyOwner
-            ).values_list("id", flat=True)
-        )
-        notification_users.extend(
-            list(
+            for user_id in notification_users:
+                Notification.objects.create(
+                    user_id=user_id,
+                    title=message,
+                    description=message,
+                    type=Notification.NotificationType.MONEY,
+                )
+
+            # send notfication for company user
+            company_id = car.branch.company_id
+            generate_company_transaction(
+                company_id=company_id,
+                amount=validated_data["company_cost"],
+                status=KhaznaTransaction.TransactionStatus.APPROVED,
+                description=f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر",  # noqa
+                created_by_id=request.user.id,
+                is_internal=True,
+            )
+            message = (
+                f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر "  # noqa
+                f"وخصم مبلغ بمقدار {validated_data['company_cost']:.2f} جنية"  # noqa
+            )
+            notification_users = list(
                 CompanyUser.objects.filter(
-                    company_id=company_id,
-                    role=CompanyUser.UserRoles.CompanyBranchManager,
+                    company_id=company_id, role=CompanyUser.UserRoles.CompanyOwner
                 ).values_list("id", flat=True)
             )
-        )
-        notification_users.append(request.user.id)
-        for user_id in notification_users:
-            Notification.objects.create(
-                user_id=user_id,
-                title=message,
-                description=message,
-                type=Notification.NotificationType.MONEY,
+            notification_users.extend(
+                list(
+                    CompanyUser.objects.filter(
+                        company_id=company_id,
+                        role=CompanyUser.UserRoles.CompanyBranchManager,
+                    ).values_list("id", flat=True)
+                )
             )
+            notification_users.append(request.user.id)
+            for user_id in notification_users:
+                Notification.objects.create(
+                    user_id=user_id,
+                    title=message,
+                    description=message,
+                    type=Notification.NotificationType.MONEY,
+                )
 
         return super().create(validated_data)
+
+
+class UpdateCarOperationSerializer(CarOperationSerializer):
+
+    def update(self, instance, validated_data):
+        if instance.status in [
+            CarOperation.OperationStatus.COMPLETED,
+            CarOperation.OperationStatus.CANCELLED,
+        ]:
+            raise CustomValidationError("لا يمكن تحديث العملية بالفعل أنها منتهية")
+
+        with transaction.atomic():
+            car_operation = super().update(instance, validated_data)
+            if car_operation.status == CarOperation.OperationStatus.COMPLETED:
+                worker = car_operation.worker
+                car = car_operation.car
+                station_id = car_operation.station_branch.station_id
+                request = self.context["request"]
+                generate_station_transaction(
+                    station_id=station_id,
+                    station_branch_id=car_operation.station_branch_id,
+                    amount=car_operation.station_cost,
+                    status=KhaznaTransaction.TransactionStatus.APPROVED,
+                    description=f"تم تفويل سيارة رقم {car.plate} بعدد {car_operation.amount} لتر",  # noqa
+                    created_by_id=request.user.id,
+                    is_internal=False,
+                )
+
+                station_branch = worker.station_branch
+                station_branch.balance = (
+                    station_branch.balance - car_operation.station_cost
+                )
+                station_branch.save()
+
+                # send notifications for station users
+                message = f"تم تفويل سيارة رقم {car.plate} بعدد {car_operation.amount} لتر"  # noqa
+                notification_users = []
+                notification_users.extend(
+                    list(
+                        StationOwner.objects.filter(
+                            station_id=station_id,
+                            role=StationOwner.UserRoles.StationOwner,
+                        ).values_list("id", flat=True)
+                    )
+                )
+                notification_users.extend(
+                    list(
+                        StationOwner.objects.filter(
+                            station_id=station_id,
+                            role=User.UserRoles.StationBranchManager,
+                            station_branch_managers__station_branch=worker.station_branch_id,
+                        ).values_list("id", flat=True)
+                    )
+                )
+                notification_users.append(worker.id)
+
+                for user_id in notification_users:
+                    Notification.objects.create(
+                        user_id=user_id,
+                        title=message,
+                        description=message,
+                        type=Notification.NotificationType.MONEY,
+                    )
+
+                # send notfication for company user
+                company_id = car.branch.company_id
+                generate_company_transaction(
+                    company_id=company_id,
+                    amount=car_operation.company_cost,
+                    status=KhaznaTransaction.TransactionStatus.APPROVED,
+                    description=f"تم تفويل سيارة رقم {car.plate} بعدد {car_operation.amount} لتر",  # noqa
+                    created_by_id=request.user.id,
+                    is_internal=True,
+                )
+                message = (
+                    f"تم تفويل سيارة رقم {car.plate} بعدد {car_operation.amount} لتر "  # noqa
+                    f"وخصم مبلغ بمقدار {car_operation.company_cost:.2f} جنية"  # noqa
+                )
+                notification_users = list(
+                    CompanyUser.objects.filter(
+                        company_id=company_id, role=CompanyUser.UserRoles.CompanyOwner
+                    ).values_list("id", flat=True)
+                )
+                notification_users.extend(
+                    list(
+                        CompanyUser.objects.filter(
+                            company_id=company_id,
+                            role=CompanyUser.UserRoles.CompanyBranchManager,
+                        ).values_list("id", flat=True)
+                    )
+                )
+                notification_users.append(request.user.id)
+                for user_id in notification_users:
+                    Notification.objects.create(
+                        user_id=user_id,
+                        title=message,
+                        description=message,
+                        type=Notification.NotificationType.MONEY,
+                    )
+        return car_operation

@@ -176,7 +176,7 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if self.context["request"].user.role in DASHBOARD_ROLES:
-            if "station_id" not in attrs:
+            if self.context["request"].method == "POST" and "station_id" not in attrs:
                 raise CustomValidationError("لازم اختيار المحطة")
 
             if "station_branches" in attrs:

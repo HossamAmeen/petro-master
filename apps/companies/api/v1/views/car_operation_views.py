@@ -17,9 +17,11 @@ from rest_framework.response import Response
 
 from apps.companies.api.v1.filters import CarOperationFilter
 from apps.companies.api.v1.serializers.car_operation_serializer import (
+    CreateCarOperationSerializer,
     ListCarOperationSerializer,
     ListCompanyCarOperationSerializer,
     SingleCarOperationSerializer,
+    UpdateCarOperationSerializer,
 )
 from apps.companies.helper import export_car_operations, get_car_operations_data
 from apps.companies.models.company_models import CompanyBranch
@@ -27,6 +29,7 @@ from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
+from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
     CompanyPermission,
     DashboardPermission,
@@ -37,7 +40,7 @@ from apps.stations.models.service_models import Service
 from apps.users.models import User
 
 
-class CarOperationViewSet(viewsets.ModelViewSet):
+class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CarOperation.objects.select_related(
         "car",
         "driver",
@@ -94,6 +97,10 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                 return ListCarOperationSerializer
         if self.action == "retrieve":
             return SingleCarOperationSerializer
+        if self.action == "create":
+            return CreateCarOperationSerializer
+        if self.action == "partial_update":
+            return UpdateCarOperationSerializer
         return ListCarOperationSerializer
 
     def get_queryset(self):

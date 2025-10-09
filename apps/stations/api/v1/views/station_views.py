@@ -65,10 +65,13 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return ListStationSerializer
 
     def get_permissions(self):
-        if self.action == "create":
+        if self.action in ["create", "list"]:
             return [IsAuthenticated(), DashboardPermission()]
         if self.action == "partial_update":
-            return [IsAuthenticated(), DashboardPermission(), StationPermission()]
+            return [
+                IsAuthenticated(),
+                EitherPermission([DashboardPermission, StationPermission]),
+            ]
         if self.action == "list":
             return [
                 IsAuthenticated(),
