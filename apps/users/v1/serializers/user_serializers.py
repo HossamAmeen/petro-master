@@ -34,6 +34,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
             "email", validated_data["phone_number"] + "@petro.com"
         )
         validated_data["password"] = make_password(validated_data["password"])
+        validated_data.pop("confirm_password")
         return User.objects.create(**validated_data)
 
 

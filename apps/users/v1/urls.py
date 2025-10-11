@@ -6,6 +6,7 @@ from .views.station_users_view import (
     StationOwnerViewSet,
     WorkerViewSet,
 )
+from .views.statistics_view import StatisticsViewSet
 from .views.users_view import FirebaseTokenViewSet, UserViewSet
 
 router = DefaultRouter()
@@ -23,5 +24,6 @@ router.register(
     StationBranchManagerViewSet,
     basename="station-branch-managers",
 )
+router.register("statistics", StatisticsViewSet, basename="statistics")
 
 urlpatterns = router.urls
