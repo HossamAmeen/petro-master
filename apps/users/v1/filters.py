@@ -1,6 +1,13 @@
 from django_filters import rest_framework as django_filters
 
-from apps.users.models import CompanyUser, StationOwner
+from apps.users.models import CompanyUser, StationOwner, User
+
+
+class UserFilter(django_filters.FilterSet):
+
+    class Meta:
+        model = User
+        fields = ["role", "is_active"]
 
 
 class CompanyBranchManagerFilter(django_filters.FilterSet):
