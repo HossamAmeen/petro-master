@@ -6,6 +6,8 @@ from apps.users.models import FirebaseToken, User
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
+    confirm_password = serializers.CharField(write_only=True)
+
     class Meta:
         model = User
         fields = [
