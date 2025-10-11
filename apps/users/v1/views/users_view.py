@@ -2,9 +2,9 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import Response
-from shared.permissions import AdminPermission
 
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.shared.permissions import AdminPermission
 from apps.users.models import FirebaseToken, User
 from apps.users.v1.filters import UserFilter
 from apps.users.v1.serializers.user_serializers import (
