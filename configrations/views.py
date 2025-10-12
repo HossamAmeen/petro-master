@@ -26,6 +26,9 @@ from .models import ConfigrationsModel, Slider
 
 
 class ConfigrationsView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
     @extend_schema(
         responses={
             200: {
