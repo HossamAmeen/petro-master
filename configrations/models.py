@@ -26,5 +26,6 @@ class ConfigrationsModel(models.Model):
 
 
 class Slider(models.Model):
+    name = models.CharField(max_length=255)
     image = models.FileField()
     order = models.IntegerField(default=0)
