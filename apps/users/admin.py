@@ -6,6 +6,8 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
 
+from apps.shared.constants import DASHBOARD_ROLES
+
 from .models import (
     CompanyBranchManager,
     CompanyUser,
@@ -101,7 +103,7 @@ class CustomUserAdmin(UserAdmin):
     created.short_description = _("Created")
 
     def get_queryset(self, request):
-        return super().get_queryset(request).filter(role=User.UserRoles.Admin)
+        return super().get_queryset(request).filter(role__in=DASHBOARD_ROLES)
 
 
 # Company Users
