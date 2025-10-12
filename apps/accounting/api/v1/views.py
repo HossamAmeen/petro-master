@@ -39,7 +39,7 @@ class KhaznaTransactionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 
-class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
+class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CompanyKhaznaTransaction.objects.select_related(
         "company", "company_branch"
     ).order_by("-id")
