@@ -171,6 +171,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     message = f"تم شحن رصيد السيارة ({car.plate}) برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
                     generate_company_transaction(
                         company_id=self.request.company_id,
+                        company_branch_id=car.branch_id,
                         amount=serializer.validated_data["amount"],
                         status=KhaznaTransaction.TransactionStatus.APPROVED,
                         description=message,
@@ -205,6 +206,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     message = f"تم سحب رصيد السيارة ({car.plate}) برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
                     generate_company_transaction(
                         company_id=self.request.company_id,
+                        company_branch_id=car.branch_id,
                         amount=serializer.validated_data["amount"],
                         status=KhaznaTransaction.TransactionStatus.APPROVED,
                         description=message,

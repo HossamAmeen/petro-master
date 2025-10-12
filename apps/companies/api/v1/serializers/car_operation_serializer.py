@@ -358,6 +358,7 @@ class CreateCarOperationSerializer(CarOperationSerializer):
             company_id = car.branch.company_id
             generate_company_transaction(
                 company_id=company_id,
+                company_branch_id=car.branch_id,
                 amount=validated_data["company_cost"],
                 status=KhaznaTransaction.TransactionStatus.APPROVED,
                 description=f"تم تفويل سيارة رقم {car.plate} بعدد {validated_data['amount']} لتر",  # noqa
@@ -459,6 +460,7 @@ class UpdateCarOperationSerializer(CarOperationSerializer):
                 company_id = car.branch.company_id
                 generate_company_transaction(
                     company_id=company_id,
+                    company_branch_id=car.branch_id,
                     amount=car_operation.company_cost,
                     status=KhaznaTransaction.TransactionStatus.APPROVED,
                     description=f"تم تفويل سيارة رقم {car.plate} بعدد {car_operation.amount} لتر",  # noqa

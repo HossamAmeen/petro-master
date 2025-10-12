@@ -169,6 +169,7 @@ class StationGasOperationAPIView(APIView):
                 company_id = car.branch.company_id
                 generate_company_transaction(
                     company_id=company_id,
+                    company_branch_id=car.branch_id,
                     amount=company_cost,
                     status=KhaznaTransaction.TransactionStatus.APPROVED,
                     description=f"تم تفويل سيارة رقم {car_opertion.car.plate} بعدد {car_opertion.amount} لتر",
@@ -314,6 +315,7 @@ class StationOtherOperationAPIView(APIView):
             company_id = company_branch.company_id
             generate_company_transaction(
                 company_id=company_id,
+                company_branch_id=company_branch.id,
                 amount=company_cost,
                 status=KhaznaTransaction.TransactionStatus.APPROVED,
                 description=f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}",

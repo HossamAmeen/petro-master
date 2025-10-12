@@ -5,10 +5,14 @@ from apps.accounting.models import (
     KhaznaTransaction,
     StationKhaznaTransaction,
 )
+from apps.companies.models.company_models import CompanyBranch
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.generate_code import generate_unique_code
-from apps.stations.api.v1.serializers import StationBranchWithDistrictSerializer
+from apps.stations.api.v1.serializers import (
+    StationBranchWithDistrictSerializer,
+    StationNameSerializer,
+)
 from apps.users.models import CompanyUser, StationOwner
 
 
@@ -20,20 +24,42 @@ class ListCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
 
 
 class ListCompanyKhaznaTransactionForDashboardSerializer(serializers.ModelSerializer):
-    company_branch_name = serializers.SerializerMethodField()
+    company = serializers.SerializerMethodField()
+    company_branch = serializers.SerializerMethodField()
 
     class Meta:
         model = CompanyKhaznaTransaction
         fields = "__all__"
 
-    def get_company_branch_name(self, obj):
-        return obj.company_branch.name if obj.company_branch else None
+    def get_company(self, obj):
+        from apps.companies.api.v1.serializers.company_serializer import (
+            ListCompanyNameSerializer,
+        )
+
+        return ListCompanyNameSerializer(obj.company).data
+
+    def get_company_branch(self, obj):
+        from apps.companies.api.v1.serializers.branch_serializers import (
+            ListCompanyBranchNameSerializer,
+        )
+
+        return ListCompanyBranchNameSerializer(obj.company_branch).data
 
 
 class CreateCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
+    company_branch = serializers.PrimaryKeyRelatedField(
+        queryset=CompanyBranch.objects.all(),
+        required=True,
+    )
+
     class Meta:
         model = CompanyKhaznaTransaction
         exclude = ("created_by", "updated_by", "reference_code", "is_internal")
+
+    def validate(self, attrs):
+        if attrs.get("company") != attrs["company_branch"].company:
+            raise CustomValidationError("الشركة غير مطابقة للفرع")
+        return attrs
 
     def create(self, validated_data):
         validated_data["reference_code"] = generate_unique_code(
@@ -42,6 +68,7 @@ class CreateCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
             min_value=10**8,
             max_value=10**9,
         )
+        validated_data["company"] = validated_data["company_branch"].company
         instance = super().create(validated_data)
 
         if instance.status == CompanyKhaznaTransaction.TransactionStatus.APPROVED:
@@ -227,6 +254,7 @@ class UpdateStationKhaznaTransactionSerializer(serializers.ModelSerializer):
 
 class ListStationKhaznaTransactionSerializer(serializers.ModelSerializer):
     station_branch = StationBranchWithDistrictSerializer(read_only=True)
+    station = StationNameSerializer()
 
     class Meta:
         model = StationKhaznaTransaction

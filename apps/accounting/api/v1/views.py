@@ -40,7 +40,9 @@ class KhaznaTransactionViewSet(viewsets.ModelViewSet):
 
 
 class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
-    queryset = CompanyKhaznaTransaction.objects.order_by("-id")
+    queryset = CompanyKhaznaTransaction.objects.select_related(
+        "company", "company_branch"
+    ).order_by("-id")
     serializer_class = ListCompanyKhaznaTransactionSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter]
     search_fields = ["company__name"]
@@ -60,7 +62,7 @@ class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
                 return ListCompanyKhaznaTransactionForDashboardSerializer
         if self.action == "partial_update":
             return UpdateCompanyKhaznaTransactionSerializer
-        if self.action == "post":
+        if self.action == "create":
             return CreateCompanyKhaznaTransactionSerializer
         return CreateCompanyKhaznaTransactionSerializer
 
@@ -73,7 +75,9 @@ class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
 
 
 class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    queryset = StationKhaznaTransaction.objects.order_by("-id")
+    queryset = StationKhaznaTransaction.objects.select_related(
+        "station", "station_branch"
+    ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = StationKhaznaTransactionFilter
     search_fields = ["station__name"]
