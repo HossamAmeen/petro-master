@@ -270,7 +270,7 @@ class CreateCarOperationSerializer(CarOperationSerializer):
         available_liters = min(car_tank_capacity, available_liters)
         if validated_data["amount"] > available_liters:
             raise CustomValidationError(
-                {"error": f"الكمية المطلوبة اكبر من الحد الأقصى {available_liters}"},
+                message=f"الكمية المطلوبة اكبر من الحد الأقصى {available_liters}",
                 code="not_found",
             )
 

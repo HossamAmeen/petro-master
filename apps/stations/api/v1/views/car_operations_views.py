@@ -41,8 +41,7 @@ class StationGasOperationAPIView(APIView):
         ).first()
         if not car_opertion:
             raise CustomValidationError(
-                {"error": "هذا العمليه غير موجوده او انتهت بالفعل"},
-                code="not_found",
+                message="هذا العمليه غير موجوده او انتهت بالفعل", code="not_found"
             )
         serializer = updateStationGasCarOperationSerializer(
             car_opertion, data=request.data, partial=True
@@ -54,9 +53,7 @@ class StationGasOperationAPIView(APIView):
                 if car.is_with_odometer:
                     if serializer.validated_data["car_meter"] < car.last_meter:
                         raise CustomValidationError(
-                            {
-                                "error": "العداد الحالي يجب ان يكون اكبر من العداد السابق"
-                            },
+                            message="العداد الحالي يجب ان يكون اكبر من العداد السابق",
                             code="not_found",
                         )
                 status = CarOperation.OperationStatus.IN_PROGRESS
@@ -65,13 +62,12 @@ class StationGasOperationAPIView(APIView):
             elif "amount" in serializer.validated_data:
                 if not car_opertion.start_time:
                     raise CustomValidationError(
-                        {"error": "يجب تحديد الوقت البدء"},
-                        code="not_found",
+                        message="يجب تحديد الوقت البدء", code="not_found"
                     )
                 end_time = timezone.localtime()
                 if end_time > car_opertion.start_time + timedelta(seconds=60):
                     raise CustomValidationError(
-                        {"error": "الوقت الانتهاء يجب ان يكون اقل من 60 ثانية"},
+                        message="الوقت الانتهاء يجب ان يكون اقل من 60 ثانية",
                         code="not_found",
                     )
                 car = car_opertion.car
@@ -88,8 +84,7 @@ class StationGasOperationAPIView(APIView):
                 available_liters = min(car_tank_capacity, available_liters)
                 if serializer.validated_data["amount"] > available_liters:
                     raise CustomValidationError(
-                        {"error": "الكمية المطلوبة اكبر من الحد الأقصى"},
-                        code="not_found",
+                        message="الكمية المطلوبة اكبر من الحد الأقصى", code="not_found"
                     )
 
                 status = CarOperation.OperationStatus.COMPLETED
@@ -213,8 +208,7 @@ class StationGasOperationAPIView(APIView):
         ).first()
         if not car_opertion:
             raise CustomValidationError(
-                {"error": "هذا العمليه غير موجوده او انتهت بالفعل"},
-                code="not_found",
+                message="هذا العمليه غير موجوده او انتهت بالفعل", code="not_found"
             )
         car_opertion.delete()
         car = car_opertion.car
