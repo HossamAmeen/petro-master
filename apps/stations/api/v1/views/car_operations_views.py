@@ -130,6 +130,35 @@ class StationGasOperationAPIView(APIView):
                 car.balance = car.balance - company_cost
                 car.save()
 
+                company_id = car.branch.company_id
+                notification_users = list(
+                    CompanyUser.objects.filter(
+                        company_id=company_id, role=CompanyUser.UserRoles.CompanyOwner
+                    ).values_list("id", flat=True)
+                )
+                notification_users.extend(
+                    list(
+                        CompanyUser.objects.filter(
+                            company_id=company_id,
+                            role=CompanyUser.UserRoles.CompanyBranchManager,
+                            company_branch_managers__company_branch=car.branch_id,
+                        ).values_list("id", flat=True)
+                    )
+                )
+                if (
+                    car.next_oil_change_km > 0
+                    and car.next_oil_change_km <= car.last_meter
+                ):
+                    # send notification to company owner to change oil for this car in arabic
+                    message = f"يجب تغيير زيت السيارة رقم {car.plate} بعدد {car_opertion.amount} لتر"
+                    for user_id in notification_users:
+                        Notification.objects.create(
+                            user_id=user_id,
+                            title=message,
+                            description=message,
+                            type=Notification.NotificationType.GENERAL,
+                        )
+
                 station_id = request.station_id
                 generate_station_transaction(
                     station_id=station_id,
@@ -161,7 +190,6 @@ class StationGasOperationAPIView(APIView):
                     )
 
                 # send notfication for company user
-                company_id = car.branch.company_id
                 generate_company_transaction(
                     company_id=company_id,
                     company_branch_id=car.branch_id,

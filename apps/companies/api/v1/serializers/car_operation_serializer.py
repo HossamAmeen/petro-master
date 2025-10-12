@@ -379,10 +379,11 @@ class CreateCarOperationSerializer(CarOperationSerializer):
                     CompanyUser.objects.filter(
                         company_id=company_id,
                         role=CompanyUser.UserRoles.CompanyBranchManager,
+                        company_branch_managers__company_branch=car.branch_id,
                     ).values_list("id", flat=True)
                 )
             )
-            notification_users.append(request.user.id)
+
             for user_id in notification_users:
                 Notification.objects.create(
                     user_id=user_id,
