@@ -20,7 +20,7 @@ from apps.shared.permissions import AdminPermission
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import Station, StationBranch
 from apps.users.models import User
-from configrations.serializers import SliderSerializer
+from configrations.serializers import ConfigrationsSerializer, SliderSerializer
 
 from .models import ConfigrationsModel, Slider
 
@@ -48,28 +48,12 @@ class ConfigrationsView(APIView):
             return Response(
                 {"term_conditions": "", "privacy_policy": "", "about_us": "", "faq": ""}
             )
-
-        return Response(
-            {
-                "term_conditions": configrations.term_conditions,
-                "privacy_policy": configrations.privacy_policy,
-                "about_us": configrations.about_us,
-                "faq": configrations.faq,
-                "app_version": configrations.app_version,
-                "company_support_email": configrations.company_support_email,
-                "company_support_phone": configrations.company_support_phone,
-                "company_support_address": configrations.company_support_address,
-                "company_support_name": configrations.company_support_name,
-                "station_support_email": configrations.station_support_email,
-                "station_support_phone": configrations.station_support_phone,
-                "station_support_address": configrations.station_support_address,
-                "station_support_name": configrations.station_support_name,
-            }
-        )
+        serializer = ConfigrationsSerializer(configrations)
+        return Response(serializer.data)
 
 
 class SliderView(ListAPIView):
-    queryset = Slider.objects.filter()
+    queryset = Slider.objects.order_by("order")
     serializer_class = SliderSerializer
     permission_classes = []
     authentication_classes = []
