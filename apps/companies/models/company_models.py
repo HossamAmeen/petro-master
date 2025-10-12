@@ -125,7 +125,7 @@ class Car(AbstractBaseModel):
     number_of_fuelings_per_day = models.IntegerField()
     number_of_washes_per_month = models.IntegerField()
     next_oil_change_km = models.IntegerField(
-        null=True, blank=True, help_text="Next oil change in km"
+        default=0, help_text="Next oil change in km"
     )
     fuel_allowed_days = models.JSONField(default=list, blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
