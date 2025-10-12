@@ -39,6 +39,15 @@ class CreateUserSerializer(serializers.ModelSerializer):
         validated_data.pop("confirm_password")
         return User.objects.create(**validated_data)
 
+    def update(self, instance, validated_data):
+        confirm_password = validated_data.pop("confirm_password")
+        if validated_data.get("password"):
+            if confirm_password != validated_data["password"]:
+                raise CustomValidationError("Passwords do not match")
+            validated_data["password"] = make_password(validated_data["password"])
+
+        return super().update(instance, validated_data)
+
 
 class SingleUserSerializer(serializers.ModelSerializer):
     class Meta:
