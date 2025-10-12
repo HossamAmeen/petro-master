@@ -60,6 +60,7 @@ class ListUserSerializer(serializers.ModelSerializer):
             "role",
             "created",
             "modified",
+            "is_active",
             "created_by",
             "updated_by",
         ]
