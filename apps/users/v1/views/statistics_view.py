@@ -67,11 +67,13 @@ class StatisticsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
                     ).count(),
                     "total_profit": CarOperation.objects.filter(
                         status=CompanyKhaznaTransaction.TransactionStatus.APPROVED
-                    ).aggregate(Sum("profits"))["profits__sum"],
+                    ).aggregate(Sum("profits"))["profits__sum"]
+                    or 0,
                     "total_profit_today": CarOperation.objects.filter(
                         status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
                         created__date=today(),
-                    ).aggregate(Sum("profits"))["profits__sum"],
+                    ).aggregate(Sum("profits"))["profits__sum"]
+                    or 0,
                 },
                 "company_branches": {
                     "total_branches": CompanyBranch.objects.count(),
