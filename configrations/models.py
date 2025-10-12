@@ -15,7 +15,7 @@ class ConfigrationsModel(models.Model):
     station_support_phone = models.CharField(max_length=255, null=True, blank=True)
     station_support_address = models.TextField(null=True, blank=True)
     station_support_name = models.CharField(max_length=255, null=True, blank=True)
-    whatsapp_number = models.CharField(max_length=15, null=True, blank=True)
+    whatsapp_number = models.CharField(max_length=150, null=True, blank=True)
     telegram_link = models.URLField(null=True, blank=True)
     facebook_link = models.URLField(null=True, blank=True)
     instagram_link = models.URLField(null=True, blank=True)
