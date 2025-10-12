@@ -3,18 +3,33 @@ from rest_framework import viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 
-from apps.accounting.api.v1.filters import StationKhaznaTransactionFilter
+from apps.accounting.api.v1.filters import (
+    CompanyKhaznaTransactionFilter,
+    StationKhaznaTransactionFilter,
+)
 from apps.accounting.api.v1.serializers.company_transaction_serializer import (
+    CreateCompanyKhaznaTransactionSerializer,
+    CreateStationKhaznaTransactionSerializer,
     KhaznaTransactionSerializer,
+    ListCompanyKhaznaTransactionForDashboardSerializer,
     ListCompanyKhaznaTransactionSerializer,
     ListStationKhaznaTransactionSerializer,
+    UpdateCompanyKhaznaTransactionSerializer,
+    UpdateStationKhaznaTransactionSerializer,
 )
 from apps.accounting.models import (
     CompanyKhaznaTransaction,
     KhaznaTransaction,
     StationKhaznaTransaction,
 )
-from apps.shared.permissions import StationPermission
+from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
+from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.shared.permissions import (
+    CompanyPermission,
+    DashboardPermission,
+    EitherPermission,
+    StationPermission,
+)
 from apps.users.models import User
 
 
@@ -24,9 +39,32 @@ class KhaznaTransactionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 
-class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
-    queryset = CompanyKhaznaTransaction.objects.order_by("-id")
+class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
+    queryset = CompanyKhaznaTransaction.objects.select_related(
+        "company", "company_branch"
+    ).order_by("-id")
     serializer_class = ListCompanyKhaznaTransactionSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ["company__name"]
+    filterset_class = CompanyKhaznaTransactionFilter
+
+    def get_permissions(self):
+        return [
+            IsAuthenticated(),
+            EitherPermission([CompanyPermission, DashboardPermission]),
+        ]
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            if self.request.user.role in COMPANY_ROLES:
+                return ListCompanyKhaznaTransactionSerializer
+            if self.request.user.role in DASHBOARD_ROLES:
+                return ListCompanyKhaznaTransactionForDashboardSerializer
+        if self.action == "partial_update":
+            return UpdateCompanyKhaznaTransactionSerializer
+        if self.action == "create":
+            return CreateCompanyKhaznaTransactionSerializer
+        return CreateCompanyKhaznaTransactionSerializer
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
@@ -36,15 +74,36 @@ class CompanyKhaznaTransactionViewSet(viewsets.ModelViewSet):
         return self.queryset
 
 
-class StationKhaznaTransactionViewSet(viewsets.ModelViewSet):
+class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = StationKhaznaTransaction.objects.select_related(
-        "station_branch__district__city"
+        "station", "station_branch"
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = StationKhaznaTransactionFilter
     search_fields = ["station__name"]
+    filter_fields = [
+        "station",
+        "station_branch",
+        "is_incoming",
+        "method",
+        "is_internal",
+    ]
     serializer_class = ListStationKhaznaTransactionSerializer
-    permission_classes = [IsAuthenticated, StationPermission]
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ListStationKhaznaTransactionSerializer
+        if self.action == "partial_update":
+            return UpdateStationKhaznaTransactionSerializer
+        if self.action == "post":
+            return CreateStationKhaznaTransactionSerializer
+        return ListStationKhaznaTransactionSerializer
+
+    def get_permissions(self):
+        return [
+            IsAuthenticated(),
+            EitherPermission([StationPermission, DashboardPermission]),
+        ]
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:

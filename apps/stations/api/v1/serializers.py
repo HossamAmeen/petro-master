@@ -2,6 +2,7 @@ from django.core.validators import MinValueValidator
 from rest_framework import serializers
 
 from apps.geo.v1.serializers import DistrictWithcitynameSerializer
+from apps.shared.base_exception_class import CustomValidationError
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import Station, StationBranch, StationService
 from apps.users.models import StationOwner
@@ -30,6 +31,11 @@ class SingleStationServiceSerializer(serializers.ModelSerializer):
 
 class ListStationSerializer(serializers.ModelSerializer):
     district = DistrictWithcitynameSerializer()
+    branches_count = serializers.IntegerField()
+    services_count = serializers.IntegerField()
+    managers_count = serializers.IntegerField()
+    workers_count = serializers.IntegerField()
+    total_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
         model = Station
@@ -73,6 +79,18 @@ class ListStationBranchSerializer(serializers.ModelSerializer):
         return list(services)
 
 
+class ListStationBranchForDashboardSerializer(serializers.ModelSerializer):
+    district = DistrictWithcitynameSerializer()
+    station = StationNameSerializer()
+    managers_count = serializers.IntegerField()
+    services_count = serializers.IntegerField()
+    workers_count = serializers.IntegerField()
+
+    class Meta:
+        model = StationBranch
+        fields = "__all__"
+
+
 class ListStationBranchForLandingpageSerializer(serializers.ModelSerializer):
     district = DistrictWithcitynameSerializer()
     station = StationNameSerializer()
@@ -107,7 +125,7 @@ class StationBranchAssignManagersSerializer(serializers.Serializer):
 
         invalid_ids = set(manager_ids) - set(valid_managers)
         if invalid_ids:
-            raise serializers.ValidationError(
+            raise CustomValidationError(
                 {
                     "message": f"بعض المديرين لا ينتمون لمحطتك (المديرين غير الصالحة: {invalid_ids})",  # noqa
                     "errors": {"invalid_manager_ids": list(invalid_ids)},

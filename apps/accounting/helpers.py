@@ -6,6 +6,7 @@ from apps.shared.generate_code import generate_unique_code
 
 def generate_company_transaction(
     company_id,
+    company_branch_id,
     amount,
     status,
     description,
@@ -26,6 +27,7 @@ def generate_company_transaction(
     approved_at = timezone.localtime() if not approved_at else approved_at
     CompanyKhaznaTransaction.objects.create(
         company_id=company_id,
+        company_branch_id=company_branch_id,
         amount=amount,
         status=status,
         reference_code=reference_code,

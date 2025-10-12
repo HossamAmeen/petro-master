@@ -1,24 +1,35 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import Response
 
+from apps.shared.constants import DASHBOARD_ROLES
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.shared.permissions import AdminPermission
 from apps.users.models import FirebaseToken, User
+from apps.users.v1.filters import UserFilter
 from apps.users.v1.serializers.user_serializers import (
+    CreateUserSerializer,
     FirebaseTokenDeleteSerializer,
     FirebaseTokenSerializer,
     ListUserSerializer,
-    UserSerializer,
 )
 
 
+# for dashboard users
 class UserViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    queryset = User.objects.select_related("created_by", "updated_by").order_by("-id")
+    queryset = (
+        User.objects.filter(role__in=DASHBOARD_ROLES)
+        .select_related("created_by", "updated_by")
+        .order_by("-id")
+    )
+    permission_classes = [IsAuthenticated, AdminPermission]
+    filterset_class = UserFilter
 
     def get_serializer_class(self):
         if self.action == "list":
             return ListUserSerializer
-        return UserSerializer
+        return CreateUserSerializer
 
 
 class FirebaseTokenViewSet(viewsets.ModelViewSet):

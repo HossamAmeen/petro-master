@@ -217,6 +217,7 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
         message = f"تم تسليم طلب نقدي بقيمة {cash_request.company_cost:.2f} للسائق {cash_request.driver.name}"  # noqa
         generate_company_transaction(
             company_id=company_branch.company_id,
+            company_branch_id=company_branch.id,
             amount=cash_request.company_cost,
             status=KhaznaTransaction.TransactionStatus.APPROVED,
             description=message,

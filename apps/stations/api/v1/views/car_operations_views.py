@@ -41,8 +41,7 @@ class StationGasOperationAPIView(APIView):
         ).first()
         if not car_opertion:
             raise CustomValidationError(
-                {"error": "هذا العمليه غير موجوده او انتهت بالفعل"},
-                code="not_found",
+                message="هذا العمليه غير موجوده او انتهت بالفعل", code="not_found"
             )
         serializer = updateStationGasCarOperationSerializer(
             car_opertion, data=request.data, partial=True
@@ -54,9 +53,7 @@ class StationGasOperationAPIView(APIView):
                 if car.is_with_odometer:
                     if serializer.validated_data["car_meter"] < car.last_meter:
                         raise CustomValidationError(
-                            {
-                                "error": "العداد الحالي يجب ان يكون اكبر من العداد السابق"
-                            },
+                            message="العداد الحالي يجب ان يكون اكبر من العداد السابق",
                             code="not_found",
                         )
                 status = CarOperation.OperationStatus.IN_PROGRESS
@@ -65,13 +62,12 @@ class StationGasOperationAPIView(APIView):
             elif "amount" in serializer.validated_data:
                 if not car_opertion.start_time:
                     raise CustomValidationError(
-                        {"error": "يجب تحديد الوقت البدء"},
-                        code="not_found",
+                        message="يجب تحديد الوقت البدء", code="not_found"
                     )
                 end_time = timezone.localtime()
-                if end_time > car_opertion.start_time + timedelta(seconds=70):
+                if end_time > car_opertion.start_time + timedelta(seconds=60):
                     raise CustomValidationError(
-                        {"error": "الوقت الانتهاء يجب ان يكون اقل من 60 ثانية"},
+                        message="الوقت الانتهاء يجب ان يكون اقل من 60 ثانية",
                         code="not_found",
                     )
                 car = car_opertion.car
@@ -88,8 +84,7 @@ class StationGasOperationAPIView(APIView):
                 available_liters = min(car_tank_capacity, available_liters)
                 if serializer.validated_data["amount"] > available_liters:
                     raise CustomValidationError(
-                        {"error": "الكمية المطلوبة اكبر من الحد الأقصى"},
-                        code="not_found",
+                        message="الكمية المطلوبة اكبر من الحد الأقصى", code="not_found"
                     )
 
                 status = CarOperation.OperationStatus.COMPLETED
@@ -135,6 +130,35 @@ class StationGasOperationAPIView(APIView):
                 car.balance = car.balance - company_cost
                 car.save()
 
+                company_id = car.branch.company_id
+                notification_users = list(
+                    CompanyUser.objects.filter(
+                        company_id=company_id, role=CompanyUser.UserRoles.CompanyOwner
+                    ).values_list("id", flat=True)
+                )
+                notification_users.extend(
+                    list(
+                        CompanyUser.objects.filter(
+                            company_id=company_id,
+                            role=CompanyUser.UserRoles.CompanyBranchManager,
+                            company_branch_managers__company_branch=car.branch_id,
+                        ).values_list("id", flat=True)
+                    )
+                )
+                if (
+                    car.next_oil_change_km > 0
+                    and car.next_oil_change_km <= car.last_meter
+                ):
+                    # send notification to company owner to change oil for this car in arabic
+                    message = f"يجب تغيير زيت السيارة رقم {car.plate} بعدد {car_opertion.amount} لتر"
+                    for user_id in notification_users:
+                        Notification.objects.create(
+                            user_id=user_id,
+                            title=message,
+                            description=message,
+                            type=Notification.NotificationType.GENERAL,
+                        )
+
                 station_id = request.station_id
                 generate_station_transaction(
                     station_id=station_id,
@@ -166,9 +190,9 @@ class StationGasOperationAPIView(APIView):
                     )
 
                 # send notfication for company user
-                company_id = car.branch.company_id
                 generate_company_transaction(
                     company_id=company_id,
+                    company_branch_id=car.branch_id,
                     amount=company_cost,
                     status=KhaznaTransaction.TransactionStatus.APPROVED,
                     description=f"تم تفويل سيارة رقم {car_opertion.car.plate} بعدد {car_opertion.amount} لتر",
@@ -212,8 +236,7 @@ class StationGasOperationAPIView(APIView):
         ).first()
         if not car_opertion:
             raise CustomValidationError(
-                {"error": "هذا العمليه غير موجوده او انتهت بالفعل"},
-                code="not_found",
+                message="هذا العمليه غير موجوده او انتهت بالفعل", code="not_found"
             )
         car_opertion.delete()
         car = car_opertion.car
@@ -314,6 +337,7 @@ class StationOtherOperationAPIView(APIView):
             company_id = company_branch.company_id
             generate_company_transaction(
                 company_id=company_id,
+                company_branch_id=company_branch.id,
                 amount=company_cost,
                 status=KhaznaTransaction.TransactionStatus.APPROVED,
                 description=f"تم اضافة الخدمه {serializer.data['service_name']} بنجاح الي السيارة رقم {car.plate}",

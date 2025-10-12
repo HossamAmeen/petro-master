@@ -1,9 +1,12 @@
+from datetime import datetime
+
 from django import forms
 from django.contrib import admin, messages
 from django.db import transaction
 from django.db.models import Count, Sum
 from django.urls import path, reverse
 from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 
 from apps.companies.models.operation_model import CarOperation
 from apps.shared.generate_code import generate_unique_code
@@ -526,6 +529,36 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
         obj.save()
 
 
+class CreatedDateRangeFilter(admin.SimpleListFilter):
+    title = _("Created Date Range")
+    parameter_name = "created_range"
+    template = "admin/caroperation_date_filter.html"
+
+    def lookups(self, request, model_admin):
+        # required by Django admin, but not really used
+        return (("custom", _("Custom range")),)
+
+    def queryset(self, request, queryset):
+        start_date = request.GET.get("created_from")
+        end_date = request.GET.get("created_to")
+
+        if start_date:
+            try:
+                start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+                queryset = queryset.filter(created__date__gte=start_date)
+            except ValueError:
+                pass
+
+        if end_date:
+            try:
+                end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+                queryset = queryset.filter(created__date__lte=end_date)
+            except ValueError:
+                pass
+
+        return queryset
+
+
 @admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
@@ -569,9 +602,11 @@ class CarOperationAdmin(admin.ModelAdmin):
         "station_branch",
         "worker",
         "service",
+        # CreatedDateRangeFilter,
     )
+
     readonly_fields = ("code", "created_by", "updated_by")
-    list_per_page = 100
+    list_per_page = 50
 
     def branch_company(self, obj):
         return obj.car.branch.company.name
@@ -588,5 +623,6 @@ class CarOperationAdmin(admin.ModelAdmin):
                 "station_branch",
                 "worker",
                 "service",
+                "created_by",
             )
         )

@@ -44,6 +44,11 @@ class DashboardPermission(BasePermission):
         return request.user.role in DASHBOARD_ROLES
 
 
+class AdminPermission(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == User.UserRoles.Admin
+
+
 class EitherPermission(BasePermission):
     def __init__(self, permissions):
         self.permissions = permissions

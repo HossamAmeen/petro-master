@@ -1,12 +1,57 @@
+from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
+from apps.shared.base_exception_class import CustomValidationError
 from apps.users.models import FirebaseToken, User
 
 
-class UserSerializer(serializers.ModelSerializer):
+class CreateUserSerializer(serializers.ModelSerializer):
+    confirm_password = serializers.CharField(write_only=True)
+
     class Meta:
         model = User
-        fields = ["id", "name", "email", "phone_number", "role"]
+        fields = [
+            "name",
+            "email",
+            "phone_number",
+            "role",
+            "password",
+            "confirm_password",
+        ]
+
+    def validate(self, attrs):
+        if (
+            self.context["request"].method == "POST"
+            and attrs["password"] != attrs["confirm_password"]
+        ):
+            raise CustomValidationError("Passwords do not match")
+        if self.context["request"].method == "PATCH" and attrs.get(
+            "password"
+        ) != attrs.get("confirm_password"):
+            raise CustomValidationError("Passwords do not match")
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["email"] = validated_data.get(
+            "email", validated_data["phone_number"] + "@petro.com"
+        )
+        validated_data["password"] = make_password(validated_data["password"])
+        validated_data.pop("confirm_password")
+        return User.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        confirm_password = validated_data.pop("confirm_password")
+        if validated_data.get("password"):
+            if confirm_password != validated_data["password"]:
+                raise CustomValidationError("Passwords do not match")
+            validated_data["password"] = make_password(validated_data["password"])
+
+        return super().update(instance, validated_data)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data.pop("password")
+        return data
 
 
 class SingleUserSerializer(serializers.ModelSerializer):
@@ -29,6 +74,7 @@ class ListUserSerializer(serializers.ModelSerializer):
             "role",
             "created",
             "modified",
+            "is_active",
             "created_by",
             "updated_by",
         ]

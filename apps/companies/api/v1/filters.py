@@ -17,9 +17,17 @@ class CompanyBranchFilter(django_filters.FilterSet):
 
 class CarOperationFilter(django_filters.FilterSet):
     start_date = django_filters.DateFilter(
-        field_name="start_time__date", lookup_expr="gte"
+        field_name="start_time__date",
+        lookup_expr="gte",
+        label="start_date_from",
+        help_text="Filter by start date from example start_date_from=YYYY-MM-DD",
     )
-    end_date = django_filters.DateFilter(field_name="end_time__date", lookup_expr="lte")
+    end_date = django_filters.DateFilter(
+        field_name="end_time__date",
+        lookup_expr="lte",
+        label="end_date_to",
+        help_text="Filter by end date to example end_date_to=YYYY-MM-DD",
+    )
     status = django_filters.CharFilter(
         method="filter_by_status",
         help_text="Filter by status example statusing=pending,in_progress,completed,cancelled",

@@ -25,6 +25,8 @@ class User(AbstractUser, TimeStampedModel):
         StationOwner = "station_owner"
         StationBranchManager = "station_branch_manager"
         StationWorker = "station_worker"
+        Supervisor = "supervisor"
+        Agent = "agent"
 
     name = models.CharField(max_length=255)
     email = models.EmailField(max_length=255, unique=True)
@@ -144,6 +146,38 @@ class Worker(User):
         "stations.StationBranch", on_delete=models.CASCADE, related_name="workers"
     )
 
+    def save(self, *args, **kwargs):
+        self.role = User.UserRoles.StationWorker
+        super().save(*args, **kwargs)
+
     class Meta:
         verbose_name = "Worker"
         verbose_name_plural = "Workers"
+
+
+# class Supervisor(User):
+#     station_branch = models.ForeignKey(
+#         "stations.StationBranch", on_delete=models.CASCADE, related_name="supervisors"
+#     )
+
+#     def save(self, *args, **kwargs):
+#         self.role = User.UserRoles.Supervisor
+#         super().save(*args, **kwargs)
+
+#     class Meta:
+#         verbose_name = "Supervisor"
+#         verbose_name_plural = "Supervisors"
+
+
+# class Agent(User):
+#     station_branch = models.ForeignKey(
+#         "stations.StationBranch", on_delete=models.CASCADE, related_name="agents"
+#     )
+
+#     def save(self, *args, **kwargs):
+#         self.role = User.UserRoles.Agent
+#         super().save(*args, **kwargs)
+
+#     class Meta:
+#         verbose_name = "Agent"
+#         verbose_name_plural = "Agents"

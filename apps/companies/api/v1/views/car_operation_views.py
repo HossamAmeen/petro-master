@@ -12,27 +12,35 @@ from drf_spectacular.utils import (
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.companies.api.v1.filters import CarOperationFilter
 from apps.companies.api.v1.serializers.car_operation_serializer import (
+    CreateCarOperationSerializer,
     ListCarOperationSerializer,
+    ListCompanyCarOperationSerializer,
     SingleCarOperationSerializer,
+    UpdateCarOperationSerializer,
 )
 from apps.companies.helper import export_car_operations, get_car_operations_data
 from apps.companies.models.company_models import CompanyBranch
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
-from apps.shared.permissions import CompanyPermission
+from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
+from apps.shared.mixins.inject_user_mixins import InjectUserMixin
+from apps.shared.permissions import (
+    CompanyPermission,
+    DashboardPermission,
+    EitherPermission,
+    StationPermission,
+)
 from apps.stations.models.service_models import Service
 from apps.users.models import User
 
 
-class CarOperationViewSet(viewsets.ModelViewSet):
-    def destroy(self, request, *args, **kwargs):
-        raise CustomValidationError("disallowed delete method")
-
+class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CarOperation.objects.select_related(
         "car",
         "driver",
@@ -54,13 +62,45 @@ class CarOperationViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "export":
             return [CompanyPermission()]
+        if self.action == "download_excel":
+            return [CompanyPermission()]
+        if self.action == "list":
+            return [
+                IsAuthenticated(),
+                EitherPermission(
+                    [CompanyPermission, DashboardPermission, StationPermission]
+                ),
+            ]
+        if self.action == "retrieve":
+            return [
+                IsAuthenticated(),
+                EitherPermission(
+                    [CompanyPermission, DashboardPermission, StationPermission]
+                ),
+            ]
+        if self.action == "create":
+            return [DashboardPermission()]
+        if self.action == "partial_update":
+            return [
+                IsAuthenticated(),
+                EitherPermission(
+                    [CompanyPermission, DashboardPermission, StationPermission()]
+                ),
+            ]
         return super().get_permissions()
 
     def get_serializer_class(self):
         if self.action == "list":
-            return ListCarOperationSerializer
+            if self.request.user.role in COMPANY_ROLES:
+                return ListCompanyCarOperationSerializer
+            elif self.request.user.role in DASHBOARD_ROLES:
+                return ListCarOperationSerializer
         if self.action == "retrieve":
             return SingleCarOperationSerializer
+        if self.action == "create":
+            return CreateCarOperationSerializer
+        if self.action == "partial_update":
+            return UpdateCarOperationSerializer
         return ListCarOperationSerializer
 
     def get_queryset(self):
@@ -80,7 +120,10 @@ class CarOperationViewSet(viewsets.ModelViewSet):
                     Service.ServiceType.DIESEL,
                 ],
             )
-        return self.queryset.filter(car__branch__company=self.request.company_id)
+        return self.queryset.distinct()
+
+    def destroy(self, request, *args, **kwargs):
+        raise CustomValidationError("disallowed delete method")
 
     @extend_schema(
         parameters=[

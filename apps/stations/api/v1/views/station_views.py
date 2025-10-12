@@ -22,7 +22,11 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.operation_model import CarOperation
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
-from apps.shared.permissions import DashboardPermission, StationPermission
+from apps.shared.permissions import (
+    DashboardPermission,
+    EitherPermission,
+    StationPermission,
+)
 from apps.stations.api.station_serializers.car_operation_serializer import (
     ListStationHomeCarOperationSerializer,
 )
@@ -40,7 +44,18 @@ from apps.users.models import StationBranchManager, StationOwner, User, Worker
 
 
 class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    queryset = Station.objects.select_related("district").order_by("-id")
+    queryset = (
+        Station.objects.select_related("district")
+        .prefetch_related("branches")
+        .annotate(
+            branches_count=Count("branches"),
+            services_count=Count("branches__station_branch_services"),
+            managers_count=Count("branches__managers"),
+            workers_count=Count("branches__workers"),
+            total_balance=Sum("balance") + Sum("branches__balance"),
+        )
+        .order_by("-id")
+    )
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -50,8 +65,20 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return ListStationSerializer
 
     def get_permissions(self):
-        if self.action == "create":
+        if self.action in ["create", "list"]:
             return [IsAuthenticated(), DashboardPermission()]
+        if self.action == "partial_update":
+            return [
+                IsAuthenticated(),
+                EitherPermission([DashboardPermission, StationPermission]),
+            ]
+        if self.action == "list":
+            return [
+                IsAuthenticated(),
+                EitherPermission([DashboardPermission]),
+            ]
+        if self.action == "retrieve":
+            return [IsAuthenticated(), DashboardPermission(), StationPermission()]
         return super().get_permissions()
 
 

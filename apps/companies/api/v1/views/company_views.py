@@ -226,6 +226,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     message = f"تم شحن رصيد فرع {company_branch.name} برصيد {serializer.validated_data['amount']}"
                     generate_company_transaction(
                         company_id=self.request.company_id,
+                        company_branch_id=company_branch.id,
                         amount=serializer.validated_data["amount"],
                         status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
                         description=message,
@@ -266,6 +267,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     message = f"تم خصم مبلغ {serializer.validated_data['amount']} من رصيد فرع {company_branch.name}"
                     generate_company_transaction(
                         company_id=self.request.company_id,
+                        company_branch_id=company_branch.id,
                         amount=serializer.validated_data["amount"],
                         status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
                         description=message,

@@ -3,13 +3,14 @@ from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import DASHBOARD_ROLES, STATION_ROLES
 from apps.stations.api.v1.serializers import (
-    ListStationSerializer,
     SingleStationBranchSerializer,
     StationBranchWithDistrictSerializer,
+    StationNameSerializer,
 )
 from apps.stations.models.stations_models import StationBranch
-from apps.users.models import StationOwner, User, Worker
+from apps.users.models import StationBranchManager, StationOwner, User, Worker
 
 
 class SingleWorkerSerializer(serializers.ModelSerializer):
@@ -40,12 +41,12 @@ class CreateWorkerSerializer(serializers.ModelSerializer):
 
     def validate_phone_number(self, phone_number):
         if User.objects.filter(phone_number=phone_number).exists():
-            raise serializers.ValidationError("هذا الرقم موجود بالفعل.")
+            raise CustomValidationError("هذا الرقم موجود بالفعل.")
         return phone_number
 
     def validate(self, attrs):
         if attrs["password"] != attrs["confirm_password"]:
-            raise serializers.ValidationError("Passwords do not match.")
+            raise CustomValidationError("Passwords do not match.")
 
         return attrs
 
@@ -68,14 +69,16 @@ class CreateWorkerSerializer(serializers.ModelSerializer):
         )
         validated_data["password"] = make_password(validated_data["password"])
         validated_data.pop("confirm_password")
-        # check station branch related to station
-        if (
-            validated_data["station_branch"].station_id
-            != self.context["request"].station_id
-        ):
-            raise CustomValidationError(
-                message="Station branch not related to your station."
-            )
+        if self.context["request"].user.role in STATION_ROLES:
+            validated_data["station_id"] = self.context["request"].user.station_id
+            # check station branch related to station
+            if (
+                validated_data["station_branch"].station_id
+                != self.context["request"].station_id
+            ):
+                raise CustomValidationError(
+                    message="Station branch not related to your station."
+                )
         return Worker.objects.create(**validated_data)
 
 
@@ -90,9 +93,9 @@ class UpdateWorkerSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if "password" in attrs:
             if "confirm_password" not in attrs:
-                raise serializers.ValidationError("Confirm password is required.")
+                raise CustomValidationError("Confirm password is required.")
             if attrs["password"] != attrs["confirm_password"]:
-                raise serializers.ValidationError("Passwords do not match.")
+                raise CustomValidationError("Passwords do not match.")
         return attrs
 
     def update(self, instance, validated_data):
@@ -120,7 +123,7 @@ class StationOwnerSerializer(serializers.ModelSerializer):
 
 
 class ListStationOwnerSerializer(serializers.ModelSerializer):
-    station = ListStationSerializer()
+    station = StationNameSerializer()
 
     class Meta:
         model = StationOwner
@@ -136,6 +139,7 @@ class StationBranchSerializer(serializers.ModelSerializer):
 
 class ListStationBranchManagerSerializer(serializers.ModelSerializer):
     station_branches = serializers.SerializerMethodField()
+    station = StationNameSerializer()
 
     class Meta:
         model = StationOwner
@@ -152,10 +156,36 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
+    station_branches = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+    station_id = serializers.IntegerField(required=False)
 
     class Meta:
         model = StationOwner
-        fields = ["id", "name", "phone_number", "email", "password", "confirm_password"]
+        fields = [
+            "id",
+            "name",
+            "phone_number",
+            "email",
+            "password",
+            "confirm_password",
+            "station_branches",
+            "station_id",
+        ]
+
+    def validate(self, attrs):
+        if self.context["request"].user.role in DASHBOARD_ROLES:
+            if self.context["request"].method == "POST" and "station_id" not in attrs:
+                raise CustomValidationError("لازم اختيار المحطة")
+
+            if "station_branches" in attrs:
+                self.station_branches = StationBranch.objects.filter(
+                    id__in=attrs["station_branches"], station_id=attrs["station_id"]
+                )
+                if self.station_branches.count() != len(attrs["station_branches"]):
+                    raise CustomValidationError("بعض الفروع غير موجودة في المحطة")
+        return super().validate(attrs)
 
     def create(self, validated_data):
         validated_data["role"] = User.UserRoles.StationBranchManager
@@ -163,15 +193,32 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
             "email", validated_data["phone_number"] + "@petro.com"
         )
         if "password" not in validated_data:
-            raise serializers.ValidationError("كلمة المرور مطلوبة.")
+            raise CustomValidationError("كلمة المرور مطلوبة.")
         if "confirm_password" not in validated_data:
-            raise serializers.ValidationError("تاكيد كلمة المرور مطلوب.")
+            raise CustomValidationError("تاكيد كلمة المرور مطلوب.")
         if validated_data["password"] != validated_data.get("confirm_password"):
-            raise serializers.ValidationError("كلمتا المرور غير متطابقة.")
+            raise CustomValidationError("كلمتا المرور غير متطابقة.")
         validated_data["password"] = make_password(validated_data["password"])
         validated_data.pop("confirm_password")
-        validated_data["station_id"] = self.context["request"].station_id
-        return StationOwner.objects.create(**validated_data)
+        if self.context["request"].user.role == User.UserRoles.StationOwner:
+            validated_data["station_id"] = self.context["request"].station_id
+
+        station_branches = validated_data.pop("station_branches")
+
+        station_manger = StationOwner.objects.create(**validated_data)
+        if station_branches:
+            StationBranchManager.objects.bulk_create(
+                [
+                    StationBranchManager(
+                        user=station_manger,
+                        station_branch_id=branch,
+                        created_by=self.context["request"].user,
+                        updated_by=self.context["request"].user,
+                    )
+                    for branch in station_branches
+                ]
+            )
+        return station_manger
 
     def update(self, instance, validated_data):
         if "password" in validated_data:
@@ -189,4 +236,18 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
                 )
             validated_data["password"] = make_password(validated_data["password"])
             validated_data.pop("confirm_password")
+
+        if "station_branches" in validated_data:
+            instance.station_branch_managers.all().delete()
+            StationBranchManager.objects.bulk_create(
+                [
+                    StationBranchManager(
+                        user=instance,
+                        station_branch_id=branch,
+                        created_by=self.context["request"].user,
+                        updated_by=self.context["request"].user,
+                    )
+                    for branch in validated_data["station_branches"]
+                ]
+            )
         return super().update(instance, validated_data)

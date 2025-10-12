@@ -10,6 +10,7 @@ from apps.accounting.helpers import generate_station_transaction
 from apps.accounting.models import StationKhaznaTransaction
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import DASHBOARD_ROLES
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import DashboardPermission, StationOwnerPermission
 from apps.stations.api.station_serializers.station_branch_serializers import (
@@ -19,6 +20,7 @@ from apps.stations.api.station_serializers.station_branch_serializers import (
 from apps.stations.api.v1.serializers import (
     AssignServicesSerializer,
     ListServiceSerializer,
+    ListStationBranchForDashboardSerializer,
     ListStationBranchForLandingpageSerializer,
     ListStationBranchSerializer,
     StationBranchAssignManagersSerializer,
@@ -76,6 +78,10 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return StationBranchUpdateSerializer
         elif self.action == "create":
             return StationBranchCreationSerializer
+        elif self.action == "list":
+            if self.request.user.role in DASHBOARD_ROLES:
+                return ListStationBranchForDashboardSerializer
+            return ListStationBranchSerializer
         return super().get_serializer_class()
 
     def get_queryset(self):
@@ -85,6 +91,12 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return self.queryset.filter(station__owners=self.request.user)
         if self.request.user.role == User.UserRoles.StationBranchManager:
             return self.queryset.filter(managers__user=self.request.user)
+        if self.request.user.role in DASHBOARD_ROLES:
+            return self.queryset.annotate(
+                services_count=Count("station_branch_services", distinct=True),
+                managers_count=Count("managers", distinct=True),
+                workers_count=Count("workers", distinct=True),
+            )
         return self.queryset.distinct()
 
     @action(detail=True, methods=["post"], url_path="update-balance")
@@ -188,13 +200,12 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     )
     @action(detail=True, methods=["GET"], url_path="services")
     def services(self, request, pk=None, *args, **kwargs):
-        services = Service.objects.order_by("-id")
-        if self.request.user.role == User.UserRoles.StationOwner:
-            services = services.filter(station_branch_services__station_branch_id=pk)
+        services = Service.objects.filter(
+            station_branch_services__station_branch_id=pk
+        ).order_by("-id")
         if self.request.user.role == User.UserRoles.StationBranchManager:
             services = services.filter(
                 station_branch_services__station_branch__managers__user=self.request.user,
-                station_branch_services__station_branch_id=pk,
             )
         if request.query_params.get("types"):
             types = request.query_params.get("types").split(",")
