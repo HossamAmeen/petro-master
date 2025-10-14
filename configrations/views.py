@@ -20,7 +20,11 @@ from apps.shared.permissions import AdminPermission
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import Station, StationBranch
 from apps.users.models import User
-from configrations.serializers import ConfigrationsSerializer, SliderSerializer
+from configrations.serializers import (
+    ConfigrationsSerializer,
+    ContactUsSerializer,
+    SliderSerializer,
+)
 
 from .models import ConfigrationsModel, Slider
 
@@ -149,4 +153,7 @@ class StatisticsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
 class ContactUsView(APIView):
     def post(self, request):
+        serializer = ContactUsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         return Response(status=status.HTTP_200_OK)
