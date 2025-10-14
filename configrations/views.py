@@ -145,3 +145,8 @@ class StatisticsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         }
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class ContactUsView(APIView):
+    def post(self, request):
+        return Response(status=status.HTTP_200_OK)
