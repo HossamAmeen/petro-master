@@ -146,7 +146,8 @@ class StationGasOperationAPIView(APIView):
                     )
                 )
                 if (
-                    car.next_oil_change_km > 0
+                    car.next_oil_change_km
+                    and car.next_oil_change_km > 0
                     and car.next_oil_change_km <= car.last_meter
                 ):
                     # send notification to company owner to change oil for this car in arabic

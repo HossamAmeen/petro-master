@@ -1,5 +1,5 @@
 from django.db.models import Sum
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -151,9 +151,21 @@ class StatisticsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return Response(data, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=ContactUsSerializer,
+    responses={
+        200: OpenApiResponse(
+            response={
+                "type": "object",
+                "properties": {"message": {"type": "string"}},
+                "required": ["message"],
+            },
+            description="Contact us message sent successfully.",
+        )
+    },
+)
 class ContactUsView(APIView):
     def post(self, request):
         serializer = ContactUsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         return Response(status=status.HTTP_200_OK)
