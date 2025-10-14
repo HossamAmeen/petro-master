@@ -107,6 +107,11 @@ class UpdateCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
         model = CompanyKhaznaTransaction
         exclude = ("created_by", "updated_by", "reference_code", "is_internal")
 
+    def validate(self, attrs):
+        if attrs.get("company") != attrs["company_branch"].company:
+            raise CustomValidationError("الشركة غير مطابقة للفرع")
+        return attrs
+
     def update(self, instance, validated_data):
         if instance.status in [
             KhaznaTransaction.TransactionStatus.APPROVED,
@@ -165,6 +170,11 @@ class CreateStationKhaznaTransactionSerializer(serializers.ModelSerializer):
         model = StationKhaznaTransaction
         exclude = ("created_by", "updated_by", "reference_code", "is_internal")
 
+    def validate(self, attrs):
+        if attrs.get("station") != attrs["station_branch"].station:
+            raise CustomValidationError("المحطة غير مطابقة للفرع")
+        return attrs
+
     def create(self, validated_data):
         validated_data["reference_code"] = generate_unique_code(
             model=StationKhaznaTransaction,
@@ -209,6 +219,11 @@ class UpdateStationKhaznaTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = StationKhaznaTransaction
         exclude = ("created_by", "updated_by", "reference_code", "is_internal")
+
+    def validate(self, attrs):
+        if attrs.get("station") != attrs["station_branch"].station:
+            raise CustomValidationError("المحطة غير مطابقة للفرع")
+        return attrs
 
     def update(self, instance, validated_data):
         if instance.status in [

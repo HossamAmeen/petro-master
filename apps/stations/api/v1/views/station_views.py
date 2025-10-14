@@ -67,18 +67,11 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ["create", "list"]:
             return [IsAuthenticated(), DashboardPermission()]
-        if self.action == "partial_update":
+        if self.action in ["partial_update", "retrieve"]:
             return [
                 IsAuthenticated(),
                 EitherPermission([DashboardPermission, StationPermission]),
             ]
-        if self.action == "list":
-            return [
-                IsAuthenticated(),
-                EitherPermission([DashboardPermission]),
-            ]
-        if self.action == "retrieve":
-            return [IsAuthenticated(), DashboardPermission(), StationPermission()]
         return super().get_permissions()
 
 
