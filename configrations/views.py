@@ -104,10 +104,10 @@ class StatisticsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
                     status=CarOperation.OperationStatus.COMPLETED, created__date=today()
                 ).count(),
                 "total_profit": CarOperation.objects.filter(
-                    status=CompanyKhaznaTransaction.TransactionStatus.APPROVED
+                    status=CarOperation.OperationStatus.COMPLETED
                 ).aggregate(Sum("profits"))["profits__sum"],
                 "total_profit_today": CarOperation.objects.filter(
-                    status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
+                    status=CarOperation.OperationStatus.COMPLETED,
                     created__date=today(),
                 ).aggregate(Sum("profits"))["profits__sum"],
             },
