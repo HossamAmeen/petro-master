@@ -308,6 +308,7 @@ if not ENVIRONMENT == "local":
         # Set profile_lifecycle to "trace" to automatically
         # run the profiler on when there is an active transaction
         profile_lifecycle="trace",
+        environment=ENVIRONMENT,
     )
 
 
