@@ -68,7 +68,7 @@ class CreateWorkerSerializer(serializers.ModelSerializer):
             "email", validated_data["phone_number"] + "@petro.com"
         )
         validated_data["password"] = make_password(validated_data["password"])
-        validated_data.pop("confirm_password")
+        validated_data.pop("confirm_password", None)
         if self.context["request"].user.role in STATION_ROLES:
             validated_data["station_id"] = self.context["request"].user.station_id
             # check station branch related to station
@@ -199,11 +199,11 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
         if validated_data["password"] != validated_data.get("confirm_password"):
             raise CustomValidationError("كلمتا المرور غير متطابقة.")
         validated_data["password"] = make_password(validated_data["password"])
-        validated_data.pop("confirm_password")
+        validated_data.pop("confirm_password", None)
         if self.context["request"].user.role == User.UserRoles.StationOwner:
             validated_data["station_id"] = self.context["request"].station_id
 
-        station_branches = validated_data.pop("station_branches")
+        station_branches = validated_data.pop("station_branches", None)
 
         station_manger = StationOwner.objects.create(**validated_data)
         if station_branches:
@@ -235,7 +235,7 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
                     errors=[],
                 )
             validated_data["password"] = make_password(validated_data["password"])
-            validated_data.pop("confirm_password")
+            validated_data.pop("confirm_password", None)
 
         if "station_branches" in validated_data:
             instance.station_branch_managers.all().delete()

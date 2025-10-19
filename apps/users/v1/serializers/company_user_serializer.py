@@ -49,7 +49,7 @@ class CreateCompanyOwnerSerializer(serializers.ModelSerializer):
             "email", validated_data["phone_number"] + "@petro.com"
         )
         validated_data["password"] = make_password(validated_data["password"])
-        company_branches = validated_data.pop("company_branches")
+        company_branches = validated_data.pop("company_branches", None)
         company_user = CompanyUser.objects.create(**validated_data)
         if company_branches:
             CompanyBranchManager.objects.bulk_create(
