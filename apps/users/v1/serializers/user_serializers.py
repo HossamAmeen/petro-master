@@ -36,11 +36,11 @@ class CreateUserSerializer(serializers.ModelSerializer):
             "email", validated_data["phone_number"] + "@petro.com"
         )
         validated_data["password"] = make_password(validated_data["password"])
-        validated_data.pop("confirm_password")
+        validated_data.pop("confirm_password", None)
         return User.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        confirm_password = validated_data.pop("confirm_password")
+        confirm_password = validated_data.pop("confirm_password", None)
         if validated_data.get("password"):
             if confirm_password != validated_data["password"]:
                 raise CustomValidationError("Passwords do not match")
@@ -50,7 +50,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data.pop("password")
+        data.pop("password", None)
         return data
 
 
