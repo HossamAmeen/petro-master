@@ -14,6 +14,7 @@ from .models import (
     FirebaseToken,
     StationBranchManager,
     StationOwner,
+    Supervisor,
     User,
     Worker,
 )
@@ -440,6 +441,39 @@ class WorkerInterface(admin.ModelAdmin):
 
     created.admin_order_field = "created"
     created.short_description = _("Created")
+
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign the logged-in user as the
+        'created_by' when creating a new Driver.
+        """
+        if not obj.pk:  # Only set created_by on creation, not updates
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        obj.save()
+
+
+@admin.register(Supervisor)
+class SupervisorInterface(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "name",
+        "phone_number",
+        "is_active",
+    )
+    search_fields = ("name", "phone_number")
+    list_filter = ("is_active", "district")
+    ordering = ("-id",)
+    list_per_page = 10
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def created(self, obj):
+        return obj.created
+
+    created.admin_order_field = "id"
+    created.short_description = _("id")
 
     def save_model(self, request, obj, form, change):
         """

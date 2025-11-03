@@ -155,18 +155,17 @@ class Worker(User):
         verbose_name_plural = "Workers"
 
 
-# class Supervisor(User):
-#     station_branch = models.ForeignKey(
-#         "stations.StationBranch", on_delete=models.CASCADE, related_name="supervisors"
-#     )
+class Supervisor(User):
+    district = models.ManyToManyField("geo.District", related_name="supervisors")
+    credit_limit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
-#     def save(self, *args, **kwargs):
-#         self.role = User.UserRoles.Supervisor
-#         super().save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        self.role = User.UserRoles.Supervisor
+        super().save(*args, **kwargs)
 
-#     class Meta:
-#         verbose_name = "Supervisor"
-#         verbose_name_plural = "Supervisors"
+    class Meta:
+        verbose_name = "Supervisor"
+        verbose_name_plural = "Supervisors"
 
 
 # class Agent(User):
