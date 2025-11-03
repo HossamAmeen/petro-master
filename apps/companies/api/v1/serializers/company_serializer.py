@@ -10,6 +10,10 @@ from apps.geo.v1.serializers import ListDistrictSerializer
 
 class ListCompanySerializer(serializers.ModelSerializer):
     district = ListDistrictSerializer()
+    total_branches = serializers.IntegerField()
+    total_cars = serializers.IntegerField()
+    total_drivers = serializers.IntegerField()
+    total_managers = serializers.IntegerField()
 
     class Meta:
         model = Company
