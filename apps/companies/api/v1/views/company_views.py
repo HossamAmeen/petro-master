@@ -56,7 +56,16 @@ from apps.users.models import CompanyBranchManager, User
 
 
 class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
-    queryset = Company.objects.select_related("district").order_by("-id")
+    queryset = (
+        Company.objects.select_related("district")
+        .annotate(
+            total_branches=Count("branches", distinct=True),
+            total_cars=Count("branches__cars", distinct=True),
+            total_drivers=Count("branches__drivers", distinct=True),
+            total_managers=Count("branches__managers", distinct=True),
+        )
+        .order_by("-id")
+    )
 
     def get_serializer_class(self):
         if self.request.method == "GET":
