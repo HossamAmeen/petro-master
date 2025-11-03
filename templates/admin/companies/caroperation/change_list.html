@@ -1,0 +1,118 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block result_list %}
+    <div id="total-summary" style="margin: 10px 0; padding: 10px; background-color: #f5f5f5; border: 1px solid #ddd;">
+        <h3 style="margin: 0;">Totals:</h3>
+        <p style="margin: 5px 0;">Total Amount: <span id="total-amount">0</span></p>
+        <p style="margin: 5px 0;">Total Cost: <span id="total-cost">0</span></p>
+        <p style="margin: 5px 0;">Total Station Cost: <span id="total-station-cost">0</span></p>
+        <p style="margin: 5px 0;">Total Company Cost: <span id="total-company-cost">0</span></p>
+        <p style="margin: 5px 0;">Total Profits: <span id="total-profits">0</span></p>
+    </div>
+    {{ block.super }}
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to format number with commas
+    function formatNumber(number) {
+        return number.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function updateTotals() {
+        let totalAmount = 0;
+        let totalCost = 0;
+        let totalStationCost = 0;
+        let totalCompanyCost = 0;
+        let totalProfits = 0;
+
+        // Find the table and get indices of columns
+        const table = document.getElementById('result_list');
+        if (!table) return;
+
+        const headers = table.querySelectorAll('thead th');
+        let amountIndex = -1;
+        let costIndex = -1;
+        let stationCostIndex = -1;
+        let companyCostIndex = -1;
+        let profitsIndex = -1;
+
+        headers.forEach((header, index) => {
+            const headerText = header.textContent.trim().toLowerCase();
+            if (headerText === 'amount') {
+                amountIndex = index;
+            } else if (headerText === 'cost') {
+                costIndex = index;
+            } else if (headerText === 'station cost') {
+                stationCostIndex = index;
+            } else if (headerText === 'company cost') {
+                companyCostIndex = index;
+            } else if (headerText === 'profits') {
+                profitsIndex = index;
+            }
+        });
+
+        // Sum the columns
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            if (amountIndex !== -1) {
+                const amountCell = row.cells[amountIndex];
+                const amountText = amountCell.textContent.trim();
+                const amount = parseFloat(amountText) || 0;
+                totalAmount += amount;
+            }
+            if (costIndex !== -1) {
+                const costCell = row.cells[costIndex];
+                const costText = costCell.textContent.trim();
+                const cost = parseFloat(costText) || 0;
+                totalCost += cost;
+            }
+            if (stationCostIndex !== -1) {
+                const stationCostCell = row.cells[stationCostIndex];
+                const stationCostText = stationCostCell.textContent.trim();
+                const stationCost = parseFloat(stationCostText) || 0;
+                totalStationCost += stationCost;
+            }
+            if (companyCostIndex !== -1) {
+                const companyCostCell = row.cells[companyCostIndex];
+                const companyCostText = companyCostCell.textContent.trim();
+                const companyCost = parseFloat(companyCostText) || 0;
+                totalCompanyCost += companyCost;
+            }
+            if (profitsIndex !== -1) {
+                const profitsCell = row.cells[profitsIndex];
+                const profitsText = profitsCell.textContent.trim();
+                const profits = parseFloat(profitsText) || 0;
+                totalProfits += profits;
+            }
+        });
+
+        // Update the totals display
+        document.getElementById('total-amount').textContent = formatNumber(totalAmount);
+        document.getElementById('total-cost').textContent = formatNumber(totalCost);
+        document.getElementById('total-station-cost').textContent = formatNumber(totalStationCost);
+        document.getElementById('total-company-cost').textContent = formatNumber(totalCompanyCost);
+        document.getElementById('total-profits').textContent = formatNumber(totalProfits);
+    }
+
+    // Initial calculation
+    updateTotals();
+
+    // Update totals when list is filtered
+    const observer = new MutationObserver(updateTotals);
+    const resultList = document.getElementById('result_list');
+    if (resultList) {
+        observer.observe(resultList, {
+            childList: true,
+            subtree: true
+        });
+    }
+});
+</script>
+{% endblock %}

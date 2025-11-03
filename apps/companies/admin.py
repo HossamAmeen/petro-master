@@ -561,6 +561,7 @@ class CreatedDateRangeFilter(admin.SimpleListFilter):
 
 @admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
+
     def save_model(self, request, obj, form, change):
         """
         Automatically assign the logged-in user as the
@@ -570,6 +571,24 @@ class CarOperationAdmin(admin.ModelAdmin):
             obj.created_by = request.user
         obj.updated_by = request.user
         obj.save()
+
+    def get_sum_cost(self, request):
+        queryset = self.get_queryset(request)
+        return queryset.aggregate(total_cost=Sum("cost"))["total_cost"] or 0
+
+    def get_sum_amount(self, request):
+        queryset = self.get_queryset(request)
+        return queryset.aggregate(total_amount=Sum("amount"))["total_amount"] or 0
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        queryset = self.get_queryset(request)
+        queryset = queryset.aggregate(
+            total_cost=Sum("cost"), total_amount=Sum("amount")
+        )
+        extra_context["sum_cost"] = queryset["total_cost"] or 0
+        extra_context["sum_amount"] = queryset["total_amount"] or 0
+        return super().changelist_view(request, extra_context=extra_context)
 
     list_display = (
         "id",
@@ -606,7 +625,7 @@ class CarOperationAdmin(admin.ModelAdmin):
     )
 
     readonly_fields = ("code", "created_by", "updated_by")
-    list_per_page = 50
+    list_per_page = 20
 
     def branch_company(self, obj):
         return obj.car.branch.company.name
