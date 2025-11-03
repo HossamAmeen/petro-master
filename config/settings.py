@@ -181,7 +181,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CSRF_TRUSTED_ORIGINS = ["https://api.petro-master.org", "https://petro-master.org"]
 
 REST_FRAMEWORK = {
-    # "EXCEPTION_HANDLER": "drf_standardized_errors.handler.exception_handler",
     "EXCEPTION_HANDLER": "apps.shared.exceptions.custom_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "apps.shared.pagination_class.CustomLimitOffsetPagination",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
@@ -189,7 +188,6 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    # set filter_backends as default
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",

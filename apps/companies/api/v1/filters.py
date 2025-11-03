@@ -56,6 +56,7 @@ class CarFilter(django_filters.FilterSet):
         method="filter_by_fuel_type",
         help_text="Filter by fuel type example fuel_type=diesel,solar,electric",
     )
+    company = django_filters.NumberFilter(field_name="branch__company")
 
     def filter_by_fuel_type(self, queryset, name, value):
         fuel_type_values = value.split(",")
@@ -68,6 +69,7 @@ class CarFilter(django_filters.FilterSet):
             "fuel_type",
             "city",
             "is_with_odometer",
+            "company",
         ]
 
 
