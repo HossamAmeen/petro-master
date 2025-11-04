@@ -49,38 +49,11 @@ class CreateCompanyOwnerSerializer(serializers.ModelSerializer):
             "email", validated_data["phone_number"] + "@petro.com"
         )
         validated_data["password"] = make_password(validated_data["password"])
-        company_branches = validated_data.pop("company_branches", None)
-        company_user = CompanyUser.objects.create(**validated_data)
-        if company_branches:
-            CompanyBranchManager.objects.bulk_create(
-                [
-                    CompanyBranchManager(
-                        user=company_user,
-                        company_branch_id=branch,
-                        created_by=self.context["request"].user,
-                        updated_by=self.context["request"].user,
-                    )
-                    for branch in company_branches
-                ]
-            )
-        return company_user
+        return CompanyUser.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
         if "password" in validated_data:
             validated_data["password"] = make_password(validated_data["password"])
-        if "company_branches" in validated_data:
-            instance.company_branch_managers.all().delete()
-            CompanyBranchManager.objects.bulk_create(
-                [
-                    CompanyBranchManager(
-                        user=instance,
-                        company_branch_id=branch,
-                        created_by=self.context["request"].user,
-                        updated_by=self.context["request"].user,
-                    )
-                    for branch in validated_data["company_branches"]
-                ]
-            )
         return super().update(instance, validated_data)
 
 
@@ -129,10 +102,21 @@ class ListCompanyBranchManagerSerializer(serializers.ModelSerializer):
 class CompanyBranchManagerSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)
     password = serializers.CharField(required=True, write_only=True)
+    company_branches = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
 
     class Meta:
         model = CompanyUser
-        fields = ["id", "name", "email", "phone_number", "role", "password"]
+        fields = [
+            "id",
+            "name",
+            "email",
+            "phone_number",
+            "role",
+            "password",
+            "company_branches",
+        ]
 
     def create(self, validated_data):
         validated_data["role"] = User.UserRoles.CompanyBranchManager
@@ -141,10 +125,38 @@ class CompanyBranchManagerSerializer(serializers.ModelSerializer):
         )
         validated_data["password"] = make_password(validated_data["password"])
         validated_data["company_id"] = self.context["request"].company_id
-        return CompanyUser.objects.create(**validated_data)
+        company_branches = validated_data.pop("company_branches", None)
+        company_user = CompanyUser.objects.create(**validated_data)
+        if company_branches:
+            CompanyBranchManager.objects.bulk_create(
+                [
+                    CompanyBranchManager(
+                        user=company_user,
+                        company_branch_id=branch,
+                        created_by=self.context["request"].user,
+                        updated_by=self.context["request"].user,
+                    )
+                    for branch in company_branches
+                ]
+            )
+        return company_user
 
     def update(self, instance, validated_data):
         validated_data["company_id"] = self.context["request"].company_id
         if "password" in validated_data:
             validated_data["password"] = make_password(validated_data["password"])
-        return super().update(instance, validated_data)
+        company_branches = validated_data.pop("company_branches", None)
+        instance = super().update(instance, validated_data)
+        if company_branches:
+            CompanyBranchManager.objects.bulk_create(
+                [
+                    CompanyBranchManager(
+                        user=instance,
+                        company_branch_id=branch,
+                        created_by=self.context["request"].user,
+                        updated_by=self.context["request"].user,
+                    )
+                    for branch in company_branches
+                ]
+            )
+        return instance
