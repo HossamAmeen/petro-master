@@ -96,6 +96,7 @@ class ListCompanyOwnerSerializer(serializers.ModelSerializer):
             "email",
             "phone_number",
             "role",
+            "company",
             "password",
             "created",
             "modified",

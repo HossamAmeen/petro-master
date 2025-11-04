@@ -48,7 +48,6 @@ class CompanyBranchManagerViewSet(InjectUserMixin, viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return ListCompanyBranchManagerSerializer
-
         return CompanyBranchManagerSerializer
 
     def get_permissions(self):

@@ -2,7 +2,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.users.v1.views.agent_views import SupervisorViewSet
 
-from .views.company_users_view import CompanyBranchManagerViewSet
+from .views.company_users_view import CompanyBranchManagerViewSet, CompanyOwnerViewSet
 from .views.station_users_view import (
     StationBranchManagerViewSet,
     StationOwnerViewSet,
@@ -13,6 +13,8 @@ from .views.users_view import FirebaseTokenViewSet, UserViewSet
 router = DefaultRouter()
 router.register("users", UserViewSet, basename="users")
 router.register("supervisors", SupervisorViewSet, basename="supervisors")
+# router.register("agents", AgentViewSet, basename="agents")
+router.register("company-owners", CompanyOwnerViewSet, basename="company-owners")
 router.register(
     "company-branch-managers",
     CompanyBranchManagerViewSet,
