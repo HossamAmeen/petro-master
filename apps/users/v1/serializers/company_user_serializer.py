@@ -157,6 +157,8 @@ class CompanyBranchManagerSerializer(serializers.ModelSerializer):
         if self.context["request"].user.role == User.UserRoles.CompanyOwner:
             validated_data["company_id"] = self.context["request"].company_id
         elif self.context["request"].user.role in DASHBOARD_ROLES:
+            if "company_id" not in validated_data:
+                raise CustomValidationError("company_id is required")
             validated_data["company_id"] = validated_data["company_id"]
         company_branches = validated_data.pop("company_branches", None)
         company_user = CompanyUser.objects.create(**validated_data)
