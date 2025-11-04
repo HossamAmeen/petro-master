@@ -90,7 +90,6 @@ class ListCompanyBranchManagerSerializer(serializers.ModelSerializer):
             "email",
             "phone_number",
             "role",
-            "password",
             "created",
             "modified",
             "created_by",
@@ -114,6 +113,7 @@ class CompanyBranchManagerSerializer(serializers.ModelSerializer):
             "email",
             "phone_number",
             "role",
+            "company_id",
             "password",
             "company_branches",
         ]
@@ -124,7 +124,10 @@ class CompanyBranchManagerSerializer(serializers.ModelSerializer):
             "email", validated_data["phone_number"] + "@petro.com"
         )
         validated_data["password"] = make_password(validated_data["password"])
-        validated_data["company_id"] = self.context["request"].company_id
+        if self.context["request"].user.role == User.UserRoles.CompanyOwner:
+            validated_data["company_id"] = self.context["request"].company_id
+        elif self.context["request"].user.role in DASHBOARD_ROLES:
+            validated_data["company_id"] = validated_data["company_id"]
         company_branches = validated_data.pop("company_branches", None)
         company_user = CompanyUser.objects.create(**validated_data)
         if company_branches:
@@ -142,7 +145,10 @@ class CompanyBranchManagerSerializer(serializers.ModelSerializer):
         return company_user
 
     def update(self, instance, validated_data):
-        validated_data["company_id"] = self.context["request"].company_id
+        if self.context["request"].user.role == User.UserRoles.CompanyOwner:
+            validated_data["company_id"] = self.context["request"].company_id
+        elif self.context["request"].user.role in DASHBOARD_ROLES:
+            validated_data["company_id"] = validated_data["company_id"]
         if "password" in validated_data:
             validated_data["password"] = make_password(validated_data["password"])
         company_branches = validated_data.pop("company_branches", None)
