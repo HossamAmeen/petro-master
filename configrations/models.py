@@ -23,6 +23,8 @@ class ConfigrationsModel(models.Model):
     x_link = models.URLField(null=True, blank=True)
     youtube_link = models.URLField(null=True, blank=True)
     linkedin_link = models.URLField(null=True, blank=True)
+    android_app_link = models.URLField(null=True, blank=True)
+    ios_app_link = models.URLField(null=True, blank=True)
 
 
 class Slider(models.Model):
