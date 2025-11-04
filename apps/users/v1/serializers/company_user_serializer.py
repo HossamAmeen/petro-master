@@ -98,6 +98,36 @@ class ListCompanyBranchManagerSerializer(serializers.ModelSerializer):
         ]
 
 
+class RetrieveCompanyBranchManagerSerializer(serializers.ModelSerializer):
+    created_by = SingleUserSerializer()
+    updated_by = SingleUserSerializer()
+    company_branches = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompanyUser
+        fields = [
+            "id",
+            "name",
+            "email",
+            "phone_number",
+            "role",
+            "company_branches",
+            "created",
+            "modified",
+            "created_by",
+            "updated_by",
+            "company_id",
+        ]
+
+    def get_company_branches(self, obj):
+        from apps.companies.api.v1.serializers.branch_serializers import (
+            ListCompanyBranchNameSerializer,
+        )
+
+        branches = CompanyBranch.objects.filter(managers__user=obj)
+        return ListCompanyBranchNameSerializer(branches, many=True).data
+
+
 class CompanyBranchManagerSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)
     password = serializers.CharField(required=True, write_only=True)
