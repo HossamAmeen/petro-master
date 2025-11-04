@@ -18,10 +18,14 @@ from apps.users.v1.serializers.company_user_serializer import (
 
 
 class CompanyOwnerViewSet(viewsets.ModelViewSet):
-    queryset = CompanyUser.objects.filter(role=User.UserRoles.CompanyOwner)
+    queryset = (
+        CompanyUser.objects.filter(role=User.UserRoles.CompanyOwner)
+        .select_related("created_by", "updated_by")
+        .order_by("-id")
+    )
 
     def get_serializer_class(self):
-        if self.action == "list":
+        if self.request.method == "GET":
             return ListCompanyOwnerSerializer
         return CreateCompanyOwnerSerializer
 
