@@ -168,15 +168,19 @@ class Supervisor(User):
         verbose_name_plural = "Supervisors"
 
 
-# class Agent(User):
-#     station_branch = models.ForeignKey(
-#         "stations.StationBranch", on_delete=models.CASCADE, related_name="agents"
-#     )
+class Agent(User):
+    district = models.ManyToManyField("geo.District", related_name="supervisors")
+    credit_limit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    supervisor = models.ForeignKey(
+        Supervisor,
+        on_delete=models.CASCADE,
+        related_name="agents",
+    )
 
-#     def save(self, *args, **kwargs):
-#         self.role = User.UserRoles.Agent
-#         super().save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        self.role = User.UserRoles.Agent
+        super().save(*args, **kwargs)
 
-#     class Meta:
-#         verbose_name = "Agent"
-#         verbose_name_plural = "Agents"
+    class Meta:
+        verbose_name = "Agent"
+        verbose_name_plural = "Agents"

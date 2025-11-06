@@ -65,6 +65,7 @@ THIRD_PARTY_APPS = [
     "polymorphic",
     "gunicorn",
     "psycopg2",
+    "django_celery_results",
 ]
 
 LOCAL_APPS = [
@@ -316,3 +317,24 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000  # Increase as needed
 SMS_SMART_EGYPT_SENDER_NAME = env("SMS_SMART_EGYPT_SENDER_NAME")
 SMS_SMART_EGYPT_USERNAME = env("SMS_SMART_EGYPT_USERNAME")
 SMS_SMART_EGYPT_PASSWORD = env("SMS_SMART_EGYPT_PASSWORD")
+
+# Redis Cache Configuration
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{env('REDIS_HOST', default='127.0.0.1')}:{env('REDIS_PORT', default='6379')}/{env('REDIS_DB', default='0')}",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
+
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://127.0.0.1:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
