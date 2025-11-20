@@ -122,6 +122,6 @@ class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
             )
         if self.request.user.role == User.UserRoles.StationWorker:
             return self.queryset.filter(
-                station__branches__workers__user=self.request.user
+                created_by_id=self.request.user.id
             )
         return self.queryset
