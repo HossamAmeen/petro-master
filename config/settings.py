@@ -64,8 +64,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "polymorphic",
     "gunicorn",
-    "psycopg2",
-    "django_celery_results",
+    "psycopg2"
 ]
 
 LOCAL_APPS = [
