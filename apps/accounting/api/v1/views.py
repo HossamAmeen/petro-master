@@ -39,6 +39,14 @@ class KhaznaTransactionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 
+    def get_queryset(self):
+        if self.request.user.role == User.UserRoles.CompanyOwner:
+            return self.queryset.filter(company=self.request.company_id)
+        if self.request.user.role == User.UserRoles.CompanyBranchManager:
+            return self.queryset.filter(company=self.request.company_id)
+        return self.queryset
+
+
 class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CompanyKhaznaTransaction.objects.select_related(
         "company", "company_branch"
@@ -111,5 +119,9 @@ class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.request.user.role == User.UserRoles.StationBranchManager:
             return self.queryset.filter(
                 station__branches__managers__user=self.request.user
+            )
+        if self.request.user.role == User.UserRoles.StationWorker:
+            return self.queryset.filter(
+                station__branches__workers__user=self.request.user
             )
         return self.queryset
