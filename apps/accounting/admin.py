@@ -6,7 +6,7 @@ from apps.notifications.models import Notification
 from apps.shared.generate_code import generate_unique_code
 from apps.users.models import CompanyUser, StationOwner
 
-from .models import CompanyKhaznaTransaction, StationKhaznaTransaction
+from apps.accounting.models import CompanyKhaznaTransaction, StationKhaznaTransaction
 
 
 class CompanyKhaznaTransactionForm(forms.ModelForm):

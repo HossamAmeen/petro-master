@@ -62,7 +62,6 @@ THIRD_PARTY_APPS = [
     "django_extensions",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
-    "polymorphic",
     "gunicorn",
     "psycopg2",
 ]
