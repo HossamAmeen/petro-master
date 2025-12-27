@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticated
 
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
@@ -24,6 +25,8 @@ class CompanyOwnerViewSet(viewsets.ModelViewSet):
         .select_related("created_by", "updated_by")
         .order_by("-id")
     )
+    search_fields = ["name", "phone_number", "email"]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
 
     def get_serializer_class(self):
         if self.request.method == "GET":
