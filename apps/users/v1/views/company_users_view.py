@@ -47,6 +47,8 @@ class CompanyBranchManagerViewSet(InjectUserMixin, viewsets.ModelViewSet):
         .select_related("created_by", "updated_by")
         .order_by("-id")
     )
+    search_fields = ["name", "phone_number", "email"]
+    
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:

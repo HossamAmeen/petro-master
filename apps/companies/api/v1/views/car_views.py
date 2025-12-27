@@ -228,6 +228,13 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
         return Response({"balance": car.balance}, status=status.HTTP_200_OK)
 
+    def perform_destroy(self, instance):
+        if instance.balance > 0:
+            raise CustomValidationError(
+                message="لا يمكن حذف السيارة حاليا لانها تحتوي على رصيد",
+                code="not_found",
+            )
+        instance.delete()
 
 class VerifyDriverView(APIView):
     permission_classes = [IsAuthenticated, StationWorkerPermission]
