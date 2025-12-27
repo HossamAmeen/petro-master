@@ -21,7 +21,7 @@ from apps.users.v1.serializers.station_serializer import (
 
 
 class StationOwnerViewSet(viewsets.ModelViewSet):
-    queryset = StationOwner.objects.select_related("station").order_by("-id")
+    queryset = StationOwner.objects.select_related("station").filter(role=User.UserRoles.StationOwner).order_by("-id")
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = StationOwnerFilter
     search_fields = ["name", "phone_number", "email"]
