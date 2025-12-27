@@ -7,12 +7,15 @@ COMPANY_ROLES = [
     User.UserRoles.CompanyBranchManager,
 ]
 
+STATION_ADMIN_ROLES = [
+    User.UserRoles.StationOwner,
+    User.UserRoles.StationBranchManager,
+]
 STATION_ROLES = [
     User.UserRoles.StationOwner,
     User.UserRoles.StationBranchManager,
     User.UserRoles.StationWorker,
 ]
-
 
 SERVICE_UNIT_CHOICES = {
     Service.ServiceUnit.OTHER: "اخري",

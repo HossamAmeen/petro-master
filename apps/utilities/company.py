@@ -1,21 +1,26 @@
 from datetime import timedelta
+
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
-from apps.companies.models.company_models import Company, CompanyBranch, Car
-from apps.companies.models.company_cash_models import CompanyCashRequest
+
+from apps.accounting.api.v1.serializers.company_transaction_serializer import (
+    ListCompanyKhaznaTransactionSerializer,
+)
+from apps.accounting.models import CompanyKhaznaTransaction
 from apps.companies.api.v1.serializers.car_operation_serializer import (
     ListCompanyHomeCarOperationSerializer,
 )
+from apps.companies.models.company_cash_models import CompanyCashRequest
+from apps.companies.models.company_models import Car, Company, CompanyBranch
 from apps.companies.models.operation_model import CarOperation
-from apps.accounting.models import CompanyKhaznaTransaction
-from apps.accounting.api.v1.serializers.company_transaction_serializer import (
-    ListCompanyKhaznaTransactionSerializer
-)
+
 
 def company_home_for_owner(company_id):
-    branches_id = CompanyBranch.objects.filter(company_id=company_id).values_list("id", flat=True)
+    branches_id = CompanyBranch.objects.filter(company_id=company_id).values_list(
+        "id", flat=True
+    )
 
     branches_filter = Q(branches__id__in=set(branches_id))
 
@@ -117,9 +122,7 @@ def company_home_for_owner(company_id):
     }
 
     response_data["car_operations"] = ListCompanyHomeCarOperationSerializer(
-        CarOperation.objects.filter(car__branch__in=branches_id).order_by("-id")[
-            :3
-        ],
+        CarOperation.objects.filter(car__branch__in=branches_id).order_by("-id")[:3],
         many=True,
     ).data
     company_transactions = (

@@ -38,7 +38,6 @@ class KhaznaTransactionViewSet(viewsets.ModelViewSet):
     serializer_class = KhaznaTransactionSerializer
     permission_classes = [IsAuthenticated]
 
-
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
             return self.queryset.filter(company=self.request.company_id)
@@ -121,7 +120,5 @@ class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 station__branches__managers__user=self.request.user
             )
         if self.request.user.role == User.UserRoles.StationWorker:
-            return self.queryset.filter(
-                created_by_id=self.request.user.id
-            )
+            return self.queryset.filter(created_by_id=self.request.user.id)
         return self.queryset
