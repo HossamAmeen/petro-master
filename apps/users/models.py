@@ -169,9 +169,9 @@ class Supervisor(User):
 
 
 class Agent(User):
-    district = models.ManyToManyField("geo.District", related_name="supervisors")
+    district = models.ManyToManyField("geo.District", related_name="agents")
     credit_limit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    supervisor = models.ForeignKey(
+    team_head = models.ForeignKey(
         Supervisor,
         on_delete=models.CASCADE,
         related_name="agents",
