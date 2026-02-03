@@ -176,6 +176,20 @@ class CarForm(forms.ModelForm):
             "plate_color": forms.RadioSelect(choices=Car.PlateColor.choices),
         }
 
+    def clean_code(self):
+        code = self.cleaned_data.get("code")
+        if not code:
+            raise forms.ValidationError(_("This field is required."))
+
+        car_code = CarCode.objects.filter(code=code).first()
+        if not car_code:
+            raise forms.ValidationError(_("كود العربيه لا يوجد في النظام"))
+
+        if car_code.car and car_code.car != self.instance:
+            raise forms.ValidationError(_("Car code is already assigned to another car."))
+
+        return code
+
     def clean_fuel_allowed_days(self):
         fuel_allowed_days = self.cleaned_data.get("fuel_allowed_days")
         if not fuel_allowed_days:
@@ -240,31 +254,26 @@ class CarAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         """
         Automatically assign the logged-in user as the
-        'created_by' when creating a new Driver.
+        'created_by' when creating a new Car.
         """
-        if not obj.pk:  # Only set created_by on creation, not updates
+        if not obj.pk:  # Only set defaults on creation, not updates
             obj.created_by = request.user
             obj.balance = 0
             obj.fuel_consumption_rate = 0
             obj.number_of_fuelings_per_day = 0
             obj.number_of_washes_per_month = 0
-            obj.fuel_allowed_days = []
+            obj.fuel_allowed_days = form.cleaned_data.get("fuel_allowed_days", [])
             obj.is_blocked_balance_update = False
-        if obj.code:
-            car_code = CarCode.objects.filter(code=obj.code).first()
-            if car_code:
-                if car_code.car:
-                    if car_code.car != obj:
-                        raise forms.ValidationError("Car code is busy")
-                else:
-                    obj.save()
-                    car_code.car = obj
-                    car_code.save()
-            else:
-                raise forms.ValidationError("كود العربيه لا يوجد في النظام")
 
         obj.updated_by = request.user
         obj.save()
+
+        # Handle CarCode linkage
+        if obj.code:
+            car_code = CarCode.objects.filter(code=obj.code).first()
+            if car_code and car_code.car != obj:
+                car_code.car = obj
+                car_code.save()
 
     def get_fields(self, request, obj=None):
         fields = super().get_fields(request, obj)
@@ -624,7 +633,7 @@ class CarOperationAdmin(admin.ModelAdmin):
         # CreatedDateRangeFilter,
     )
 
-    readonly_fields = ("code", "created_by", "updated_by")
+    readonly_fields = ("code", "created_by", "updated_by", "created")
     list_per_page = 20
 
     def branch_company(self, obj):
