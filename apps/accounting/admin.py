@@ -32,6 +32,8 @@ class CompanyKhaznaTransactionForm(forms.ModelForm):
 @admin.register(CompanyKhaznaTransaction)
 class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
     form = CompanyKhaznaTransactionForm
+    list_per_page = 10
+    list_max_show_all = 0  # Disable "Show all" link
     list_display = (
         "id",
         "amount",
@@ -133,6 +135,10 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
                     type=Notification.NotificationType.MONEY,
                 )
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related("company")
+        return qs
+
 
 class StationKhaznaTransactionForm(forms.ModelForm):
     class Meta:
@@ -158,6 +164,8 @@ class StationKhaznaTransactionForm(forms.ModelForm):
 @admin.register(StationKhaznaTransaction)
 class StationKhaznaTransactionAdmin(admin.ModelAdmin):
     form = StationKhaznaTransactionForm
+    list_per_page = 10
+    list_max_show_all = 0  # Disable "Show all" link
     list_display = (
         "id",
         "amount",
@@ -256,3 +264,7 @@ class StationKhaznaTransactionAdmin(admin.ModelAdmin):
         if db_field.name == "station_branch":
             kwargs["required"] = False
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related("station")
+        return qs

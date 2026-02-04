@@ -144,13 +144,12 @@ class Car(AbstractBaseModel):
             else self.code
         )
 
-    def clean(self):
-        if self.permitted_fuel_amount > self.tank_capacity:
-            raise ValidationError("الكمية المسموح بها أكبر من حجم المخزون")
-
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = generate_unique_code(Car)
+        if self.permitted_fuel_amount > self.tank_capacity:
+            raise ValidationError("الكمية المسموح بها أكبر من حجم المخزون")
+
         super().save(*args, **kwargs)
 
     @property
