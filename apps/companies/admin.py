@@ -9,11 +9,24 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from apps.companies.models.operation_model import CarOperation
+from apps.geo.models import District
 from apps.shared.generate_code import generate_unique_code
 from apps.stations.models.service_models import Service
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, CarCode, Company, CompanyBranch, Driver
+
+
+class CompanyBranchForm(forms.ModelForm):
+    district = forms.ModelChoiceField(
+        queryset=District.objects.all(),
+        required=True,
+        empty_label=None
+    )
+
+    class Meta:
+        model = CompanyBranch
+        fields = "__all__"
 
 
 class BranchInline(admin.TabularInline):
@@ -104,6 +117,7 @@ class CompanyAdmin(admin.ModelAdmin):
 
 @admin.register(CompanyBranch)
 class CompanyBranchAdmin(admin.ModelAdmin):
+    form = CompanyBranchForm
     list_display = (
         "name",
         "email",
@@ -146,6 +160,8 @@ class CompanyBranchAdmin(admin.ModelAdmin):
         if not obj.pk:  # Only set created_by on creation, not updates
             obj.created_by = request.user
             obj.balance = 0
+        if not obj.district:
+            raise forms.ValidationError("District is required")
         obj.updated_by = request.user
         obj.save()
 
