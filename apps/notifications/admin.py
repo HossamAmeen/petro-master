@@ -6,6 +6,8 @@ from .models import Notification
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ("id", "title", "created", "user")  # Customize displayed fields
+    list_filter = ("type", "is_read", "is_success", "user")
+    search_fields = ("title", "description")
     ordering = ("-created",)  # Optional: Order by newest first
     list_per_page = 20  # Optional: Pagination
 

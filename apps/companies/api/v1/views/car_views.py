@@ -24,6 +24,8 @@ from apps.companies.api.v1.serializers.car_serializer import (
     CarUpdateWithCompanySerializer,
     ListCarSerializer,
 )
+from django.db.models import F
+
 from apps.companies.api.v1.serializers.driver_serializer import (
     DriverSerializer,
     ListDriverSerializer,
@@ -159,11 +161,11 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
             if serializer.validated_data["type"] == "add":
                 car.refresh_from_db()
                 if parent_object.balance >= serializer.validated_data["amount"]:
-                    car.balance += serializer.validated_data["amount"]
+                    car.balance = F("balance") + serializer.validated_data["amount"]
                     car.save()
 
                     parent_object.refresh_from_db()
-                    parent_object.balance -= serializer.validated_data["amount"]
+                    parent_object.balance = F("balance") - serializer.validated_data["amount"]
                     parent_object.save()
                     message = f"تم شحن رصيد السيارة ({car.plate}) برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
                     generate_company_transaction(
@@ -194,11 +196,11 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
             elif serializer.validated_data["type"] == "subtract":
                 car.refresh_from_db()
                 if car.balance >= serializer.validated_data["amount"]:
-                    car.balance -= serializer.validated_data["amount"]
+                    car.balance = F("balance") - serializer.validated_data["amount"]
                     car.save()
 
                     parent_object.refresh_from_db()
-                    parent_object.balance += serializer.validated_data["amount"]
+                    parent_object.balance = F("balance") + serializer.validated_data["amount"]
                     parent_object.save()
                     message = f"تم سحب رصيد السيارة ({car.plate}) برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
                     generate_company_transaction(

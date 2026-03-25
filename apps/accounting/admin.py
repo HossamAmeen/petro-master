@@ -58,8 +58,8 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
         "is_internal",
         "for_what",
         "reviewed_by",
-        "created",
-        "modified",
+        "created_with_ms",
+        "modified_with_ms",
         "created_by",
         "updated_by",
     )
@@ -134,6 +134,18 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
                     description=notification_message,
                     type=Notification.NotificationType.MONEY,
                 )
+
+    def created_with_ms(self, obj):
+        if obj.created:
+            return obj.created.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        return "-"
+    created_with_ms.short_description = "Created (with ms)"
+
+    def modified_with_ms(self, obj):
+        if obj.modified:
+            return obj.modified.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        return "-"
+    modified_with_ms.short_description = "Modified (with ms)"
 
     def get_queryset(self, request):
         qs = super().get_queryset(request).select_related("company")
