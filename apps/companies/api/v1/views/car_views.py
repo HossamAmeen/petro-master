@@ -228,6 +228,8 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                         status_code=status.HTTP_400_BAD_REQUEST,
                     )
 
+        # Refresh from DB to evaluate F() expressions and get actual balance for response
+        car.refresh_from_db()
         return Response({"balance": car.balance}, status=status.HTTP_200_OK)
 
     def perform_destroy(self, instance):
