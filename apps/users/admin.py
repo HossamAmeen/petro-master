@@ -1,4 +1,8 @@
-from typing import override
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
+
 
 from django import forms
 from django.contrib import admin
