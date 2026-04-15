@@ -121,28 +121,23 @@ print(
     f"############################ ENVIRONMENT {ENVIRONMENT} ############################"
 )
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": env("DB_NAME", default="defaultdb"),
-#         "USER": env("DB_USER", default="doadmin"),
-#         "PASSWORD": env("DB_PASSWORD", default="password"),
-#         "HOST": env(
-#             "DB_HOST",
-#             default="db-postgresql-fra1-63337-do-user-21327337-0.k.db.ondigitalocean.com",
-#         ),
-#         "PORT": env("DB_PORT", default="25060"),
-#         "OPTIONS": {
-#             "sslmode": env("DB_SSL_MODE", default="require"),
-#         },
-#     }
-# }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("DB_NAME", default="defaultdb"),
+        "USER": env("DB_USER", default="doadmin"),
+        "PASSWORD": env("DB_PASSWORD", default="password"),
+        "HOST": env(
+            "DB_HOST",
+            default="db-postgresql-fra1-63337-do-user-21327337-0.k.db.ondigitalocean.com",
+        ),
+        "PORT": env("DB_PORT", default="25060"),
+        "OPTIONS": {
+            "sslmode": env("DB_SSL_MODE", default="require"),
+        },
     }
 }
+
 
 print("Database Configured", DATABASES)
 # Password validation
