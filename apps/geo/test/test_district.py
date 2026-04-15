@@ -26,7 +26,7 @@ def district(city):
 
 
 @pytest.mark.django_db
-class TestDistrict:
+class TestDistrictAPI:
     def test_get_districts(self, api_client, district):
         url = reverse("districts-list")
         response = api_client.get(url)
