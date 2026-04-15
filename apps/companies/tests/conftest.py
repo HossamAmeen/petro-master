@@ -1,6 +1,8 @@
 import pytest
+
 from apps.companies.models.company_models import Company, CompanyBranch
-from apps.users.models import CompanyUser, CompanyBranchManager, User
+from apps.users.models import CompanyBranchManager, CompanyUser, User
+
 
 @pytest.fixture
 def company(db, geo_data):

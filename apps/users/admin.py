@@ -1,5 +1,3 @@
-from typing import override
-
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -330,7 +328,6 @@ class StationOwnerInterface(admin.ModelAdmin):
     ordering = ("-created",)
     list_per_page = 10
 
-    @override
     def has_delete_permission(self, request, obj=None):
         return False
 

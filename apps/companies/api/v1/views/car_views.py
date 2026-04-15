@@ -1,6 +1,7 @@
 import math
 
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -24,8 +25,6 @@ from apps.companies.api.v1.serializers.car_serializer import (
     CarUpdateWithCompanySerializer,
     ListCarSerializer,
 )
-from django.db.models import F
-
 from apps.companies.api.v1.serializers.driver_serializer import (
     DriverSerializer,
     ListDriverSerializer,

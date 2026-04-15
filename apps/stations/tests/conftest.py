@@ -1,6 +1,8 @@
 import pytest
+
 from apps.stations.models.stations_models import Station, StationBranch
-from apps.users.models import StationOwner, StationBranchManager, Worker, User
+from apps.users.models import StationBranchManager, StationOwner, User, Worker
+
 
 @pytest.fixture
 def station(db, admin_user, geo_data):

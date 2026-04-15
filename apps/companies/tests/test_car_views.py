@@ -1,14 +1,15 @@
-import pytest
 from decimal import Decimal
+from unittest.mock import patch
+
+import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
-from unittest.mock import patch
 
-from apps.geo.models import City, Country, District
-from apps.users.models import User, CompanyUser
 from apps.companies.models.company_models import Car, Company, CompanyBranch
+from apps.geo.models import City, Country, District
 from apps.shared.base_exception_class import CustomValidationError
+from apps.users.models import CompanyUser, User
 
 
 @pytest.mark.django_db
@@ -70,7 +71,7 @@ class TestCarViewSetUpdateBalance:
         
         self.branch_manager = CompanyUser.objects.create(
             role=User.UserRoles.CompanyBranchManager,
-            email="manager@test.com", 
+            email="manager@test.com",
             name="Manager",
             phone_number="0987654321",
             company=self.company,

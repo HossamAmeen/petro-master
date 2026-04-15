@@ -1,5 +1,7 @@
 import pytest
-from apps.users.models import User, Supervisor, Agent
+
+from apps.users.models import Agent, Supervisor, User
+
 
 @pytest.fixture
 def admin_user(db):
