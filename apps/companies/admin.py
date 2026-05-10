@@ -234,6 +234,7 @@ class CarAdmin(admin.ModelAdmin):
         "balance",
         "branch",
         "company_name",
+        "operations_link",
     )
     search_fields = (
         "code",
@@ -266,6 +267,12 @@ class CarAdmin(admin.ModelAdmin):
         return obj.branch.company.name
 
     company_name.short_description = "Company"
+
+    def operations_link(self, obj):
+        url = reverse("admin:companies_caroperation_changelist") + f"?car__id__exact={obj.id}"
+        return format_html('<a class="button" href="{}">Operations</a>', url)
+
+    operations_link.short_description = "Operations"
 
     def save_model(self, request, obj, form, change):
         """
@@ -635,7 +642,7 @@ class CarOperationAdmin(admin.ModelAdmin):
         "service",
         "branch_company",
     )
-    search_fields = ("code",)
+    search_fields = ("code", "car__code", "car__plate_number")
     list_filter = (
         "status",
         "start_time",
@@ -646,7 +653,6 @@ class CarOperationAdmin(admin.ModelAdmin):
         "station_branch",
         "worker",
         "service",
-        # CreatedDateRangeFilter,
     )
 
     readonly_fields = ("code", "created_by", "updated_by", "created")
