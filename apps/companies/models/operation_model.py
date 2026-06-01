@@ -75,6 +75,9 @@ class CarOperation(AbstractBaseModel):
     def __str__(self):
         return f"{self.car} - {self.service} - {self.code}"
 
+    def delete(self, *args, **kwargs):
+        raise PermissionError("Deleting a CarOperation is not allowed.")
+
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = generate_unique_code(self.__class__)
