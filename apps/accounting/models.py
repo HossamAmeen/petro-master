@@ -62,9 +62,9 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
         CAR = "Car"
         DRIVER = "Driver"
 
-    company = models.ForeignKey("companies.Company", on_delete=models.CASCADE)
+    company = models.ForeignKey("companies.Company", on_delete=models.PROTECT)
     company_branch = models.ForeignKey(
-        "companies.CompanyBranch", on_delete=models.SET_NULL, null=True
+        "companies.CompanyBranch", on_delete=models.PROTECT, null=True
     )
     for_what = models.CharField(
         max_length=20,
@@ -90,9 +90,9 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
 
 
 class StationKhaznaTransaction(KhaznaTransaction):
-    station = models.ForeignKey("stations.Station", on_delete=models.CASCADE)
+    station = models.ForeignKey("stations.Station", on_delete=models.PROTECT)
     station_branch = models.ForeignKey(
-        "stations.StationBranch", on_delete=models.SET_NULL, null=True
+        "stations.StationBranch", on_delete=models.PROTECT, null=True
     )
 
     def __str__(self):
