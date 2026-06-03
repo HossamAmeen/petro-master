@@ -76,7 +76,11 @@ class CarOperation(AbstractBaseModel):
         return f"{self.car} - {self.service} - {self.code}"
 
     def delete(self, *args, **kwargs):
-        raise PermissionError("Deleting a CarOperation is not allowed.")
+        if self.status == self.OperationStatus.COMPLETED:
+            raise PermissionError(
+                f"Deleting Car Operation {self.car} - {self.service} - {self.code} is not allowed, because it is {self.OperationStatus.COMPLETED}."
+            )
+        super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         if not self.code:

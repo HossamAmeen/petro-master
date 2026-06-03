@@ -15,6 +15,7 @@ from apps.stations.models.service_models import Service
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, CarCode, Company, CompanyBranch, Driver
+from django.core.exceptions import PermissionDenied
 
 
 class CompanyBranchForm(forms.ModelForm):
@@ -593,6 +594,26 @@ class CreatedDateRangeFilter(admin.SimpleListFilter):
 
 @admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
+
+    def has_change_permission(self, request, obj=None):
+        if obj and obj.status == "completed":
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.status == "completed":
+            return False
+        return super().has_delete_permission(request, obj)
+
+    def delete_model(self, request, obj):
+        if obj.status == "completed":
+            raise PermissionDenied("Cannot delete a completed operation.")
+        super().delete_model(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        if queryset.filter(status="completed").exists():
+            raise PermissionDenied("Cannot delete completed operations.")
+        super().delete_queryset(request, queryset)
 
     def save_model(self, request, obj, form, change):
         """
