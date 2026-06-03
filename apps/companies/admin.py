@@ -595,6 +595,11 @@ class CreatedDateRangeFilter(admin.SimpleListFilter):
 @admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
 
+    def has_change_permission(self, request, obj=None):
+        if obj and obj.status == "completed":
+            return False
+        return super().has_change_permission(request, obj)
+
     def has_delete_permission(self, request, obj=None):
         if obj and obj.status == "completed":
             return False
