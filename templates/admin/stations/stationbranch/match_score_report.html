@@ -167,6 +167,7 @@
         <tr>
           <th class="center" style="width: 60px;">#</th>
           <th>Station Branch</th>
+          <th class="num">Ops with Fuel Image</th>
           <th class="num">Match 100</th>
           <th class="num">Total Responses</th>
           <th style="width: 220px;">Match Score</th>
@@ -190,6 +191,7 @@
             </div>
             <div class="station-name">{{ row.station_name }}</div>
           </td>
+          <td class="num">{{ row.fuel_image_ops_count }}</td>
           <td class="num">{{ row.match_100_count }}</td>
           <td class="num">{{ row.total_responses }}</td>
           <td class="score-cell">
@@ -213,7 +215,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="empty-state">No AI API responses found.</td>
+          <td colspan="6" class="empty-state">No AI API responses found.</td>
         </tr>
         {% endfor %}
       </tbody>
