@@ -9,6 +9,7 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from apps.companies.models.operation_model import CarOperation
+from apps.companies.models.ai_api_response_model import AIApiResponse
 from apps.geo.models import District
 from apps.shared.generate_code import generate_unique_code
 from apps.stations.models.service_models import Service
@@ -592,10 +593,61 @@ class CreatedDateRangeFilter(admin.SimpleListFilter):
         return queryset
 
 
+@admin.register(AIApiResponse)
+class AIApiResponseAdmin(admin.ModelAdmin):
+    list_display = (
+        "get_station_branch", 
+        "image_preview", 
+        "car_operation_amount", 
+        "extracted_number", 
+        "token_taken", 
+        "image_size_mb", 
+        "created"
+    )
+    search_fields = ("car_operation__code", "extracted_number")
+    readonly_fields = ("created_by", "updated_by", "created", "modified")
+    list_per_page = 20
+    autocomplete_fields = ("car_operation",)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("car_operation", "car_operation__station_branch")
+
+    def get_station_branch(self, obj):
+        if obj.car_operation and obj.car_operation.station_branch:
+            return obj.car_operation.station_branch
+        return "-"
+    get_station_branch.short_description = "Station Branch"
+
+    def car_operation_amount(self, obj):
+        if obj.car_operation:
+            return obj.car_operation.amount
+        return "-"
+    car_operation_amount.short_description = "Amount"
+
+    def image_preview(self, obj):
+        if obj.car_operation and obj.car_operation.fuel_image:
+            return format_html('<img src="{}" style="max-height: 50px; max-width: 50px;" />', obj.car_operation.fuel_image.url)
+        return "-"
+    image_preview.short_description = "Image"
+
+    def image_size_mb(self, obj):
+        if obj.image_size:
+            try:
+                size_mb = int(obj.image_size) / (1024 * 1024)
+                return f"{size_mb:.2f} MB"
+            except (ValueError, TypeError):
+                return "-"
+        return "-"
+    image_size_mb.short_description = "Image Size (MB)"
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        obj.save()
+
 @admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
-
-
     def has_delete_permission(self, request, obj=None):
         if obj and obj.status == "completed":
             return False
