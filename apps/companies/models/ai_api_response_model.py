@@ -15,6 +15,10 @@ class AIApiResponse(AbstractBaseModel):
     estimated_money = models.DecimalField(
         max_digits=10, decimal_places=6, null=True, blank=True
     )
+    model_name = models.CharField(max_length=100, null=True, blank=True)
+    request_time = models.FloatField(
+        null=True, blank=True, help_text="API request duration in seconds"
+    )
     raw_response = models.JSONField(null=True, blank=True)
 
     class Meta:

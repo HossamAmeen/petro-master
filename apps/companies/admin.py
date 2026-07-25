@@ -601,13 +601,24 @@ class AIApiResponseAdmin(admin.ModelAdmin):
         "car_operation_amount",
         "extracted_number",
         "match_score",
+        "model_name",
+        "request_time_display",
         "token_taken",
+        "estimated_money_egp",
         "image_size_mb",
         "created",
     )
-    search_fields = ("car_operation__code", "extracted_number")
-    list_filter = ("match_score",)
-    readonly_fields = ("created_by", "updated_by", "created", "modified", "match_score")
+    search_fields = ("car_operation__code", "extracted_number", "model_name")
+    list_filter = ("match_score", "model_name")
+    readonly_fields = (
+        "created_by",
+        "updated_by",
+        "created",
+        "modified",
+        "match_score",
+        "estimated_money_egp",
+        "request_time_display",
+    )
     list_per_page = 20
     autocomplete_fields = ("car_operation",)
 
@@ -650,6 +661,20 @@ class AIApiResponseAdmin(admin.ModelAdmin):
                 return "-"
         return "-"
     image_size_mb.short_description = "Image Size (MB)"
+
+    def estimated_money_egp(self, obj):
+        if obj.estimated_money is None:
+            return "-"
+        return f"{obj.estimated_money} EGP"
+    estimated_money_egp.short_description = "Estimated Money (EGP)"
+    estimated_money_egp.admin_order_field = "estimated_money"
+
+    def request_time_display(self, obj):
+        if obj.request_time is None:
+            return "-"
+        return f"{obj.request_time:.2f}s"
+    request_time_display.short_description = "Request Time"
+    request_time_display.admin_order_field = "request_time"
 
     def save_model(self, request, obj, form, change):
         if not obj.pk:

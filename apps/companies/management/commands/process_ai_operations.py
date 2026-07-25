@@ -2,6 +2,7 @@ from apps.users.models import User
 import base64
 import json
 import os
+import time
 from decimal import Decimal, InvalidOperation
 
 import requests
@@ -94,6 +95,7 @@ class Command(BaseCommand):
 
     def extract_fuel_number(self, image_bytes: bytes, media_type: str) -> dict:
         b64 = base64.b64encode(image_bytes).decode("utf-8")
+        started_at = time.perf_counter()
         response = self.client.chat.completions.create(
             model=self.MODEL,
             messages=[{
@@ -105,6 +107,7 @@ class Command(BaseCommand):
             }],
             max_tokens=self.MAX_TOKENS,
         )
+        request_time = time.perf_counter() - started_at
 
         usage = response.usage
         total_tokens = usage.total_tokens if usage else 0
@@ -115,6 +118,8 @@ class Command(BaseCommand):
             "raw_response": json.loads(response.model_dump_json()),
             "token_taken": total_tokens,
             "estimated_money": self.estimate_cost(total_tokens),
+            "model_name": getattr(response, "model", None) or self.MODEL,
+            "request_time": request_time,
         }
 
     def estimate_cost(self, total_tokens: int) -> Decimal:
@@ -151,6 +156,8 @@ class Command(BaseCommand):
                 image_size=str(image_size),
                 token_taken=result.get("token_taken"),
                 estimated_money=result.get("estimated_money"),
+                model_name=result.get("model_name"),
+                request_time=result.get("request_time"),
                 created_by_id=created_by,
             )
         except Exception as exc:
