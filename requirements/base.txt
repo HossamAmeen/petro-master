@@ -48,4 +48,4 @@ redis==7.0.1
 django-redis==6.0.0
 
 # openai
-openai==1.36.1
+openai==2.48.0
