@@ -152,12 +152,21 @@ class StationBranchAdmin(admin.ModelAdmin):
             total = item["total_responses"] or 0
             match_100 = item["match_100_count"] or 0
             percentage = (match_100 / total) * 100 if total else 0
+            branch_id = item["car_operation__station_branch_id"]
+            ai_responses_url = None
+            if branch_id:
+                ai_responses_url = (
+                    reverse("admin:companies_aiapiresponse_changelist")
+                    + f"?car_operation__station_branch__id__exact={branch_id}"
+                    + "&page_size=100"
+                )
             rows.append(
                 {
                     "station_name": item[
                         "car_operation__station_branch__station__name"
                     ],
                     "branch_name": item["car_operation__station_branch__name"],
+                    "ai_responses_url": ai_responses_url,
                     "match_100_count": match_100,
                     "total_responses": total,
                     "match_percentage": round(percentage, 2),

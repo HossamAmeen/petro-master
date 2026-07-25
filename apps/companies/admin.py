@@ -609,7 +609,7 @@ class AIApiResponseAdmin(admin.ModelAdmin):
         "created",
     )
     search_fields = ("car_operation__code", "extracted_number", "model_name")
-    list_filter = ("match_score", "model_name")
+    list_filter = ("match_score", "model_name", "car_operation__station_branch")
     readonly_fields = (
         "created_by",
         "updated_by",
@@ -621,6 +621,27 @@ class AIApiResponseAdmin(admin.ModelAdmin):
     )
     list_per_page = 20
     autocomplete_fields = ("car_operation",)
+
+    def get_changelist(self, request, **kwargs):
+        from django.contrib.admin.views.main import ChangeList
+
+        class PageSizeChangeList(ChangeList):
+            def get_filters_params(self, params=None):
+                lookup_params = super().get_filters_params(params)
+                lookup_params.pop("page_size", None)
+                return lookup_params
+
+        return PageSizeChangeList
+
+    def get_changelist_instance(self, request):
+        original_list_per_page = self.list_per_page
+        page_size = request.GET.get("page_size")
+        if page_size and str(page_size).isdigit():
+            self.list_per_page = min(int(page_size), 1000)
+        try:
+            return super().get_changelist_instance(request)
+        finally:
+            self.list_per_page = original_list_per_page
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related(

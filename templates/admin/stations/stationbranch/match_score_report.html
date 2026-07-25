@@ -91,6 +91,13 @@
     font-weight: 600;
     color: #222;
   }
+  .branch-name a {
+    color: #417690;
+    text-decoration: none;
+  }
+  .branch-name a:hover {
+    text-decoration: underline;
+  }
   .station-name {
     color: #666;
     font-size: 12px;
@@ -174,7 +181,13 @@
             </span>
           </td>
           <td>
-            <div class="branch-name">{{ row.branch_name }}</div>
+            <div class="branch-name">
+              {% if row.ai_responses_url %}
+                <a href="{{ row.ai_responses_url }}">{{ row.branch_name }}</a>
+              {% else %}
+                {{ row.branch_name }}
+              {% endif %}
+            </div>
             <div class="station-name">{{ row.station_name }}</div>
           </td>
           <td class="num">{{ row.match_100_count }}</td>
