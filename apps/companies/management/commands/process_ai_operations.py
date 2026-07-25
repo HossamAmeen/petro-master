@@ -19,8 +19,8 @@ class Command(BaseCommand):
     MODEL = "gpt-4o"
     MAX_TOKENS = 50
     PROMPT = "Extract only the fuel number/reading from this image. Reply with the number only."
-    INPUT_PRICE_PER_MILLION = 5.0
-    OUTPUT_PRICE_PER_MILLION = 15.0
+    PRICE_PER_MILLION_TOKENS_USD = 5.0
+    USD_TO_EGP = 50.0
     MEDIA_BASE_URL = getattr(settings, "MEDIA_PUBLIC_BASE_URL", "https://api.petro-master.org")
 
     def add_arguments(self, parser):
@@ -107,8 +107,6 @@ class Command(BaseCommand):
         )
 
         usage = response.usage
-        prompt_tokens = usage.prompt_tokens if usage else 0
-        completion_tokens = usage.completion_tokens if usage else 0
         total_tokens = usage.total_tokens if usage else 0
         content = response.choices[0].message.content if response.choices else None
 
@@ -116,25 +114,44 @@ class Command(BaseCommand):
             "extracted_number": content.strip() if content else None,
             "raw_response": json.loads(response.model_dump_json()),
             "token_taken": total_tokens,
-            "estimated_money": self.estimate_cost(prompt_tokens, completion_tokens),
+            "estimated_money": self.estimate_cost(total_tokens),
         }
 
-    def estimate_cost(self, prompt_tokens: int, completion_tokens: int) -> float:
-        return (
-            (prompt_tokens / 1_000_000.0) * self.INPUT_PRICE_PER_MILLION
-            + (completion_tokens / 1_000_000.0) * self.OUTPUT_PRICE_PER_MILLION
+    def estimate_cost(self, total_tokens: int) -> Decimal:
+        """Estimate request cost in EGP. $5 per 1M tokens, $1 = 50 EGP."""
+        cost_usd = (Decimal(total_tokens) / Decimal("1000000")) * Decimal(
+            str(self.PRICE_PER_MILLION_TOKENS_USD)
         )
+        return cost_usd * Decimal(str(self.USD_TO_EGP))
+
+    def calculate_match_score(self, extracted_number, amount) -> int | None:
+        if extracted_number is None or amount is None:
+            return None
+        try:
+            extracted = Decimal(str(extracted_number).strip())
+            actual = Decimal(str(amount))
+        except (InvalidOperation, ValueError, TypeError):
+            return None
+
+        difference = abs(extracted - actual)
+        if difference <= 1:
+            return 100
+        if difference <= 5:
+            return 50
+        return 0
 
     def save_response(self, operation, result: dict, image_size: int, created_by: int) -> None:
+        extracted_number = result.get("extracted_number")
         try:
             AIApiResponse.objects.create(
                 car_operation=operation,
-                raw_response=result.get("raw_response",{}),
-                extracted_number=result.get("extracted_number"),
+                raw_response=result.get("raw_response", {}),
+                extracted_number=extracted_number,
+                match_score=self.calculate_match_score(extracted_number, operation.amount),
                 image_size=str(image_size),
                 token_taken=result.get("token_taken"),
                 estimated_money=result.get("estimated_money"),
-                created_by_id=created_by
+                created_by_id=created_by,
             )
         except Exception as exc:
             print(exc)
