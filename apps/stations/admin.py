@@ -5,6 +5,7 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 
 from apps.companies.models.ai_api_response_model import AIApiResponse
+from apps.companies.models.operation_model import CarOperation
 from apps.users.models import StationBranchManager
 
 from .models.service_models import Service
@@ -147,6 +148,14 @@ class StationBranchAdmin(admin.ModelAdmin):
             )
         )
 
+        fuel_image_ops_by_branch = dict(
+            CarOperation.objects.filter(fuel_image__isnull=False)
+            .exclude(fuel_image="")
+            .values("station_branch_id")
+            .annotate(total=Count("id"))
+            .values_list("station_branch_id", "total")
+        )
+
         rows = []
         for item in stats:
             total = item["total_responses"] or 0
@@ -167,6 +176,9 @@ class StationBranchAdmin(admin.ModelAdmin):
                     ],
                     "branch_name": item["car_operation__station_branch__name"],
                     "ai_responses_url": ai_responses_url,
+                    "fuel_image_ops_count": fuel_image_ops_by_branch.get(
+                        branch_id, 0
+                    ),
                     "match_100_count": match_100,
                     "total_responses": total,
                     "match_percentage": round(percentage, 2),
