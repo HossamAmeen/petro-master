@@ -1,8 +1,10 @@
 from django.contrib import admin
-from django.db.models import Sum
-from django.urls import reverse
+from django.db.models import Count, Q, Sum
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
 from django.utils.html import format_html
 
+from apps.companies.models.ai_api_response_model import AIApiResponse
 from apps.users.models import StationBranchManager
 
 from .models.service_models import Service
@@ -98,6 +100,7 @@ class StationAdmin(admin.ModelAdmin):
 
 @admin.register(StationBranch)
 class StationBranchAdmin(admin.ModelAdmin):
+    change_list_template = "admin/stations/stationbranch/change_list.html"
     list_display = (
         "name",
         "address",
@@ -114,9 +117,70 @@ class StationBranchAdmin(admin.ModelAdmin):
     readonly_fields = ("created_by", "updated_by")
     list_filter = ("station",)
     search_fields = ("name", "address")
-    page_size = 10
-    page_size_query_param = "page_size"
-    max_page_size = 20
+    list_per_page = 10
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "match-score-report/",
+                self.admin_site.admin_view(self.match_score_report_view),
+                name="stations_stationbranch_match_score_report",
+            ),
+        ]
+        return custom_urls + urls
+
+    def match_score_report_view(self, request):
+        stats = (
+            AIApiResponse.objects.values(
+                "car_operation__station_branch_id",
+                "car_operation__station_branch__name",
+                "car_operation__station_branch__station__name",
+            )
+            .annotate(
+                total_responses=Count("id"),
+                match_100_count=Count("id", filter=Q(match_score=100)),
+            )
+            .order_by(
+                "car_operation__station_branch__station__name",
+                "car_operation__station_branch__name",
+            )
+        )
+
+        rows = []
+        for item in stats:
+            total = item["total_responses"] or 0
+            match_100 = item["match_100_count"] or 0
+            percentage = (match_100 / total) * 100 if total else 0
+            rows.append(
+                {
+                    "station_name": item[
+                        "car_operation__station_branch__station__name"
+                    ],
+                    "branch_name": item["car_operation__station_branch__name"],
+                    "match_100_count": match_100,
+                    "total_responses": total,
+                    "match_percentage": round(percentage, 2),
+                }
+            )
+
+        rows.sort(
+            key=lambda row: (row["match_percentage"], row["match_100_count"]),
+            reverse=True,
+        )
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "AI Match Score Report",
+            "rows": rows,
+            "total_branches": len(rows),
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(
+            request,
+            "admin/stations/stationbranch/match_score_report.html",
+            context,
+        )
 
     def managers_link(self, obj):
         count = obj.managers.count()

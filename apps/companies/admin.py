@@ -665,7 +665,7 @@ class AIApiResponseAdmin(admin.ModelAdmin):
     def estimated_money_egp(self, obj):
         if obj.estimated_money is None:
             return "-"
-        return f"{obj.estimated_money} EGP"
+        return f"{obj.estimated_money:.2f} EGP"
     estimated_money_egp.short_description = "Estimated Money (EGP)"
     estimated_money_egp.admin_order_field = "estimated_money"
 

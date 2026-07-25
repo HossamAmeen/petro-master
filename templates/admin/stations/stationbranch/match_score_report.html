@@ -1,0 +1,216 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .match-report {
+    max-width: 1100px;
+    margin-top: 10px;
+  }
+  .match-report__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .match-report__header h1 {
+    margin: 0 0 6px;
+  }
+  .match-report__subtitle {
+    margin: 0;
+    color: #666;
+  }
+  .match-report__meta {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    white-space: nowrap;
+    font-size: 13px;
+    color: #444;
+  }
+  .match-table-wrap {
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+  .match-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .match-table thead th {
+    background: #417690;
+    color: #fff;
+    font-weight: 600;
+    text-align: left;
+    padding: 12px 14px;
+    font-size: 13px;
+    border: none;
+  }
+  .match-table thead th.num,
+  .match-table tbody td.num {
+    text-align: right;
+  }
+  .match-table thead th.center,
+  .match-table tbody td.center {
+    text-align: center;
+  }
+  .match-table tbody td {
+    padding: 12px 14px;
+    border-top: 1px solid #eee;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  .match-table tbody tr:nth-child(even) {
+    background: #fafbfc;
+  }
+  .match-table tbody tr:hover {
+    background: #f0f7fb;
+  }
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e8eef2;
+    color: #334;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .rank-badge.top {
+    background: #ffd666;
+    color: #5c4300;
+  }
+  .branch-name {
+    font-weight: 600;
+    color: #222;
+  }
+  .station-name {
+    color: #666;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .score-cell {
+    min-width: 180px;
+  }
+  .score-bar {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .score-bar__fill {
+    height: 100%;
+    border-radius: 999px;
+  }
+  .score-bar__fill.high { background: #28a745; }
+  .score-bar__fill.medium { background: #f0ad4e; }
+  .score-bar__fill.low { background: #dc3545; }
+  .score-value {
+    font-weight: 700;
+  }
+  .score-value.high { color: #1e7e34; }
+  .score-value.medium { color: #b86e00; }
+  .score-value.low { color: #c82333; }
+  .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: #777;
+  }
+  .match-report__actions {
+    margin-top: 18px;
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label='stations' %}">Stations</a>
+  &rsaquo; <a href="{% url 'admin:stations_stationbranch_changelist' %}">Station Branches</a>
+  &rsaquo; {% translate 'AI Match Score Report' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="match-report">
+  <div class="match-report__header">
+    <div>
+      <h1>AI Match Score Report</h1>
+      <p class="match-report__subtitle">
+        Branches ranked by highest match score percentage
+        (match score 100 / total AI responses).
+      </p>
+    </div>
+    <div class="match-report__meta">
+      Branches with data: <strong>{{ total_branches }}</strong>
+    </div>
+  </div>
+
+  <div class="match-table-wrap">
+    <table class="match-table">
+      <thead>
+        <tr>
+          <th class="center" style="width: 60px;">#</th>
+          <th>Station Branch</th>
+          <th class="num">Match 100</th>
+          <th class="num">Total Responses</th>
+          <th style="width: 220px;">Match Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="center">
+            <span class="rank-badge {% if forloop.counter <= 3 %}top{% endif %}">
+              {{ forloop.counter }}
+            </span>
+          </td>
+          <td>
+            <div class="branch-name">{{ row.branch_name }}</div>
+            <div class="station-name">{{ row.station_name }}</div>
+          </td>
+          <td class="num">{{ row.match_100_count }}</td>
+          <td class="num">{{ row.total_responses }}</td>
+          <td class="score-cell">
+            {% if row.match_percentage >= 80 %}
+              <span class="score-value high">{{ row.match_percentage }}%</span>
+              <div class="score-bar">
+                <div class="score-bar__fill high" style="width: {{ row.match_percentage }}%;"></div>
+              </div>
+            {% elif row.match_percentage >= 50 %}
+              <span class="score-value medium">{{ row.match_percentage }}%</span>
+              <div class="score-bar">
+                <div class="score-bar__fill medium" style="width: {{ row.match_percentage }}%;"></div>
+              </div>
+            {% else %}
+              <span class="score-value low">{{ row.match_percentage }}%</span>
+              <div class="score-bar">
+                <div class="score-bar__fill low" style="width: {{ row.match_percentage }}%;"></div>
+              </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="empty-state">No AI API responses found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="match-report__actions">
+    <a href="{% url 'admin:stations_stationbranch_changelist' %}" class="button">
+      Back to Station Branches
+    </a>
+  </div>
+</div>
+{% endblock %}

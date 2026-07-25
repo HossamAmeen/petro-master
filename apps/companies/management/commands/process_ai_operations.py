@@ -8,6 +8,7 @@ from decimal import Decimal, InvalidOperation
 import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.db.models import Count
 from openai import OpenAI
 
 from apps.companies.models.ai_api_response_model import AIApiResponse
@@ -23,6 +24,7 @@ class Command(BaseCommand):
     PRICE_PER_MILLION_TOKENS_USD = 5.0
     USD_TO_EGP = 50.0
     MEDIA_BASE_URL = getattr(settings, "MEDIA_PUBLIC_BASE_URL", "https://api.petro-master.org")
+    MAX_RESPONSES_PER_BRANCH = 100
 
     def add_arguments(self, parser):
         parser.add_argument("limit", type=int, help="The number of CarOperations to process")
@@ -43,16 +45,44 @@ class Command(BaseCommand):
         image_field = options["image_field"]
         limit = options["limit"]
 
-        branch_ids = CarOperation.objects.filter(
-            ai_api_responses__isnull=True
-        ).values_list('station_branch_id', flat=True).distinct()
-        
+        branch_ids = (
+            CarOperation.objects.filter(
+                ai_api_responses__isnull=True,
+                fuel_image__isnull=False)
+            .values_list("station_branch_id", flat=True)
+            .distinct()
+        )
+
+        existing_counts = {
+            row["car_operation__station_branch_id"]: row["total"]
+            for row in (
+                AIApiResponse.objects.filter(
+                    car_operation__station_branch_id__in=branch_ids
+                )
+                .values("car_operation__station_branch_id")
+                .annotate(total=Count("id"))
+            )
+        }
+
         operations = []
         for branch_id in branch_ids:
+            existing_count = existing_counts.get(branch_id, 0)
+            remaining_capacity = self.MAX_RESPONSES_PER_BRANCH - existing_count
+            if remaining_capacity <= 0:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Station branch {branch_id} already has "
+                        f"{existing_count} AIApiResponse records (max "
+                        f"{self.MAX_RESPONSES_PER_BRANCH}). Skipping."
+                    )
+                )
+                continue
+
+            branch_limit = min(limit, remaining_capacity)
             branch_ops = CarOperation.objects.filter(
-                ai_api_responses__isnull=True, 
-                station_branch_id=branch_id
-            ).order_by("-id")[:limit]
+                ai_api_responses__isnull=True,
+                station_branch_id=branch_id,
+            ).order_by("-id")[:branch_limit]
             operations.extend(branch_ops)
 
         if not operations:
