@@ -2,6 +2,7 @@ from apps.users.models import User
 import base64
 import json
 import os
+from decimal import Decimal, InvalidOperation
 
 import requests
 from django.conf import settings
@@ -20,7 +21,7 @@ class Command(BaseCommand):
     PROMPT = "Extract only the fuel number/reading from this image. Reply with the number only."
     INPUT_PRICE_PER_MILLION = 5.0
     OUTPUT_PRICE_PER_MILLION = 15.0
-    MEDIA_BASE_URL = getattr(settings, "MEDIA_PUBLIC_BASE_URL", "https://api.staging.petro-master.org")
+    MEDIA_BASE_URL = getattr(settings, "MEDIA_PUBLIC_BASE_URL", "https://api.petro-master.org")
 
     def add_arguments(self, parser):
         parser.add_argument("limit", type=int, help="The number of CarOperations to process")
@@ -36,10 +37,11 @@ class Command(BaseCommand):
         if not api_key:
             raise CommandError("OPENAI_API_KEY is not set in settings or environment variables.")
 
+        self.api_key = api_key
         self.client = OpenAI(api_key=api_key)
         image_field = options["image_field"]
         limit = options["limit"]
-        
+
         branch_ids = CarOperation.objects.filter(
             ai_api_responses__isnull=True
         ).values_list('station_branch_id', flat=True).distinct()
@@ -65,7 +67,6 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f"Successfully processed {operation.code}"))
             except Exception as exc:
                 self.stdout.write(self.style.ERROR(f"Failed to process {operation.code}: {exc}"))
-
         self.stdout.write(self.style.SUCCESS(f"Finished processing {success_count} operations."))
 
     def process_operation(self, operation, image_field: str, user_id: int) -> None:
@@ -75,12 +76,10 @@ class Command(BaseCommand):
 
         image_url = self.build_image_url(image_file)
         image_bytes, media_type = self.download_image(image_url)
-        # result = self.extract_fuel_number(image_bytes, media_type)
-        result = {}
+        result = self.extract_fuel_number(image_bytes, media_type)
         self.save_response(operation, result, len(image_bytes), created_by=user_id)
 
     def build_image_url(self, image_file) -> str:
-        return "https://api.petro-master.org/media/fuel_images/CAP2351827349112984160.jpg"
         url = image_file.url
         if url.startswith(("http://", "https://")):
             return url
