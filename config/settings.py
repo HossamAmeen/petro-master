@@ -336,3 +336,5 @@ CELERY_TIMEZONE = "UTC"
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+
+OPENAI_API_KEY = env("OPENAI_API_KEY", default="")

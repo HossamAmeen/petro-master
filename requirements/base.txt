@@ -46,3 +46,6 @@ celery==5.5.3
 # redis
 redis==7.0.1
 django-redis==6.0.0
+
+# openai
+openai==2.48.0
