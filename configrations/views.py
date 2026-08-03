@@ -5,6 +5,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from apps.configrations.throttles import ContactUsRateThrottle
 
 from apps.accounting.models import (
     CompanyKhaznaTransaction,
@@ -165,6 +166,10 @@ class StatisticsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     },
 )
 class ContactUsView(APIView):
+    permission_classes = []
+    authentication_classes = []
+    throttle_classes = [ContactUsRateThrottle]
+
     def post(self, request):
         serializer = ContactUsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
