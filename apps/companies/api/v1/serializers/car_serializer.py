@@ -118,10 +118,6 @@ class CarWithPlateInfoSerializer(serializers.ModelSerializer):
         model = Car
         fields = ["id", "code", "plate_number", "plate_character", "plate_color"]
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        return data
-
 
 class CarBalanceUpdateSerializer(BalanceUpdateSerializer):
     pass
