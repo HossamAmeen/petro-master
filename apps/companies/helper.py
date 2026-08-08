@@ -68,6 +68,7 @@ def export_car_operations(*args, **kwargs):
     cars = Car.objects.filter(
         branch__company=kwargs.get("company_id"),
         operations__status=CarOperation.OperationStatus.COMPLETED,
+        branch__in=kwargs.get("branches", []),
     ).distinct()
     if kwargs.get("car"):
         cars = cars.filter(id=kwargs.get("car"))
