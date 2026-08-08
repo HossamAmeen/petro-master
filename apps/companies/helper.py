@@ -1,3 +1,4 @@
+import logging
 import os
 
 from django.conf import settings
@@ -11,9 +12,13 @@ from apps.companies.models.operation_model import Car, CarOperation
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.send_sms import send_sms
 
+logger = logging.getLogger(__name__)
+
 
 def get_car_operations_data(*args, **kwargs):
-    if not kwargs.get("branches"):
+    branches = kwargs.get("branches")
+    logger.info(f"get_car_operations_data called with branches: {branches}, company_id: {kwargs.get('company_id')}")
+    if not branches:
         raise CustomValidationError(
             message="Branches are required for this operation with company id {}".format(
                 kwargs.get("company_id")
@@ -22,7 +27,7 @@ def get_car_operations_data(*args, **kwargs):
         )
     queryset = (
         CarOperation.objects.filter(
-            car__branch__in=kwargs.get("branches"),
+            car__branch__in=branches,
             status=CarOperation.OperationStatus.COMPLETED,
         )
         .select_related("car", "driver", "station_branch", "worker", "service")
@@ -61,6 +66,8 @@ def send_cash_request_otp(instance):
 
 
 def export_car_operations(*args, **kwargs):
+    branches = kwargs.get("branches")
+    logger.info(f"export_car_operations called with branches: {branches}, company_id: {kwargs.get('company_id')}")
     wb = Workbook()
     ws = wb.active
     ws.title = "Data Export"
@@ -82,7 +89,7 @@ def export_car_operations(*args, **kwargs):
         is_first_car = False
 
         # Row with car number + "العربية"
-        car_number_row = ["", "", "", "", "", str(car), "العربية"]
+        car_number_row = ["", "", "", str(car.branch.name), "الفرع", str(car), "العربية"]
         ws.append(car_number_row)
 
         # Style car row: black text + gray background
