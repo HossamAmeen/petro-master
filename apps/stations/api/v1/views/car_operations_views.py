@@ -23,6 +23,8 @@ from apps.stations.api.station_serializers.car_operation_serializer import (
 )
 from apps.stations.models.service_models import Service
 from apps.users.models import CompanyUser, StationOwner
+import logging
+logger = logging.getLogger(__name__)
 
 
 class StationGasOperationAPIView(APIView):
@@ -204,11 +206,18 @@ class StationGasOperationAPIView(APIView):
                     f"تم تفويل سيارة رقم {car_opertion.car.plate} بعدد {car_opertion.amount} لتر "
                     f"وخصم مبلغ بمقدار {car_opertion.company_cost:.2f} جنية"  # noqa
                 )
-                notification_users = list(
-                    CompanyUser.objects.filter(company_id=company_id).values_list(
-                        "id", flat=True
+                notification_users = []
+                try:
+                    notification_users = list(
+                        CompanyUser.objects.filter(
+                            company_id=company_id,
+                            company_branch_managers__company_branch=car.branch_id
+                        ).values_list(
+                            "id", flat=True
+                        )
                     )
-                )
+                except Exception as e:
+                    logger.error(e)
                 notification_users.append(request.user.id)
                 for user_id in notification_users:
                     Notification.objects.create(
