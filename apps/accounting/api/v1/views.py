@@ -77,7 +77,9 @@ class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.request.user.role == User.UserRoles.CompanyOwner:
             return self.queryset.filter(company=self.request.company_id)
         if self.request.user.role == User.UserRoles.CompanyBranchManager:
-            return self.queryset.filter(company=self.request.company_id)
+            return self.queryset.filter(
+                company_branch__managers__user_id=self.request.user.id
+            )
         return self.queryset
 
 

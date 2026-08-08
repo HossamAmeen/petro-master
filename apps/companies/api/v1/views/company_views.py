@@ -425,7 +425,7 @@ class CompanyHomeView(APIView):
             many=True,
         ).data
         company_transactions = (
-            CompanyKhaznaTransaction.objects.filter(company__branches__in=branches_id)
+            CompanyKhaznaTransaction.objects.filter(company_branches__in=branches_id)
             .distinct()
             .order_by("-id")[:3]
         )
