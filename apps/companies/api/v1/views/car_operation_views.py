@@ -213,6 +213,11 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
             {
                 "message": "يتم الان استخراج العمليات وسوف يتم ارسال اليك اشعار لك لتحميل الملف بعد الانتهاء",
                 "download_url": download_url,
+                "query_param":{
+                    "car": request.query_params.get("car"),
+                    "date_from": date_from,
+                    "date_to": date_to
+                }
             }
         )
 
