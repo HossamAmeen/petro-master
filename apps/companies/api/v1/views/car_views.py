@@ -22,6 +22,7 @@ from apps.companies.api.v1.serializers.car_serializer import (
     CarCreationSerializer,
     CarSerializer,
     CarUpdateWithCompanySerializer,
+    CarWithPlateInfoSerializer,
     ListCarSerializer,
 )
 from django.db.models import F
@@ -80,6 +81,8 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.request.method == "GET":
+            if self.request.query_params.get("no_paginate", "").lower() == "true":
+                return CarWithPlateInfoSerializer
             return ListCarSerializer
         if self.request.method == "POST":
             return CarCreationSerializer
