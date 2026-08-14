@@ -46,7 +46,7 @@ class StationAdmin(admin.ModelAdmin):
         "updated_by",
     )
     search_fields = ("name", "address", "district__name")
-    readonly_fields = ("created_by", "updated_by")
+    readonly_fields = ("balance","created_by", "updated_by")
 
     def branches_link(self, obj):
         count = obj.branches.count()
@@ -114,7 +114,7 @@ class StationBranchAdmin(admin.ModelAdmin):
         "created_by",
         "updated_by",
     )
-    readonly_fields = ("created_by", "updated_by")
+    readonly_fields = ("balance", "created_by", "updated_by")
     list_filter = ("station",)
     search_fields = ("name", "address")
     list_per_page = 10

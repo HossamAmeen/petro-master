@@ -52,7 +52,7 @@ class CompanyAdmin(admin.ModelAdmin):
     )
     search_fields = ("name", "address", "phone_number")
     list_filter = ("district", "is_active")
-    readonly_fields = ["created_by", "updated_by"]
+    readonly_fields = ["balance", "created_by", "updated_by"]
     list_per_page = 10
 
     def total_balance(self, obj):
@@ -107,8 +107,6 @@ class CompanyAdmin(admin.ModelAdmin):
         if not obj.pk:  # Only set created_by on creation, not updates
             obj.created_by = request.user
             obj.balance = 0
-        else:
-            obj.balance = form.cleaned_data.get("balance", obj.balance)
         obj.updated_by = request.user
         obj.save()
 
@@ -134,7 +132,7 @@ class CompanyBranchAdmin(admin.ModelAdmin):
     )
     search_fields = ("name", "email", "phone_number")
     list_filter = ("company",)
-    readonly_fields = ["created_by", "updated_by"]
+    readonly_fields = ["balance", "created_by", "updated_by"]
     list_per_page = 20
 
     def car_link(self, obj):
@@ -258,6 +256,7 @@ class CarAdmin(admin.ModelAdmin):
         "branch__company",
     )
     readonly_fields = (
+        "balance",
         "created_by",
         "updated_by",
         "created",
