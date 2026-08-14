@@ -42,6 +42,7 @@ class CarOperationFilter(django_filters.FilterSet):
         fields = [
             "car",
             "driver",
+            "station",
             "station_branch",
             "worker",
             "service",

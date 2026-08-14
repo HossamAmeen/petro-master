@@ -708,14 +708,6 @@ class CarOperationAdmin(admin.ModelAdmin):
         obj.updated_by = request.user
         obj.save()
 
-    def get_sum_cost(self, request):
-        queryset = self.get_queryset(request)
-        return queryset.aggregate(total_cost=Sum("cost"))["total_cost"] or 0
-
-    def get_sum_amount(self, request):
-        queryset = self.get_queryset(request)
-        return queryset.aggregate(total_amount=Sum("amount"))["total_amount"] or 0
-
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         queryset = self.get_queryset(request)
