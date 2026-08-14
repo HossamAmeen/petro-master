@@ -138,7 +138,7 @@ class TestWorkerViewSet:
         url = reverse("workers-list")
         data = {
             "name": "New Worker",
-            "phone_number": "01000000007",
+            "phone_number": "01000000012",
             "email": "newworker@example.com",
             "password": "password123",
             "confirm_password": "password123",

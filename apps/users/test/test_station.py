@@ -33,6 +33,7 @@ class TestUserAPI:
             phone_number="01000005693",
             email="owner1@gmail.com",
             password="owner1",
+            role=User.UserRoles.StationOwner,
             created_by=self.user,
             updated_by=self.user,
             station=self.station,
@@ -52,7 +53,6 @@ class TestUserAPI:
                 "name": "owner1",
                 "phone_number": "01000005693",
                 "email": "owner1@gmail.com",
-                "password": "owner1",
                 "created_by": self.user.id,
                 "updated_by": self.user.id,
                 "station": self.station.id,
@@ -66,7 +66,6 @@ class TestUserAPI:
             assert actual["name"] == expected["name"]
             assert actual["email"] == expected["email"]
             assert actual["phone_number"] == expected["phone_number"]
-            assert actual["password"] == expected["password"]
             assert actual["created_by"] == expected["created_by"]
             assert actual["updated_by"] == expected["updated_by"]
 
@@ -162,14 +161,21 @@ class TestStationBranchManager:
             role="admin",
             station=self.station,
         )
-        self.station_branch_manager = StationBranchManager.objects.create(
+        self.station_branch_manager = StationOwner.objects.create(
             name="manager1",
             phone_number="01102000",
             email="manager1@gmail.com",
             password="user1",
-            role="admin",
+            role=User.UserRoles.StationBranchManager,
+            station=self.station,
+            created_by=self.user,
+            updated_by=self.user,
+        )
+        StationBranchManager.objects.create(
             station_branch=self.station_branch,
-            user=self.station_owner,
+            user=self.station_branch_manager,
+            created_by=self.user,
+            updated_by=self.user,
         )
         access_token = AccessToken.for_user(self.station_branch_manager)
         self.client.defaults["HTTP_AUTHORIZATION"] = f"Bearer {str(access_token)}"
@@ -188,9 +194,9 @@ class TestStationBranchManager:
             "phone_number": "011020004",
             "email": "manager2@gmail.com",
             "password": "user1",
-            "role": "admin",
-            "station_branch": self.station_branch.id,
-            "user": self.station_owner.id,
+            "confirm_password": "user1",
+            "station_branches": [self.station_branch.id],
+            "station_id": self.station.id,
         }
         response = self.client.post(
             self.url_list, data=data, content_type="application/json"
@@ -203,9 +209,9 @@ class TestStationBranchManager:
             "phone_number": "0110200044",
             "email": "manager2@gmail.com",
             "password": "manager22",
-            "role": "admin",
-            "station_branch": self.station_branch.id,
-            "user": self.station_owner.id,
+            "confirm_password": "manager22",
+            "station_branches": [self.station_branch.id],
+            "station_id": self.station.id,
         }
         response = self.client.put(
             self.url_detail, data=update_data, content_type="application/json"
@@ -218,9 +224,9 @@ class TestStationBranchManager:
             "phone_number": "0110200044",
             "email": "manager2@gmail.com",
             "password": "manager22",
-            "role": "admin",
-            "station_branch": self.station_branch.id,
-            "user": self.station_owner.id,
+            "confirm_password": "manager22",
+            "station_branches": [self.station_branch.id],
+            "station_id": self.station.id,
         }
 
         response = self.client.get(

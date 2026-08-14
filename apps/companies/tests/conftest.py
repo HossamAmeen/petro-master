@@ -2,13 +2,16 @@ import pytest
 from apps.companies.models.company_models import Company, CompanyBranch
 from apps.users.models import CompanyUser, CompanyBranchManager, User
 
+
 @pytest.fixture
-def company(db, geo_data):
+def company(db, admin_user, geo_data):
     return Company.objects.create(
         name="Company 1",
         address="Company Address 1",
         district=geo_data["district"],
+        created_by=admin_user,
     )
+
 
 @pytest.fixture
 def company_owner(db, admin_user, company):
@@ -22,13 +25,16 @@ def company_owner(db, admin_user, company):
         created_by=admin_user,
     )
 
+
 @pytest.fixture
-def company_branch(db, company, geo_data):
+def company_branch(db, admin_user, company, geo_data):
     return CompanyBranch.objects.create(
         name="Company Branch 1",
         company=company,
         district=geo_data["district"],
+        created_by=admin_user,
     )
+
 
 @pytest.fixture
 def company_branch_manager(db, admin_user, company_branch, company):

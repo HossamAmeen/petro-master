@@ -8,6 +8,7 @@ from django.utils import timezone
 from faker import Faker
 
 from apps.accounting.models import CompanyKhaznaTransaction
+from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Car, Company, CompanyBranch, Driver
 from apps.companies.models.operation_model import CarOperation
 from apps.geo.models import City, Country, District
@@ -19,7 +20,16 @@ from apps.stations.models.stations_models import (
     StationBranchService,
     StationService,
 )
-from apps.users.models import CompanyBranchManager, CompanyUser, User, Worker
+from apps.users.models import (
+    CompanyBranchManager,
+    CompanyUser,
+    FirebaseToken,
+    StationBranchManager,
+    StationOwner,
+    Supervisor,
+    User,
+    Worker,
+)
 
 fake = Faker()
 
@@ -29,15 +39,23 @@ class UserFactory(factory.django.DjangoModelFactory):
         model = User
 
     name = factory.Faker("name")
-    email = factory.Faker("company_email")
-    phone_number = factory.Faker("phone_number")
-    role = factory.LazyFunction(
-        lambda: ["admin", "station_manager", "station_employee", "station_worker"][
-            random.randint(0, 3)
-        ]
-    )
-    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
-    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    email = factory.Sequence(lambda n: f"user-{n}@example.com")
+    phone_number = factory.Sequence(lambda n: f"010000{n:05d}")
+    role = User.UserRoles.Admin
+    password = factory.PostGenerationMethodCall("set_password", "password123")
+
+
+class AdminUserFactory(UserFactory):
+    is_staff = True
+    is_superuser = True
+
+
+class CountryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Country
+
+    name = factory.Sequence(lambda n: f"Country {n}")
+    code = factory.Sequence(lambda n: f"C{n:02}")
 
 
 class CityFactory(factory.django.DjangoModelFactory):
@@ -45,7 +63,7 @@ class CityFactory(factory.django.DjangoModelFactory):
         model = City
 
     name = factory.Faker("city")  # Generates a random city name
-    country = factory.LazyFunction(lambda: Country.objects.order_by("?").first())
+    country = factory.SubFactory(CountryFactory)
 
 
 class DistrictFactory(factory.django.DjangoModelFactory):
@@ -207,7 +225,7 @@ class StationBranchServiceFactory(factory.django.DjangoModelFactory):
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 
 
-class CompanyUserFactory(factory.django.DjangoModelFactory):
+class CompanyUserFactory(UserFactory):
     class Meta:
         model = CompanyUser
 
@@ -220,6 +238,41 @@ class CompanyUserFactory(factory.django.DjangoModelFactory):
     company = factory.LazyFunction(lambda: Company.objects.order_by("?").first())
 
 
+class StationOwnerFactory(UserFactory):
+    class Meta:
+        model = StationOwner
+
+    name = factory.Faker("name")
+    email = factory.Sequence(lambda n: f"station-owner-{n}@example.com")
+    phone_number = factory.Sequence(lambda n: f"011000{n:05d}")
+    role = User.UserRoles.StationOwner
+    station = factory.SubFactory(StationFactory)
+    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+
+
+class StationBranchManagerFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = StationBranchManager
+
+    station_branch = factory.SubFactory(StationBranchFactory)
+    user = factory.SubFactory(StationOwnerFactory)
+    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+
+
+class SupervisorFactory(UserFactory):
+    class Meta:
+        model = Supervisor
+
+    name = factory.Faker("name")
+    email = factory.Sequence(lambda n: f"supervisor-{n}@example.com")
+    phone_number = factory.Sequence(lambda n: f"012000{n:05d}")
+    role = User.UserRoles.Supervisor
+    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+
+
 class CompanyBranchManagerFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = CompanyBranchManager
@@ -230,7 +283,7 @@ class CompanyBranchManagerFactory(factory.django.DjangoModelFactory):
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 
 
-class WorkerFactory(factory.django.DjangoModelFactory):
+class WorkerFactory(UserFactory):
     class Meta:
         model = Worker
 
@@ -242,6 +295,24 @@ class WorkerFactory(factory.django.DjangoModelFactory):
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     station_branch = factory.LazyFunction(
         lambda: StationBranch.objects.order_by("?").first()
+    )
+
+
+class FirebaseTokenFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = FirebaseToken
+
+    user = factory.SubFactory(UserFactory)
+    token = factory.Sequence(lambda n: f"firebase-token-{n}")
+
+
+class CompanyCashRequestFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CompanyCashRequest
+
+    driver = factory.SubFactory(DriverFactory)
+    amount = factory.LazyFunction(
+        lambda: Decimal(random.uniform(100, 5000)).quantize(Decimal("0.01"))
     )
 
 
