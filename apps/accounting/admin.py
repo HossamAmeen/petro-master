@@ -1,8 +1,11 @@
 from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError
+from django.http import JsonResponse
+from django.urls import path, reverse
 
 from apps.accounting.models import CompanyKhaznaTransaction, StationKhaznaTransaction
+from apps.companies.models.company_models import CompanyBranch
 from apps.notifications.models import Notification
 from apps.shared.generate_code import generate_unique_code
 from apps.users.models import CompanyUser, StationOwner
@@ -12,6 +15,23 @@ class CompanyKhaznaTransactionForm(forms.ModelForm):
     class Meta:
         model = CompanyKhaznaTransaction
         fields = "__all__"  # or specify your fields
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["company_branch"].required = False
+        self.fields["company_branch"].queryset = CompanyBranch.objects.none()
+        self.fields["company_branch"].widget.attrs["data-branches-url"] = reverse(
+            "admin:accounting_companykhaznatransaction_branches_by_company"
+        )
+
+        company_id = self.data.get("company") or self.initial.get("company")
+        if not company_id and self.instance.pk:
+            company_id = self.instance.company_id
+
+        if company_id:
+            self.fields["company_branch"].queryset = CompanyBranch.objects.filter(
+                company_id=company_id
+            ).order_by("name")
 
     def clean(self):
         cleaned_data = super().clean()
@@ -27,6 +47,17 @@ class CompanyKhaznaTransactionForm(forms.ModelForm):
                 )
 
         return cleaned_data
+
+
+class CompanyBranchByCompanyListFilter(admin.RelatedFieldListFilter):
+    def field_choices(self, field, request, model_admin):
+        company_id = request.GET.get("company__id__exact")
+        if not company_id:
+            return []
+        return field.get_choices(
+            include_blank=False,
+            limit_choices_to={"company_id": company_id},
+        )
 
 
 @admin.register(CompanyKhaznaTransaction)
@@ -68,7 +99,7 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
         "is_internal",
         "status",
         "company",
-        "company__branches",
+        ("company_branch", CompanyBranchByCompanyListFilter),
     )
 
     def has_change_permission(self, request, obj=None):
@@ -79,10 +110,29 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "company_branch":
-            kwargs["required"] = False
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    class Media:
+        js = ("accounting/js/filter_company_branch.js",)
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "branches-by-company/",
+                self.admin_site.admin_view(self.branches_by_company),
+                name="accounting_companykhaznatransaction_branches_by_company",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def branches_by_company(self, request):
+        company_id = request.GET.get("company")
+        if not company_id:
+            return JsonResponse({"results": []})
+        branches = (
+            CompanyBranch.objects.filter(company_id=company_id)
+            .order_by("name")
+            .values("id", "name")
+        )
+        return JsonResponse({"results": list(branches)})
 
     def save_model(self, request, obj, form, change):
         if not obj.pk:  # Only set created_by on creation, not updates
