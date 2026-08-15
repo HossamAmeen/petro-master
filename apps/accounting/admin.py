@@ -20,8 +20,12 @@ class CompanyKhaznaTransactionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["company_branch"].required = False
         self.fields["company_branch"].queryset = CompanyBranch.objects.none()
-        self.fields["company_branch"].widget.attrs["data-branches-url"] = reverse(
-            "admin:accounting_companykhaznatransaction_branches_by_company"
+        self.fields["company_branch"].widget.attrs.update(
+            {
+                "data-branches-url": reverse(
+                    "admin:accounting_companykhaznatransaction_branches_by_company"
+                )
+            }
         )
 
         company_id = self.data.get("company") or self.initial.get("company")
@@ -50,6 +54,14 @@ class CompanyKhaznaTransactionForm(forms.ModelForm):
 
 
 class CompanyBranchByCompanyListFilter(admin.RelatedFieldListFilter):
+    template = "admin/accounting/company_branch_filter.html"
+
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+        self.branches_url = reverse(
+            "admin:accounting_companykhaznatransaction_branches_by_company"
+        )
+
     def field_choices(self, field, request, model_admin):
         company_id = request.GET.get("company__id__exact")
         if not company_id:
@@ -127,12 +139,15 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
         company_id = request.GET.get("company")
         if not company_id:
             return JsonResponse({"results": []})
-        branches = (
-            CompanyBranch.objects.filter(company_id=company_id)
-            .order_by("name")
-            .values("id", "name")
+        try:
+            company_id = int(company_id)
+        except (TypeError, ValueError):
+            return JsonResponse({"results": []})
+
+        branches = CompanyBranch.objects.filter(company_id=company_id).order_by("name")
+        return JsonResponse(
+            {"results": [{"id": branch.id, "name": str(branch)} for branch in branches]}
         )
-        return JsonResponse({"results": list(branches)})
 
     def save_model(self, request, obj, form, change):
         if not obj.pk:  # Only set created_by on creation, not updates
