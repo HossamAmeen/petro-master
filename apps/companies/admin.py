@@ -719,9 +719,6 @@ class CarOperationAdmin(admin.ModelAdmin):
             raise PermissionDenied("Cannot delete completed operations.")
         super().delete_queryset(request, queryset)
 
-    def has_change_permission(self, request, obj=None):
-        return False
-
     def save_model(self, request, obj, form, change):
         """
         Automatically assign the logged-in user as the
