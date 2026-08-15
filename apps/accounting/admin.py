@@ -16,6 +16,11 @@ class CompanyKhaznaTransactionForm(forms.ModelForm):
         model = CompanyKhaznaTransaction
         fields = "__all__"  # or specify your fields
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        company_branch_field = self.fields["company_branch"]
+        company_branch_field.required = False
+
     def clean(self):
         cleaned_data = super().clean()
         company_branch = cleaned_data.get("company_branch")
