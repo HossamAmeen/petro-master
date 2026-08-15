@@ -719,6 +719,9 @@ class CarOperationAdmin(admin.ModelAdmin):
             raise PermissionDenied("Cannot delete completed operations.")
         super().delete_queryset(request, queryset)
 
+    def has_change_permission(self, request, obj=None):
+        return False
+
     def save_model(self, request, obj, form, change):
         """
         Automatically assign the logged-in user as the
@@ -728,14 +731,6 @@ class CarOperationAdmin(admin.ModelAdmin):
             obj.created_by = request.user
         obj.updated_by = request.user
         obj.save()
-
-    def get_sum_cost(self, request):
-        queryset = self.get_queryset(request)
-        return queryset.aggregate(total_cost=Sum("cost"))["total_cost"] or 0
-
-    def get_sum_amount(self, request):
-        queryset = self.get_queryset(request)
-        return queryset.aggregate(total_amount=Sum("amount"))["total_amount"] or 0
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
