@@ -16,27 +16,6 @@ class CompanyKhaznaTransactionForm(forms.ModelForm):
         model = CompanyKhaznaTransaction
         fields = "__all__"  # or specify your fields
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["company_branch"].required = False
-        self.fields["company_branch"].queryset = CompanyBranch.objects.none()
-        self.fields["company_branch"].widget.attrs.update(
-            {
-                "data-branches-url": reverse(
-                    "admin:accounting_companykhaznatransaction_branches_by_company"
-                )
-            }
-        )
-
-        company_id = self.data.get("company") or self.initial.get("company")
-        if not company_id and self.instance.pk:
-            company_id = self.instance.company_id
-
-        if company_id:
-            self.fields["company_branch"].queryset = CompanyBranch.objects.filter(
-                company_id=company_id
-            ).order_by("name")
-
     def clean(self):
         cleaned_data = super().clean()
         company_branch = cleaned_data.get("company_branch")
