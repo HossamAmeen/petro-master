@@ -1,5 +1,9 @@
+{% url 'admin:accounting_companykhaznatransaction_branches_by_company' as branches_by_company_url %}
+<script>
 (function () {
     "use strict";
+
+    var fallbackBranchesUrl = "{{ branches_by_company_url|escapejs }}";
 
     function getJQuery() {
         return window.jQuery || (window.django && window.django.jQuery) || null;
@@ -49,7 +53,10 @@
             return;
         }
 
-        var branchesUrl = $branch.data("branches-url") || $branch.attr("data-branches-url");
+        var branchesUrl =
+            $branch.attr("data-branches-url") ||
+            $branch.data("branches-url") ||
+            fallbackBranchesUrl;
         var requestId = 0;
 
         function populateFormBranches(companyId, selectedId) {
@@ -76,7 +83,7 @@
 
                 if (
                     previousValue &&
-                    $branch.find('option[value="' + previousValue + '"]').length
+                    $branch.find("option[value='" + previousValue + "']").length
                 ) {
                     $branch.val(previousValue);
                 } else {
@@ -87,8 +94,8 @@
             });
         }
 
-        $company.on("change", function () {
-            populateFormBranches($company.val());
+        $(document).on("change", "#id_company", function () {
+            populateFormBranches($(this).val());
         });
 
         if ($company.val() && $branch.find("option").length <= 1) {
@@ -107,10 +114,12 @@
         }
 
         var branchesUrl =
-            $branchFilter.data("branches-url") || $branchFilter.attr("data-branches-url");
+            $branchFilter.attr("data-branches-url") ||
+            $branchFilter.data("branches-url") ||
+            fallbackBranchesUrl;
         var lookupKwarg =
-            $branchFilter.data("lookup") ||
             $branchFilter.attr("data-lookup") ||
+            $branchFilter.data("lookup") ||
             "company_branch__id__exact";
         var requestId = 0;
 
@@ -146,7 +155,7 @@
 
                 if (
                     previousValue &&
-                    $branchFilter.find('option[value="' + previousValue + '"]').length
+                    $branchFilter.find("option[value='" + previousValue + "']").length
                 ) {
                     $branchFilter.val(previousValue);
                     $branchFilter.attr("name", lookupKwarg);
@@ -159,8 +168,8 @@
             });
         }
 
-        $companyFilter.on("change", function () {
-            populateFilterBranches($companyFilter.val());
+        $(document).on("change", '.search-filter[data-name="company"]', function () {
+            populateFilterBranches($(this).val());
         });
 
         if ($companyFilter.val()) {
@@ -178,9 +187,13 @@
         bindChangelistDependentFilter($);
     }
 
-    if (document.readyState === "complete") {
+    var $ = getJQuery();
+    if ($) {
+        $(start);
+    } else if (document.readyState === "complete") {
         start();
     } else {
         window.addEventListener("load", start);
     }
 })();
+</script>

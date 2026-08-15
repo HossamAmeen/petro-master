@@ -122,9 +122,6 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-    class Media:
-        js = ("accounting/js/filter_company_branch.js",)
-
     def get_urls(self):
         custom_urls = [
             path(
