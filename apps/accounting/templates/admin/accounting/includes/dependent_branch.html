@@ -1,6 +1,13 @@
+{% url 'admin:accounting_companykhaznatransaction_branches_by_company' as company_branches_url %}
+{% url 'admin:accounting_stationkhaznatransaction_branches_by_station' as station_branches_url %}
 <script>
 (function () {
     "use strict";
+
+    var fallbackUrls = {
+        company: "{{ company_branches_url|escapejs }}",
+        station: "{{ station_branches_url|escapejs }}"
+    };
 
     function getJQuery() {
         return window.jQuery || (window.django && window.django.jQuery) || null;
@@ -53,7 +60,9 @@
                 (this.id === "id_station_branch" ? "station" : "company");
             var $parent = $("#id_" + parentField);
             var branchesUrl =
-                $branch.attr("data-branches-url") || $branch.data("branches-url");
+                $branch.attr("data-branches-url") ||
+                $branch.data("branches-url") ||
+                fallbackUrls[parentField];
 
             if (!$parent.length || !branchesUrl) {
                 return;
@@ -102,7 +111,7 @@
                 populateFormBranches($(this).val());
             });
 
-            if ($parent.val() && $branch.find("option").length <= 1) {
+            if ($parent.val()) {
                 populateFormBranches($parent.val(), $branch.val());
             }
         });
@@ -115,7 +124,8 @@
             var $parentFilter = $('.search-filter[data-name="' + parentName + '"]');
             var branchesUrl =
                 $branchFilter.attr("data-branches-url") ||
-                $branchFilter.data("branches-url");
+                $branchFilter.data("branches-url") ||
+                fallbackUrls[parentName];
             var lookupKwarg =
                 $branchFilter.attr("data-lookup") ||
                 $branchFilter.data("lookup") ||

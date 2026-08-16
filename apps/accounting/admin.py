@@ -25,6 +25,41 @@ def _branch_options_response(branches):
     )
 
 
+def _configure_dependent_branch_field(
+    form,
+    *,
+    branch_field_name,
+    parent_field_name,
+    branches_url_name,
+    branch_model,
+    parent_fk_name,
+):
+    branch_field = form.fields.get(branch_field_name)
+    if branch_field is None:
+        return
+
+    branch_field.required = False
+    branch_field.queryset = branch_model.objects.none()
+
+    widget = getattr(branch_field.widget, "widget", branch_field.widget)
+    widget.attrs.update(
+        {
+            "data-branches-url": reverse(branches_url_name),
+            "data-parent-field": parent_field_name,
+        }
+    )
+
+    parent_id = (
+        form.data.get(parent_field_name)
+        or form.initial.get(parent_field_name)
+        or getattr(form.instance, f"{parent_fk_name}_id", None)
+    )
+    if parent_id:
+        branch_field.queryset = branch_model.objects.filter(
+            **{f"{parent_fk_name}_id": parent_id}
+        ).order_by("name")
+
+
 class CompanyKhaznaTransactionForm(forms.ModelForm):
     class Meta:
         model = CompanyKhaznaTransaction
@@ -32,25 +67,14 @@ class CompanyKhaznaTransactionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["company_branch"].required = False
-        self.fields["company_branch"].queryset = CompanyBranch.objects.none()
-        self.fields["company_branch"].widget.attrs.update(
-            {
-                "data-branches-url": reverse(
-                    "admin:accounting_companykhaznatransaction_branches_by_company"
-                ),
-                "data-parent-field": "company",
-            }
+        _configure_dependent_branch_field(
+            self,
+            branch_field_name="company_branch",
+            parent_field_name="company",
+            branches_url_name="admin:accounting_companykhaznatransaction_branches_by_company",
+            branch_model=CompanyBranch,
+            parent_fk_name="company",
         )
-
-        company_id = self.data.get("company") or self.initial.get("company")
-        if not company_id and self.instance.pk:
-            company_id = self.instance.company_id
-
-        if company_id:
-            self.fields["company_branch"].queryset = CompanyBranch.objects.filter(
-                company_id=company_id
-            ).order_by("name")
 
     def clean(self):
         cleaned_data = super().clean()
@@ -134,6 +158,11 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
         if obj and obj.status != CompanyKhaznaTransaction.TransactionStatus.PENDING:
             return False
         return True
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "company_branch":
+            kwargs["required"] = False
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -231,25 +260,14 @@ class StationKhaznaTransactionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["station_branch"].required = False
-        self.fields["station_branch"].queryset = StationBranch.objects.none()
-        self.fields["station_branch"].widget.attrs.update(
-            {
-                "data-branches-url": reverse(
-                    "admin:accounting_stationkhaznatransaction_branches_by_station"
-                ),
-                "data-parent-field": "station",
-            }
+        _configure_dependent_branch_field(
+            self,
+            branch_field_name="station_branch",
+            parent_field_name="station",
+            branches_url_name="admin:accounting_stationkhaznatransaction_branches_by_station",
+            branch_model=StationBranch,
+            parent_fk_name="station",
         )
-
-        station_id = self.data.get("station") or self.initial.get("station")
-        if not station_id and self.instance.pk:
-            station_id = self.instance.station_id
-
-        if station_id:
-            self.fields["station_branch"].queryset = StationBranch.objects.filter(
-                station_id=station_id
-            ).order_by("name")
 
     def clean(self):
         cleaned_data = super().clean()

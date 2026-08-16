@@ -14,6 +14,7 @@ Jazzmin list filters live in the search form. Selecting a filter does **not** re
 
 - Branch list filter options load via AJAX when the parent (company/station) is selected. Do not require Search or a page refresh just to show options.
 - The add/change form keeps the branch field empty until a parent is selected, then loads that parent’s branches.
+- Approved/declined transactions are view-only (`has_change_permission` is False). Django then excludes every field from the ModelForm, so form `__init__` must not assume `company_branch` / `station_branch` exist.
 - Branch fields are optional (`required=False`, model `null=True, blank=True`). Saving without a branch applies the transaction to the company/station.
 - Endpoints:
   - `admin:accounting_companykhaznatransaction_branches_by_company`
