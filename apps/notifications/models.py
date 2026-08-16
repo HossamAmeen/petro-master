@@ -16,5 +16,10 @@ class Notification(TimeStampedModel):
     title = models.CharField(max_length=255)
     type = models.CharField(max_length=20, choices=NotificationType.choices)
     is_success = models.BooleanField(default=False)
-    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        "users.User", on_delete=models.SET_NULL,
+    null=True,
+        blank=True,
+        help_text="The user that this notification is for. If the user is deleted, the notification will be set to null."
+    )
     url = models.URLField(null=True, blank=True)

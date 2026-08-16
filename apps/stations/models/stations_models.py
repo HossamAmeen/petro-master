@@ -31,7 +31,7 @@ class StationBranch(AbstractBaseModel):
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
     station = models.ForeignKey(
-        Station, on_delete=models.CASCADE, related_name="branches"
+        Station, on_delete=models.PROTECT, related_name="branches"
     )
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
@@ -50,9 +50,9 @@ class StationBranch(AbstractBaseModel):
 
 
 class StationService(AbstractBaseModel):
-    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.PROTECT)
     station = models.ForeignKey(
-        Station, on_delete=models.CASCADE, related_name="station_services"
+        Station, on_delete=models.PROTECT, related_name="station_services"
     )
 
     def __str__(self):
@@ -65,10 +65,10 @@ class StationService(AbstractBaseModel):
 
 class StationBranchService(AbstractBaseModel):
     service = models.ForeignKey(
-        Service, on_delete=models.CASCADE, related_name="station_branch_services"
+        Service, on_delete=models.PROTECT, related_name="station_branch_services"
     )
     station_branch = models.ForeignKey(
-        StationBranch, on_delete=models.CASCADE, related_name="station_branch_services"
+        StationBranch, on_delete=models.PROTECT, related_name="station_branch_services"
     )
 
     def __str__(self):
