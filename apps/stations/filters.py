@@ -1,7 +1,13 @@
 from django_filters import rest_framework as django_filters
 
 from apps.stations.models.service_models import Service
-from apps.stations.models.stations_models import StationBranch
+from apps.stations.models.stations_models import StationBranch, Station
+
+
+class StationFilter(django_filters.FilterSet):
+    class Meta:
+        model = Station
+        fields = ["name", "address", "district"]
 
 
 class StationBranchFilter(django_filters.FilterSet):
