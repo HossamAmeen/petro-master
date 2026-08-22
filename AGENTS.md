@@ -23,3 +23,11 @@ Jazzmin list filters live in the search form. Selecting a filter does **not** re
 - Filter template: `apps/accounting/templates/admin/accounting/dependent_branch_filter.html`.
 
 Do not populate a branch dropdown with every branch in the system. Always scope by the selected company or station.
+
+## Testing Standards (Pytest)
+
+When writing tests (especially using Pytest) for this project, you **must** adhere to the following senior backend standards:
+- **URL Resolution**: Always use `django.urls.reverse` (e.g. `reverse("station-home")`) for endpoints. Never hardcode API URL strings.
+- **Comprehensive Coverage**: Tests must cover all logical edge cases. Do not just test validation errors; ensure you test the full "happy path" (successful creation, balance deductions, profits). Test different permission layers for user roles (Owner vs Manager vs Worker).
+- **Avoid Repetition**: Utilize `@pytest.mark.parametrize` where applicable to test multiple roles or conditions within the same test function.
+- **Fixture Reusability**: Do not duplicate data creation in test functions. Create and utilize standard fixtures in `conftest.py` that fully model business requirements (e.g. `company`, `car`, `car_operation`).
