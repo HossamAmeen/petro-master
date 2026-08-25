@@ -1,5 +1,6 @@
 from datetime import date
 
+from apps.stations.filters import StationFilter
 from django.db.models import Count, F, Q, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
@@ -56,6 +57,11 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
         )
         .order_by("-id")
     )
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_class = StationFilter
+    search_fields = ["name", "address", "district__name"]
+    ordering_fields = ["id", "name", "address", "district__name"]
+    ordering = ["-id"]
 
     def get_serializer_class(self):
         if self.action == "create":

@@ -91,6 +91,13 @@
     font-weight: 600;
     color: #222;
   }
+  .branch-name a {
+    color: #417690;
+    text-decoration: none;
+  }
+  .branch-name a:hover {
+    text-decoration: underline;
+  }
   .station-name {
     color: #666;
     font-size: 12px;
@@ -160,6 +167,7 @@
         <tr>
           <th class="center" style="width: 60px;">#</th>
           <th>Station Branch</th>
+          <th class="num">Ops with Fuel Image</th>
           <th class="num">Match 100</th>
           <th class="num">Total Responses</th>
           <th style="width: 220px;">Match Score</th>
@@ -174,9 +182,16 @@
             </span>
           </td>
           <td>
-            <div class="branch-name">{{ row.branch_name }}</div>
+            <div class="branch-name">
+              {% if row.ai_responses_url %}
+                <a href="{{ row.ai_responses_url }}">{{ row.branch_name }}</a>
+              {% else %}
+                {{ row.branch_name }}
+              {% endif %}
+            </div>
             <div class="station-name">{{ row.station_name }}</div>
           </td>
+          <td class="num">{{ row.fuel_image_ops_count }}</td>
           <td class="num">{{ row.match_100_count }}</td>
           <td class="num">{{ row.total_responses }}</td>
           <td class="score-cell">
@@ -200,7 +215,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="empty-state">No AI API responses found.</td>
+          <td colspan="6" class="empty-state">No AI API responses found.</td>
         </tr>
         {% endfor %}
       </tbody>

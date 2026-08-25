@@ -52,7 +52,7 @@ class CompanyAdmin(admin.ModelAdmin):
     )
     search_fields = ("name", "address", "phone_number")
     list_filter = ("district", "is_active")
-    readonly_fields = ["created_by", "updated_by"]
+    readonly_fields = ["balance", "created_by", "updated_by"]
     list_per_page = 10
 
     def total_balance(self, obj):
@@ -107,8 +107,6 @@ class CompanyAdmin(admin.ModelAdmin):
         if not obj.pk:  # Only set created_by on creation, not updates
             obj.created_by = request.user
             obj.balance = 0
-        else:
-            obj.balance = form.cleaned_data.get("balance", obj.balance)
         obj.updated_by = request.user
         obj.save()
 
@@ -134,7 +132,7 @@ class CompanyBranchAdmin(admin.ModelAdmin):
     )
     search_fields = ("name", "email", "phone_number")
     list_filter = ("company",)
-    readonly_fields = ["created_by", "updated_by"]
+    readonly_fields = ["balance", "created_by", "updated_by"]
     list_per_page = 20
 
     def car_link(self, obj):
@@ -258,6 +256,7 @@ class CarAdmin(admin.ModelAdmin):
         "branch__company",
     )
     readonly_fields = (
+        "balance",
         "created_by",
         "updated_by",
         "created",
@@ -609,7 +608,7 @@ class AIApiResponseAdmin(admin.ModelAdmin):
         "created",
     )
     search_fields = ("car_operation__code", "extracted_number", "model_name")
-    list_filter = ("match_score", "model_name")
+    list_filter = ("match_score", "model_name", "car_operation__station_branch")
     readonly_fields = (
         "created_by",
         "updated_by",
@@ -621,6 +620,27 @@ class AIApiResponseAdmin(admin.ModelAdmin):
     )
     list_per_page = 20
     autocomplete_fields = ("car_operation",)
+
+    def get_changelist(self, request, **kwargs):
+        from django.contrib.admin.views.main import ChangeList
+
+        class PageSizeChangeList(ChangeList):
+            def get_filters_params(self, params=None):
+                lookup_params = super().get_filters_params(params)
+                lookup_params.pop("page_size", None)
+                return lookup_params
+
+        return PageSizeChangeList
+
+    def get_changelist_instance(self, request):
+        original_list_per_page = self.list_per_page
+        page_size = request.GET.get("page_size")
+        if page_size and str(page_size).isdigit():
+            self.list_per_page = min(int(page_size), 1000)
+        try:
+            return super().get_changelist_instance(request)
+        finally:
+            self.list_per_page = original_list_per_page
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related(
@@ -708,14 +728,6 @@ class CarOperationAdmin(admin.ModelAdmin):
             obj.created_by = request.user
         obj.updated_by = request.user
         obj.save()
-
-    def get_sum_cost(self, request):
-        queryset = self.get_queryset(request)
-        return queryset.aggregate(total_cost=Sum("cost"))["total_cost"] or 0
-
-    def get_sum_amount(self, request):
-        queryset = self.get_queryset(request)
-        return queryset.aggregate(total_amount=Sum("amount"))["total_amount"] or 0
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}

@@ -5,6 +5,7 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 
 from apps.companies.models.ai_api_response_model import AIApiResponse
+from apps.companies.models.operation_model import CarOperation
 from apps.users.models import StationBranchManager
 
 from .models.service_models import Service
@@ -46,7 +47,7 @@ class StationAdmin(admin.ModelAdmin):
         "updated_by",
     )
     search_fields = ("name", "address", "district__name")
-    readonly_fields = ("created_by", "updated_by")
+    readonly_fields = ("balance","created_by", "updated_by")
 
     def branches_link(self, obj):
         count = obj.branches.count()
@@ -114,7 +115,7 @@ class StationBranchAdmin(admin.ModelAdmin):
         "created_by",
         "updated_by",
     )
-    readonly_fields = ("created_by", "updated_by")
+    readonly_fields = ("balance", "created_by", "updated_by")
     list_filter = ("station",)
     search_fields = ("name", "address")
     list_per_page = 10
@@ -147,17 +148,37 @@ class StationBranchAdmin(admin.ModelAdmin):
             )
         )
 
+        fuel_image_ops_by_branch = dict(
+            CarOperation.objects.filter(fuel_image__isnull=False)
+            .exclude(fuel_image="")
+            .values("station_branch_id")
+            .annotate(total=Count("id"))
+            .values_list("station_branch_id", "total")
+        )
+
         rows = []
         for item in stats:
             total = item["total_responses"] or 0
             match_100 = item["match_100_count"] or 0
             percentage = (match_100 / total) * 100 if total else 0
+            branch_id = item["car_operation__station_branch_id"]
+            ai_responses_url = None
+            if branch_id:
+                ai_responses_url = (
+                    reverse("admin:companies_aiapiresponse_changelist")
+                    + f"?car_operation__station_branch__id__exact={branch_id}"
+                    + "&page_size=100"
+                )
             rows.append(
                 {
                     "station_name": item[
                         "car_operation__station_branch__station__name"
                     ],
                     "branch_name": item["car_operation__station_branch__name"],
+                    "ai_responses_url": ai_responses_url,
+                    "fuel_image_ops_count": fuel_image_ops_by_branch.get(
+                        branch_id, 0
+                    ),
                     "match_100_count": match_100,
                     "total_responses": total,
                     "match_percentage": round(percentage, 2),

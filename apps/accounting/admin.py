@@ -1,17 +1,80 @@
 from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError
+from django.http import JsonResponse
+from django.urls import path, reverse
 
 from apps.accounting.models import CompanyKhaznaTransaction, StationKhaznaTransaction
+from apps.companies.models.company_models import CompanyBranch
 from apps.notifications.models import Notification
 from apps.shared.generate_code import generate_unique_code
+from apps.stations.models.stations_models import StationBranch
 from apps.users.models import CompanyUser, StationOwner
+
+
+def _parse_positive_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _branch_options_response(branches):
+    return JsonResponse(
+        {"results": [{"id": branch.id, "name": str(branch)} for branch in branches]}
+    )
+
+
+def _configure_dependent_branch_field(
+    form,
+    *,
+    branch_field_name,
+    parent_field_name,
+    branches_url_name,
+    branch_model,
+    parent_fk_name,
+):
+    branch_field = form.fields.get(branch_field_name)
+    if branch_field is None:
+        return
+
+    branch_field.required = False
+    branch_field.queryset = branch_model.objects.none()
+
+    widget = getattr(branch_field.widget, "widget", branch_field.widget)
+    widget.attrs.update(
+        {
+            "data-branches-url": reverse(branches_url_name),
+            "data-parent-field": parent_field_name,
+        }
+    )
+
+    parent_id = (
+        form.data.get(parent_field_name)
+        or form.initial.get(parent_field_name)
+        or getattr(form.instance, f"{parent_fk_name}_id", None)
+    )
+    if parent_id:
+        branch_field.queryset = branch_model.objects.filter(
+            **{f"{parent_fk_name}_id": parent_id}
+        ).order_by("name")
 
 
 class CompanyKhaznaTransactionForm(forms.ModelForm):
     class Meta:
         model = CompanyKhaznaTransaction
-        fields = "__all__"  # or specify your fields
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _configure_dependent_branch_field(
+            self,
+            branch_field_name="company_branch",
+            parent_field_name="company",
+            branches_url_name="admin:accounting_companykhaznatransaction_branches_by_company",
+            branch_model=CompanyBranch,
+            parent_fk_name="company",
+        )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -27,6 +90,26 @@ class CompanyKhaznaTransactionForm(forms.ModelForm):
                 )
 
         return cleaned_data
+
+
+class CompanyBranchByCompanyListFilter(admin.RelatedFieldListFilter):
+    template = "admin/accounting/dependent_branch_filter.html"
+
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+        self.parent_filter = "company"
+        self.branches_url = reverse(
+            "admin:accounting_companykhaznatransaction_branches_by_company"
+        )
+
+    def field_choices(self, field, request, model_admin):
+        company_id = request.GET.get("company__id__exact")
+        if not company_id:
+            return []
+        return field.get_choices(
+            include_blank=False,
+            limit_choices_to={"company_id": company_id},
+        )
 
 
 @admin.register(CompanyKhaznaTransaction)
@@ -68,7 +151,7 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
         "is_internal",
         "status",
         "company",
-        "company__branches",
+        ("company_branch", CompanyBranchByCompanyListFilter),
     )
 
     def has_change_permission(self, request, obj=None):
@@ -76,13 +159,31 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
             return False
         return True
 
-    def has_delete_permission(self, request, obj=None):
-        return False
-
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "company_branch":
             kwargs["required"] = False
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "branches-by-company/",
+                self.admin_site.admin_view(self.branches_by_company),
+                name="accounting_companykhaznatransaction_branches_by_company",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def branches_by_company(self, request):
+        company_id = _parse_positive_int(request.GET.get("company"))
+        if not company_id:
+            return JsonResponse({"results": []})
+
+        branches = CompanyBranch.objects.filter(company_id=company_id).order_by("name")
+        return _branch_options_response(branches)
 
     def save_model(self, request, obj, form, change):
         if not obj.pk:  # Only set created_by on creation, not updates
@@ -157,6 +258,17 @@ class StationKhaznaTransactionForm(forms.ModelForm):
         model = StationKhaznaTransaction
         fields = "__all__"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _configure_dependent_branch_field(
+            self,
+            branch_field_name="station_branch",
+            parent_field_name="station",
+            branches_url_name="admin:accounting_stationkhaznatransaction_branches_by_station",
+            branch_model=StationBranch,
+            parent_fk_name="station",
+        )
+
     def clean(self):
         cleaned_data = super().clean()
         station_branch = cleaned_data.get("station_branch")
@@ -171,6 +283,26 @@ class StationKhaznaTransactionForm(forms.ModelForm):
                 )
 
         return cleaned_data
+
+
+class StationBranchByStationListFilter(admin.RelatedFieldListFilter):
+    template = "admin/accounting/dependent_branch_filter.html"
+
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+        self.parent_filter = "station"
+        self.branches_url = reverse(
+            "admin:accounting_stationkhaznatransaction_branches_by_station"
+        )
+
+    def field_choices(self, field, request, model_admin):
+        station_id = request.GET.get("station__id__exact")
+        if not station_id:
+            return []
+        return field.get_choices(
+            include_blank=False,
+            limit_choices_to={"station_id": station_id},
+        )
 
 
 @admin.register(StationKhaznaTransaction)
@@ -201,7 +333,7 @@ class StationKhaznaTransactionAdmin(admin.ModelAdmin):
         "is_internal",
         "status",
         "station",
-        "station__branches",
+        ("station_branch", StationBranchByStationListFilter),
     )
     readonly_fields = (
         "id",
@@ -226,6 +358,24 @@ class StationKhaznaTransactionAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "branches-by-station/",
+                self.admin_site.admin_view(self.branches_by_station),
+                name="accounting_stationkhaznatransaction_branches_by_station",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def branches_by_station(self, request):
+        station_id = _parse_positive_int(request.GET.get("station"))
+        if not station_id:
+            return JsonResponse({"results": []})
+
+        branches = StationBranch.objects.filter(station_id=station_id).order_by("name")
+        return _branch_options_response(branches)
 
     def save_model(self, request, obj, form, change):
 

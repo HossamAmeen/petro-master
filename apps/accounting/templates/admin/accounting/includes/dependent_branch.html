@@ -1,0 +1,219 @@
+{% url 'admin:accounting_companykhaznatransaction_branches_by_company' as company_branches_url %}
+{% url 'admin:accounting_stationkhaznatransaction_branches_by_station' as station_branches_url %}
+<script>
+(function () {
+    "use strict";
+
+    var fallbackUrls = {
+        company: "{{ company_branches_url|escapejs }}",
+        station: "{{ station_branches_url|escapejs }}"
+    };
+
+    function getJQuery() {
+        return window.jQuery || (window.django && window.django.jQuery) || null;
+    }
+
+    function fetchBranches(url, parentField, parentId) {
+        if (!url || !parentId) {
+            return Promise.resolve([]);
+        }
+
+        return fetch(
+            url + "?" + encodeURIComponent(parentField) + "=" + encodeURIComponent(parentId),
+            {
+                credentials: "same-origin",
+                headers: { Accept: "application/json" },
+            }
+        )
+            .then(function (response) {
+                if (!response.ok) {
+                    return { results: [] };
+                }
+                return response.json();
+            })
+            .then(function (data) {
+                return data.results || [];
+            })
+            .catch(function () {
+                return [];
+            });
+    }
+
+    function refreshSelect2($, $select) {
+        if (!$select.length || typeof $select.select2 !== "function") {
+            return;
+        }
+
+        if ($select.hasClass("select2-hidden-accessible")) {
+            $select.select2("destroy");
+        }
+
+        var width = $select.hasClass("search-filter") ? "100%" : "element";
+        $select.select2({ width: width, minimumInputLength: 0 });
+    }
+
+    function bindFormDependentSelect($) {
+        $("#id_company_branch, #id_station_branch").each(function () {
+            var $branch = $(this);
+            var parentField =
+                $branch.attr("data-parent-field") ||
+                (this.id === "id_station_branch" ? "station" : "company");
+            var $parent = $("#id_" + parentField);
+            var branchesUrl =
+                $branch.attr("data-branches-url") ||
+                $branch.data("branches-url") ||
+                fallbackUrls[parentField];
+
+            if (!$parent.length || !branchesUrl) {
+                return;
+            }
+
+            var requestId = 0;
+
+            function populateFormBranches(parentId, selectedId) {
+                var currentRequest = ++requestId;
+                var previousValue = selectedId != null ? selectedId : $branch.val();
+
+                $branch.find("option:not(:first)").remove();
+
+                if (!parentId) {
+                    $branch.val("");
+                    refreshSelect2($, $branch);
+                    return;
+                }
+
+                fetchBranches(branchesUrl, parentField, parentId).then(function (branches) {
+                    if (currentRequest !== requestId) {
+                        return;
+                    }
+
+                    branches.forEach(function (branch) {
+                        var isSelected = String(branch.id) === String(previousValue);
+                        $branch.append(
+                            new Option(branch.name, branch.id, false, isSelected)
+                        );
+                    });
+
+                    if (
+                        previousValue &&
+                        $branch.find("option[value='" + previousValue + "']").length
+                    ) {
+                        $branch.val(previousValue);
+                    } else {
+                        $branch.val("");
+                    }
+
+                    refreshSelect2($, $branch);
+                });
+            }
+
+            $(document).on("change", "#id_" + parentField, function () {
+                populateFormBranches($(this).val());
+            });
+
+            if ($parent.val()) {
+                populateFormBranches($parent.val(), $branch.val());
+            }
+        });
+    }
+
+    function bindChangelistDependentFilter($) {
+        $(".search-filter[data-parent-filter]").each(function () {
+            var $branchFilter = $(this);
+            var parentName = $branchFilter.attr("data-parent-filter");
+            var $parentFilter = $('.search-filter[data-name="' + parentName + '"]');
+            var branchesUrl =
+                $branchFilter.attr("data-branches-url") ||
+                $branchFilter.data("branches-url") ||
+                fallbackUrls[parentName];
+            var lookupKwarg =
+                $branchFilter.attr("data-lookup") ||
+                $branchFilter.data("lookup") ||
+                parentName + "_branch__id__exact";
+
+            if (!$parentFilter.length || !branchesUrl) {
+                return;
+            }
+
+            var requestId = 0;
+
+            function populateFilterBranches(parentId, selectedId) {
+                var currentRequest = ++requestId;
+                var previousValue =
+                    selectedId != null ? selectedId : $branchFilter.val();
+
+                $branchFilter.find("option[data-name]").remove();
+
+                if (!parentId) {
+                    $branchFilter.removeAttr("name");
+                    refreshSelect2($, $branchFilter);
+                    return;
+                }
+
+                fetchBranches(branchesUrl, parentName, parentId).then(function (branches) {
+                    if (currentRequest !== requestId) {
+                        return;
+                    }
+
+                    branches.forEach(function (branch) {
+                        var $option = $("<option></option>")
+                            .attr("value", branch.id)
+                            .attr("data-name", lookupKwarg)
+                            .text(branch.name);
+
+                        if (String(branch.id) === String(previousValue)) {
+                            $option.prop("selected", true);
+                        }
+
+                        $branchFilter.append($option);
+                    });
+
+                    if (
+                        previousValue &&
+                        $branchFilter.find("option[value='" + previousValue + "']").length
+                    ) {
+                        $branchFilter.val(previousValue);
+                        $branchFilter.attr("name", lookupKwarg);
+                    } else {
+                        $branchFilter.val("");
+                        $branchFilter.removeAttr("name");
+                    }
+
+                    refreshSelect2($, $branchFilter);
+                });
+            }
+
+            $(document).on(
+                "change",
+                '.search-filter[data-name="' + parentName + '"]',
+                function () {
+                    populateFilterBranches($(this).val());
+                }
+            );
+
+            if ($parentFilter.val()) {
+                populateFilterBranches($parentFilter.val(), $branchFilter.val());
+            }
+        });
+    }
+
+    function start() {
+        var $ = getJQuery();
+        if (!$) {
+            return;
+        }
+
+        bindFormDependentSelect($);
+        bindChangelistDependentFilter($);
+    }
+
+    var $ = getJQuery();
+    if ($) {
+        $(start);
+    } else if (document.readyState === "complete") {
+        start();
+    } else {
+        window.addEventListener("load", start);
+    }
+})();
+</script>

@@ -38,7 +38,7 @@ class CompanyBranch(AbstractBaseModel):
     address = models.CharField(max_length=255, null=True, blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     company = models.ForeignKey(
-        Company, on_delete=models.CASCADE, related_name="branches"
+        Company, on_delete=models.PROTECT, related_name="branches"
     )
     district = models.ForeignKey(
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
@@ -134,7 +134,7 @@ class Car(AbstractBaseModel):
         "geo.City", on_delete=models.SET_NULL, null=True, blank=True
     )
     branch = models.ForeignKey(
-        CompanyBranch, on_delete=models.CASCADE, related_name="cars"
+        CompanyBranch, on_delete=models.PROTECT, related_name="cars"
     )
 
     def __str__(self):
@@ -205,7 +205,7 @@ class Driver(AbstractBaseModel):
     )
     lincense_expiration_date = models.DateField()
     branch = models.ForeignKey(
-        CompanyBranch, on_delete=models.CASCADE, related_name="drivers"
+        CompanyBranch, on_delete=models.PROTECT, related_name="drivers"
     )
 
     def __str__(self):
