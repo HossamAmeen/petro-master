@@ -8,6 +8,8 @@
 - Reuse factories from `apps/companies/factories.py`; add a factory before repeating model setup in tests.
 - API tests must cover successful requests and relevant authentication, authorization, validation, and ownership boundaries.
 - Exercise application code against the test database. Mock only network-bound third-party adapters, such as Firebase Cloud Messaging and email/SMS providers.
+- Car API tests live in `apps/companies/tests/api/v1/car/`, with one module per CRUD action plus custom-action modules. Test function names end in `_success` or `_fail`.
+- Reuse `car_factory`, `car_code_factory`, `car_payload_factory`, and `company_car` from `apps/companies/tests/conftest.py` instead of creating car graphs inside tests.
 
 ## API conventions
 
@@ -67,7 +69,7 @@ The `companies` app (`apps/companies`) manages company accounts, branches, cars,
 - **`CompanyHomeView`** (`company_views.py`): Aggregates dashboard metrics for a company owner or branch manager, returning total cars, balances across entities, recent operations, and transactions.
 - **`CarOperationViewSet`** (`car_operation_views.py`): Manages car service/fueling records. Includes custom `export` and `download-excel` actions to generate and retrieve Excel reports of operations asynchronously. Deletion of operations is explicitly disabled.
 - **`CarViewSet` & `VerifyDriverView`** (`car_views.py`): 
-  - **`CarViewSet`**: Manages car records. Features a custom `update-balance` action for transferring funds between a branch/company and a car, which also generates internal transactions and notifications. Prevents deleting cars with a positive balance.
+  - **`CarViewSet`**: Manages car records. Features a custom `update-balance` action for transferring funds between a branch/company and a car, which also generates internal transactions and notifications. Prevents deleting cars with a positive balance. Car clients do not submit `created_by` or `updated_by`; `InjectUserMixin` owns these read-only audit fields.
   - **`VerifyDriverView`**: Station-facing endpoint that verifies a driver and car code before a service begins. It checks balances and daily fueling limits, calculates available liters, creates a `PENDING` `CarOperation`, and locks the car from receiving balance updates (`is_blocked_balance_update = True`).
 - **`CompanyCashRequestViewSet`** (`company_cash_request_views.py`): Manages driver cash requests at stations. Role-based scoping applies (Company vs Station users).
   - **`create`**: Initiates a request, proactively deducting the total cost (amount + company fees) from the company/branch balance and notifying owners.

@@ -31,6 +31,7 @@ class ListCarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
         fields = "__all__"
+        read_only_fields = ["created_by", "updated_by"]
 
     def get_is_license_expiring_soon(self, obj):
         if obj.license_expiration_date:
@@ -50,6 +51,7 @@ class CarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
         fields = "__all__"
+        read_only_fields = ["created_by", "updated_by"]
 
     def validate(self, attrs):
         super().validate(attrs)

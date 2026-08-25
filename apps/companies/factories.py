@@ -9,7 +9,13 @@ from faker import Faker
 
 from apps.accounting.models import CompanyKhaznaTransaction
 from apps.companies.models.company_cash_models import CompanyCashRequest
-from apps.companies.models.company_models import Car, Company, CompanyBranch, Driver
+from apps.companies.models.company_models import (
+    Car,
+    CarCode,
+    Company,
+    CompanyBranch,
+    Driver,
+)
 from apps.companies.models.operation_model import CarOperation
 from apps.geo.models import City, Country, District
 from apps.notifications.models import Notification
@@ -134,6 +140,15 @@ class CarFactory(factory.django.DjangoModelFactory):
     city = factory.LazyFunction(lambda: City.objects.order_by("?").first())
     branch = factory.LazyFunction(lambda: CompanyBranch.objects.order_by("?").first())
     number_of_washes_per_month = factory.LazyFunction(lambda: random.randint(1, 10))
+    created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+    updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
+
+
+class CarCodeFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CarCode
+
+    code = factory.Sequence(lambda number: f"CAR{number:07d}")
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
     updated_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())
 
