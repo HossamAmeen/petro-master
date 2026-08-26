@@ -1,14 +1,19 @@
+from datetime import timedelta
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
+from django.utils import timezone
 
 from apps.companies.factories import (
     CarCodeFactory,
     CarFactory,
     CompanyBranchFactory,
     CompanyFactory,
+    DriverFactory,
 )
 from apps.companies.models.company_models import Car, Company, CompanyBranch
+from apps.geo.models import City, District
 from apps.users.models import CompanyBranchManager, CompanyUser, User
 
 
@@ -158,3 +163,77 @@ def other_company_branch(admin_user, geo_data, other_company):
         created_by=admin_user,
         updated_by=admin_user,
     )
+
+
+@pytest.fixture
+def second_company_branch(admin_user, company, geo_data):
+    return CompanyBranchFactory(
+        name="Company Branch 1B",
+        company=company,
+        district=geo_data["district"],
+        created_by=admin_user,
+        updated_by=admin_user,
+    )
+
+
+@pytest.fixture
+def other_city_company_branch(admin_user, company, geo_data):
+    city = City.objects.create(name="Alexandria", country=geo_data["country"])
+    district = District.objects.create(name="Smouha", city=city)
+    return CompanyBranchFactory(
+        name="Alexandria Branch",
+        company=company,
+        district=district,
+        created_by=admin_user,
+        updated_by=admin_user,
+    )
+
+
+@pytest.fixture
+def driver_factory(db, admin_user, company_branch):
+    counter = {"n": 0}
+
+    def create_driver(**overrides):
+        counter["n"] += 1
+        token = uuid4().hex
+        defaults = {
+            "name": f"Driver {counter['n']}",
+            "phone_number": f"011{token[:8]}",
+            "code": token[:10].upper(),
+            "lincense_number": f"LIC{token[:17]}".upper(),
+            "lincense_expiration_date": timezone.localdate() + timedelta(days=180),
+            "branch": company_branch,
+            "created_by": admin_user,
+            "updated_by": admin_user,
+        }
+        defaults.update(overrides)
+        return DriverFactory(**defaults)
+
+    return create_driver
+
+
+@pytest.fixture
+def company_driver(driver_factory):
+    return driver_factory()
+
+
+@pytest.fixture
+def driver_payload_factory(company_branch):
+    counter = {"n": 0}
+
+    def build_driver_payload(**overrides):
+        counter["n"] += 1
+        token = uuid4().hex
+        payload = {
+            "name": f"New Driver {counter['n']}",
+            "phone_number": f"012{token[:8]}",
+            "lincense_number": f"NEW{token[:17]}".upper(),
+            "lincense_expiration_date": (
+                timezone.localdate() + timedelta(days=365)
+            ).isoformat(),
+            "branch": company_branch.id,
+        }
+        payload.update(overrides)
+        return payload
+
+    return build_driver_payload

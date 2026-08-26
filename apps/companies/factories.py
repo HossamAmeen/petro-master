@@ -158,9 +158,9 @@ class DriverFactory(factory.django.DjangoModelFactory):
         model = Driver
 
     name = factory.Faker("name")
-    phone_number = factory.Faker("phone_number")
-    code = factory.LazyFunction(lambda: f"DR-{uuid.uuid4().hex[:10].upper()}")
-    lincense_number = factory.Faker("ssn")
+    phone_number = factory.Sequence(lambda n: f"015000{n:05d}")
+    code = factory.Sequence(lambda n: f"DRV{n:07d}")
+    lincense_number = factory.Sequence(lambda n: f"LIC{n:07d}")
     lincense_expiration_date = factory.Faker("future_date")
     branch = factory.LazyFunction(lambda: CompanyBranch.objects.order_by("?").first())
     created_by = factory.LazyFunction(lambda: User.objects.order_by("?").first())

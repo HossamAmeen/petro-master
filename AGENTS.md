@@ -10,6 +10,8 @@
 - Exercise application code against the test database. Mock only network-bound third-party adapters, such as Firebase Cloud Messaging and email/SMS providers.
 - Car API tests live in `apps/companies/tests/api/v1/car/`, with one module per CRUD action plus custom-action modules. Test function names end in `_success` or `_fail`.
 - Reuse `car_factory`, `car_code_factory`, `car_payload_factory`, and `company_car` from `apps/companies/tests/conftest.py` instead of creating car graphs inside tests.
+- Driver API tests live in `apps/companies/tests/api/v1/driver/`, with one module per CRUD action. Test function names end in `_success` or `_fail`.
+- Reuse `driver_factory`, `driver_payload_factory`, and `company_driver` from `apps/companies/tests/conftest.py` instead of creating driver graphs inside tests.
 
 ## API conventions
 
