@@ -36,6 +36,8 @@ When writing tests (especially using Pytest) for this project, you **must** adhe
 
 `Company`, `CompanyBranch`, `Station`, and `StationBranch` each have an `is_available` boolean that defaults to `True`. Use this field to mark an entity unavailable without deleting it.
 
+The stations list API returns available stations by default. Supplying the `is_available` query parameter explicitly overrides that default, including `is_available=false` for unavailable stations.
+
 ## Companies App Overview
 
 The `companies` app (`apps/companies`) manages company accounts, branches, cars, drivers, and their related operations and cash requests.
