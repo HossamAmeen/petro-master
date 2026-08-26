@@ -8,8 +8,9 @@
 - Reuse factories from `apps/companies/factories.py`; add a factory before repeating model setup in tests.
 - API tests must cover successful requests and relevant authentication, authorization, validation, and ownership boundaries.
 - Exercise application code against the test database. Mock only network-bound third-party adapters, such as Firebase Cloud Messaging and email/SMS providers.
-- Car API tests live in `apps/companies/tests/api/v1/car/`, with one module per CRUD action plus custom-action modules. Test function names end in `_success` or `_fail`.
-- Reuse `car_factory`, `car_code_factory`, `car_payload_factory`, and `company_car` from `apps/companies/tests/conftest.py` instead of creating car graphs inside tests.
+- Car API tests live in `apps/companies/tests/api/v1/car/`, with one module per CRUD action plus custom-action modules (`test_update_balance.py`, `test_verify_driver.py`). Test function names end in `_success` or `_fail`.
+- Reuse `car_factory`, `car_code_factory`, `car_payload_factory`, `company_car`, and `car_operation_factory` from `apps/companies/tests/conftest.py` instead of creating car graphs inside tests.
+- `VerifyDriverView` tests authenticate as a station worker via `auth_client(..., station_id=...)`. Cover petrol and non-petrol quotes, code/company/driver ownership, in-progress operations, allowed fuel days, balance, and daily petrol/diesel fueling limits.
 - Driver API tests live in `apps/companies/tests/api/v1/driver/`, with one module per CRUD action. Test function names end in `_success` or `_fail`.
 - Reuse `driver_factory`, `driver_payload_factory`, and `company_driver` from `apps/companies/tests/conftest.py` instead of creating driver graphs inside tests.
 

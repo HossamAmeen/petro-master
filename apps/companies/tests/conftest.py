@@ -8,11 +8,13 @@ from django.utils import timezone
 from apps.companies.factories import (
     CarCodeFactory,
     CarFactory,
+    CarOperationFactory,
     CompanyBranchFactory,
     CompanyFactory,
     DriverFactory,
 )
 from apps.companies.models.company_models import Car, Company, CompanyBranch
+from apps.companies.models.operation_model import CarOperation
 from apps.geo.models import City, District
 from apps.users.models import CompanyBranchManager, CompanyUser, User
 
@@ -215,6 +217,22 @@ def driver_factory(db, admin_user, company_branch):
 @pytest.fixture
 def company_driver(driver_factory):
     return driver_factory()
+
+
+@pytest.fixture
+def car_operation_factory(db, admin_user, branch, station_worker):
+    def create_car_operation(**overrides):
+        defaults = {
+            "station_branch": branch,
+            "worker": station_worker,
+            "status": CarOperation.OperationStatus.PENDING,
+            "created_by": admin_user,
+            "updated_by": admin_user,
+        }
+        defaults.update(overrides)
+        return CarOperationFactory(**defaults)
+
+    return create_car_operation
 
 
 @pytest.fixture
