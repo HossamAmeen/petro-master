@@ -31,6 +31,10 @@
 
 - Tests target the versioned `/api/v1/` endpoints and use DRF's `APIClient`.
 - Set `company_id` or `station_id` JWT claims through the shared `auth_client` fixture for scoped endpoints.
+- Auth API tests live in `apps/auth/tests/`, with one module per endpoint (`test_company_login.py`, `test_station_login.py`, `test_dashboard_login.py`, `test_profile.py`, `test_password_reset_request.py`, `test_password_reset_confirm.py`, `test_token_refresh.py`) plus `test_utils.py` for SendGrid. Test function names end in `_success` or `_fail`.
+- Reuse `company_owner`, `company_branch_manager`, `station_owner`, `branch_manager`, `station_worker`, and dashboard user fixtures. Hash passwords with `set_login_password` before login assertions — most user fixtures store a raw password string.
+- Company login is owner/branch-manager only and embeds `company_id` plus all company branch IDs. Station login is owner/manager/worker and embeds `station_id` (workers via `worker.station_branch.station_id`). Dashboard login is admin/finance/customer_support only. Wrong-role, inactive, and unknown-identifier attempts return 401 `invalid_credentials`.
+- Profile GET adds role-specific `balance` (company total, managed-branch sum, station total, or 0 for workers) and `available_balance=0`. `phone_number` and `role` are read-only. Mock only SendGrid in `test_utils.py`; password-reset email uses the locmem backend and `django.core.mail.outbox`.
 # AGENTS.md
 
 Living guide for coding agents working on Petro Master backend.
@@ -91,6 +95,22 @@ The `companies` app (`apps/companies`) manages company accounts, branches, cars,
   - **`create`**: Initiates a request, proactively deducting the total cost (amount + company fees) from the company/branch balance and notifying owners.
   - **`partial_update`**: Used by Station Workers to approve an in-progress request (validating via OTP). Finalizes the workflow, deducts station costs (amount + station fees) from the station branch balance, logs transactions for both the company and the station, and sends out notifications.
   - **`destroy`**: Cancels a pending request, changes its status to `REJECTED`, and refunds the deducted balance back to the company or branch.
+
+## Auth App Overview
+
+The `auth` app (`apps/auth`) issues JWT sessions for company, station, and dashboard users and handles profile + password-reset flows.
+
+### Views (`apps/auth/v1/views.py`)
+- **`CompanyLoginAPIView`**: Unauthenticated. Accepts email or phone `identifier`. Allows `company_owner` and `company_branch_manager` only. Tokens carry `company_id`; the body also returns `user` and all company `branches`.
+- **`StationLoginAPIView`**: Unauthenticated. Allows station owner, branch manager, and worker. Tokens carry `station_id` from `stationowner.station` or `worker.station_branch.station_id`.
+- **`DashboardLoginAPIView`**: Unauthenticated. Allows `DASHBOARD_ROLES` (admin, finance, customer_support). Tokens do not embed company/station claims.
+- **`CustomTokenRefreshView`**: Copies `company_id` / `station_id` from the refresh token onto the new access token. Company/station roles without those claims are rejected.
+- **`ProfileAPIView`**: Authenticated retrieve/update of the current user. Password is write-only; phone and role are read-only. `to_representation` adds role-specific `balance` and `available_balance`.
+- **`PasswordResetRequestAPIView`** / **`PasswordResetConfirmAPIView`**: Unauthenticated. Request emails a 24-hour token via Django `send_mail`. Confirm GET renders HTML; POST sets the password and clears the token.
+
+### Testing
+- Auth API tests live in `apps/auth/tests/` with one module per endpoint. Reuse shared user/company/station fixtures and `apps/auth/tests/helpers.py` (`set_login_password`, URL reverses, JWT helpers).
+- Cover successful logins by email and phone, JWT claims, wrong-role/inactive/unknown credentials, profile balances per role, reset email/outbox, expired tokens, and refresh-token claim copying. Mock SendGrid only.
 
 ## Stations App Overview
 
