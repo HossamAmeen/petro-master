@@ -1,0 +1,129 @@
+name: petro-master-dev
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: petro_master
+      POSTGRES_USER: petro
+      POSTGRES_PASSWORD: petro
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petro -d petro_master"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile
+    env_file:
+      - path: ../../.env
+        required: false
+    environment: &django-env
+      DEBUG: "on"
+      SECRET_KEY: ${SECRET_KEY:-dev-insecure-secret-key}
+      ALLOWED_HOSTS: "*"
+      ENVIRONMENT: local
+      ACCESS_TOKEN_LIFETIME: "2592000"
+      REFRESH_TOKEN_LIFETIME: "1"
+      DB_NAME: petro_master
+      DB_USER: petro
+      DB_PASSWORD: petro
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_SSL_MODE: disable
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-dev-sendgrid-key}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@example.com}
+      EMAIL_PORT: "587"
+      FIREBASE_CREDENTIALS: ${FIREBASE_CREDENTIALS:-}
+      SENTRY_DNS: ${SENTRY_DNS:-}
+      SMS_SMART_EGYPT_SENDER_NAME: ${SMS_SMART_EGYPT_SENDER_NAME:-Petromaster}
+      SMS_SMART_EGYPT_USERNAME: ${SMS_SMART_EGYPT_USERNAME:-dev-sms-user}
+      SMS_SMART_EGYPT_PASSWORD: ${SMS_SMART_EGYPT_PASSWORD:-dev-sms-password}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      RUN_MIGRATIONS: "true"
+    volumes:
+      - ../..:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  celery:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile
+    env_file:
+      - path: ../../.env
+        required: false
+    environment:
+      <<: *django-env
+      RUN_MIGRATIONS: "false"
+    volumes:
+      - ../..:/app
+    command: ["celery", "-A", "config", "worker", "--loglevel=info"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    restart: unless-stopped
+
+  celery-beat:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile
+    env_file:
+      - path: ../../.env
+        required: false
+    environment:
+      <<: *django-env
+      RUN_MIGRATIONS: "false"
+    volumes:
+      - ../..:/app
+    command: ["celery", "-A", "config", "beat", "--loglevel=info"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
