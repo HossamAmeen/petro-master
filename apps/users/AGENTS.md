@@ -49,9 +49,7 @@ Junction / Support Models:
 | `v1/serializers/station_serializer.py` | Station owner/manager/worker serializers |
 | `v1/serializers/agent_serializer.py` | Supervisor serializers |
 | `test/conftest.py` | User fixtures (admin, finance, support, driver, supervisor, agent) |
-| `test/test_users.py` | Dashboard user CRUD tests |
-| `test/test_station.py` | Station owner & branch manager tests |
-| `test/test_worker.py` | Worker scoping & permission tests |
+| `tests/api/v1/` | API tests, one package per ViewSet |
 
 ## API Endpoints
 
@@ -119,16 +117,20 @@ class MyViewSet(InjectUserMixin, viewsets.ModelViewSet):
 ## Testing
 
 ```bash
-# Run all users tests
-venv/bin/python -m pytest apps/users/test/ -v
+# Run all users API tests
+venv/bin/python -m pytest apps/users/tests/ -v
 
-# Run specific test file
-venv/bin/python -m pytest apps/users/test/test_worker.py -v
+# Run a ViewSet package
+venv/bin/python -m pytest apps/users/tests/api/v1/worker/ -v
 ```
+
+### Layout
+Tests live in `apps/users/tests/api/v1/` with one package per ViewSet (`user`, `company_owner`, `company_branch_manager`, `station_owner`, `station_branch_manager`, `worker`, `supervisor`, `firebase_token`). Function names end in `_success` or `_fail`. URL helpers are in `apps/users/tests/helpers.py`.
 
 ### Test fixtures
 - Root `conftest.py`: `api_client`, `auth_client`, `geo_data`, `mock_firebase_notifications`
 - `apps/users/test/conftest.py`: `admin_user`, `finance_user`, `customer_support_user`, `driver_user`, `supervisor`, `agent`
+- `apps/users/tests/conftest.py`: extra company/station users, payload factories, `firebase_token_factory`
 
 ### Auth in tests
 ```python
@@ -136,6 +138,13 @@ client = auth_client(user)                    # Basic auth
 client = auth_client(user, station.id)        # With station_id claim
 client = auth_client(user, company_id=co.id)  # With company_id claim
 ```
+
+### What to cover
+- Unauthenticated 401 and wrong-role 403 for every ViewSet
+- Admin-only dashboard users and supervisors; dashboard-only company owners; company+dashboard branch managers (owner queryset is company-scoped); station+dashboard station users/workers
+- Password hashing, default `{phone}@petro.com` email, search/filters, and worker/manager branch scoping
+- Firebase tokens are current-user scoped; `delete-by-token` must not remove another user's token
+- `CompanyBranchManagerViewSet.create` uses `CreateCompanyOwnerSerializer`, so POST currently persists `company_owner` role — assert that actual behavior
 
 ## Dependencies
 
