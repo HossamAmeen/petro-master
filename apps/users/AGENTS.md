@@ -125,7 +125,7 @@ venv/bin/python -m pytest apps/users/tests/api/v1/worker/ -v
 ```
 
 ### Layout
-Tests live in `apps/users/tests/api/v1/` with one package per ViewSet (`user`, `company_owner`, `company_branch_manager`, `station_owner`, `station_branch_manager`, `worker`, `supervisor`, `firebase_token`). Function names end in `_success` or `_fail`. URL helpers are in `apps/users/tests/helpers.py`.
+Tests live in `apps/users/tests/api/v1/` with one package per ViewSet (`user`, `company_owner`, `company_branch_manager`, `station_owner`, `station_branch_manager`, `worker`, `supervisor`, `firebase_token`). Wrap tests in a `Test*` class; method names end in `_success` or `_fail`. URL helpers are in `apps/users/tests/helpers.py`.
 
 ### Test fixtures
 - Root `conftest.py`: `api_client`, `auth_client`, `geo_data`, `mock_firebase_notifications`

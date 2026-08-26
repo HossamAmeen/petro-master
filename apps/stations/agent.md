@@ -44,6 +44,6 @@ Users interact with the station app under different roles defined in the `User` 
 
 ## Testing
 
-API tests live in `apps/stations/tests/api/v1/` (`station`, `station_branch`, `service`, `home`, `operations`, `reports`, `gas_operation`, `other_operation`). Names end in `_success` / `_fail`. Reuse fixtures from `apps/stations/tests/conftest.py` and helpers from `apps/stations/tests/helpers.py`.
+API tests live in `apps/stations/tests/api/v1/` (`station`, `station_branch`, `service`, `home`, `operations`, `reports`, `gas_operation`, `other_operation`). Wrap tests in a `Test*` class; method names end in `_success` / `_fail`. Reuse fixtures from `apps/stations/tests/conftest.py` and helpers from `apps/stations/tests/helpers.py`.
 
 Gas completion: `start_time` then `car_meter`+`motor_image` then `amount`+`fuel_image` within 60s. Assert car/station-branch balances, khazna rows, and notification recipients (station owners + worker; company branch managers + worker; oil-change to company owner + that branch's managers). Other-op PATCH is the assigned worker only, needs `StationBranchService`, and notifies all company users plus station owners.
