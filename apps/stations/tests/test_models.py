@@ -1,6 +1,8 @@
 import pytest
-from apps.stations.models.stations_models import Station, StationBranch
+
 from apps.stations.models.service_models import Service
+from apps.stations.models.stations_models import Station, StationBranch
+
 
 @pytest.mark.django_db
 class TestStationModels:
@@ -17,6 +19,23 @@ class TestStationModels:
         assert branch.fees == 0.0
         assert str(branch) == f"{branch.name} - {branch.station.name}"
 
+    @pytest.mark.parametrize("fixture_name", ["station", "branch"])
+    def test_station_models_are_available_by_default(self, request, fixture_name):
+        instance = request.getfixturevalue(fixture_name)
+
+        assert instance.is_available is True
+
+    @pytest.mark.parametrize("fixture_name", ["station", "branch"])
+    def test_station_models_can_be_made_unavailable(self, request, fixture_name):
+        instance = request.getfixturevalue(fixture_name)
+
+        instance.is_available = False
+        instance.save(update_fields=["is_available"])
+        instance.refresh_from_db()
+
+        assert instance.is_available is False
+
+
 @pytest.mark.django_db
 class TestServiceModels:
     def test_service_creation(self, admin_user):
@@ -25,7 +44,7 @@ class TestServiceModels:
             unit=Service.ServiceUnit.LITRE,
             type=Service.ServiceType.PETROL,
             cost=12.50,
-            created_by=admin_user
+            created_by=admin_user,
         )
         assert Service.objects.count() == 1
         assert service.name == "Super Petrol"
