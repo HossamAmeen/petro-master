@@ -105,7 +105,7 @@ class updateStationOtherCarOperationSerializer(serializers.ModelSerializer):
         return branch_service.service
 
     def update(self, instance, validated_data):
-        instance.service_id = validated_data.get("service", instance.service)
+        instance.service = validated_data.get("service", instance.service)
         instance.cost = validated_data.get("cost", instance.cost)
         instance.car_image = validated_data.get("car_image", instance.car_image)
         instance.unit = Service.ServiceUnit.UNIT

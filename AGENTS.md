@@ -26,6 +26,9 @@
 - Company branch API tests live in `apps/companies/tests/api/v1/company_branch/`, with one module per CRUD action plus `test_assign_managers.py` and `test_update_balance.py`. Test function names end in `_success` or `_fail`.
 - Reuse `company_branch_factory`, `company_branch_payload_factory`, `branch_manager_user_factory`, `company_branch`, `second_company_branch`, and `other_company_branch` from `apps/companies/tests/conftest.py` instead of creating branch graphs inside tests.
 - `CompanyBranchViewSet` list allows company and dashboard roles; create is dashboard-only; `assign-managers` and `update-balance` are company-owner-only. Retrieve/update/delete are authenticated and queryset-scoped for owners (their company) and branch managers (assigned branches only). Cover city/company filters, `no_paginate`, annotated counts, manager replacement, and company↔branch balance transfers.
+- Station API tests live in `apps/stations/tests/api/v1/` (`station`, `station_branch`, `service`, `home`, `operations`, `reports`, `gas_operation`, `other_operation`). Test function names end in `_success` or `_fail`.
+- Reuse `station`, `branch`, `station_owner`, `branch_manager`, `station_worker`, `service`, `other_service`, `gas_operation`, `other_operation`, and factories from `apps/stations/tests/conftest.py`. Image helpers and cost/notification asserts live in `apps/stations/tests/helpers.py`.
+- Gas PATCH is authenticated (not worker-scoped): `start_time`, then `car_meter`+`motor_image`, then `amount`+`fuel_image` within 60s. Assert car and station-branch balance deductions, khazna rows, oil-change GENERAL recipients, and MONEY recipients (station owners + actor; car-branch company managers + actor). Other-op PATCH is the assigned worker only; company MONEY goes to every `CompanyUser` for that company plus the worker.
 
 ## API conventions
 
@@ -150,3 +153,13 @@ The `stations` app (`apps/stations`) manages gas station networks, their physica
 - **`StationGasOperationAPIView` & `StationOtherOperationAPIView`** (`car_operations_views.py`): Core endpoints used by Station Workers to process and finalize operations.
   - **`StationGasOperationAPIView`**: Handles fuel operations. Validates amounts against car limits, calculates company vs station costs, deducts from car balances, records internal transactions, and triggers system notifications.
   - **`StationOtherOperationAPIView`**: Similar flow but tailored for non-fuel services (like washing), utilizing branch-specific `other_service_fees`.
+
+### Testing (`apps/stations/tests/`)
+- Tests live in `apps/stations/tests/api/v1/` with one package per area: `station`, `station_branch`, `service`, `home`, `operations`, `reports`, `gas_operation`, `other_operation`. Function names end in `_success` or `_fail`.
+- Reuse `station`, `branch`, `station_owner`, `branch_manager`, `station_worker`, `service`, `other_service`, `gas_operation`, `other_operation`, plus factories in `apps/stations/tests/conftest.py` (`station_factory`, `station_branch_factory`, `station_branch_service_factory`).
+- Shared helpers (`gas_url`, `image_file`, `gas_costs`, `notification_user_ids`) live in `apps/stations/tests/helpers.py`. Multipart image uploads are required for meter/amount/other-op patches.
+- `StationGasOperationAPIView` PATCH is authenticated only (not worker-scoped). Completing `amount` requires `start_time` within 60 seconds, `fuel_image`, and amount ≤ min(tank/permitted, floor(car.balance / company_liter_cost)). It deducts `company_cost` from `car.balance` and `station_cost` from `station_branch.balance` (station/company entity balances are unchanged).
+- Gas MONEY notifications: all `StationOwner` rows for the JWT `station_id` plus the acting user; company MONEY goes to managers of that car's company branch plus the acting user (not the company owner). Oil-change GENERAL goes to company owners and that branch's managers.
+- `StationOtherOperationAPIView` is worker-scoped and requires `service__isnull=True`. Completing deducts `company_cost` from the car only (station branch balance is not changed). Station MONEY: all station owners plus the worker. Company MONEY: all `CompanyUser` rows for the company plus the worker.
+- `StationViewSet` list/create are dashboard-only; retrieve/PATCH allow dashboard or station roles. `StationBranchViewSet` list is public; `update-balance` is station-owner-only. `StationHomeAPIView` / `StationReportsAPIView` require station roles; operations list is authenticated and role-scoped.
+- Model smoke tests remain in `apps/stations/tests/test_models.py`.

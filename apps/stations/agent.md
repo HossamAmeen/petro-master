@@ -40,4 +40,10 @@ Users interact with the station app under different roles defined in the `User` 
 ## Key Business Logic Points
 - **Profit Calculation**: The company charges more per liter/service based on `branch.fees`. `profits = company_cost - station_cost`.
 - **Atomic Transactions**: Operations that adjust balances (`PATCH` on `StationGasOperationAPIView` and `StationOtherOperationAPIView`) use `@atomic` to ensure data integrity during partial updates.
-- **Meter Validation**: Required for vehicles with `is_with_odometer` set to True. The new odometer reading cannot be less than the old reading.
+- **Meter Validation**: Required for vehicles with `is_with_odometer` set to True. The new odometer reading cannot be less than the old reading (`<` fails; equal is allowed).
+
+## Testing
+
+API tests live in `apps/stations/tests/api/v1/` (`station`, `station_branch`, `service`, `home`, `operations`, `reports`, `gas_operation`, `other_operation`). Names end in `_success` / `_fail`. Reuse fixtures from `apps/stations/tests/conftest.py` and helpers from `apps/stations/tests/helpers.py`.
+
+Gas completion: `start_time` then `car_meter`+`motor_image` then `amount`+`fuel_image` within 60s. Assert car/station-branch balances, khazna rows, and notification recipients (station owners + worker; company branch managers + worker; oil-change to company owner + that branch's managers). Other-op PATCH is the assigned worker only, needs `StationBranchService`, and notifies all company users plus station owners.
