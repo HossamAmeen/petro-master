@@ -38,6 +38,8 @@
 - Users API tests live in `apps/users/tests/api/v1/`, with one package per ViewSet (`user`, `company_owner`, `company_branch_manager`, `station_owner`, `station_branch_manager`, `worker`, `supervisor`, `firebase_token`). Test function names end in `_success` or `_fail`.
 - Reuse `admin_user`, `finance_user`, `customer_support_user`, `company_owner`, `company_branch_manager`, `station_owner`, `branch_manager`, `station_worker`, `supervisor`, and `agent` from `apps/users/test/conftest.py` plus company/station fixtures. Extra owners/stations/payload factories live in `apps/users/tests/conftest.py`.
 - `UserViewSet` and `SupervisorViewSet` are admin-only. `CompanyOwnerViewSet` is dashboard-only. Company branch managers allow company + dashboard (owners are company-scoped). Station owner/manager/worker endpoints allow station + dashboard. Firebase tokens are authenticated; queryset is the current user only. Cover unauthenticated 401, wrong-role 403, queryset scoping, search/filters, password hashing, default `{phone}@petro.com` email, and branch-assignment side effects.
+- Notifications API tests live in `apps/notifications/tests/` (`test_list.py`, `test_update.py`, `test_signals.py`, `test_fcm_manager.py`). The list is authenticated and current-user scoped. Dashboard roles get a real `unread_count`; company/station roles always receive `unread_count=0`. PATCH may only change `is_read`. FCM is autouse-mocked in root `conftest.py`; assert the mock from notification `post_save`. Test `FCMManager.send_fcm_message` against the original function captured in `apps/notifications/tests/conftest.py`.
+- Geo API tests live in `apps/geo/tests/` (`test_cities.py`, `test_districts.py`). Cities and districts are unauthenticated GET-only (`http_method_names=["get"]`). Cover public list/retrieve, `country`/`city` filters, name search, `no_paginate`, newest-first ordering, nested district→city payload, and POST/PATCH/DELETE 405. There is no Country endpoint.
 # AGENTS.md
 
 Living guide for coding agents working on Petro Master backend.
@@ -114,6 +116,21 @@ The `auth` app (`apps/auth`) issues JWT sessions for company, station, and dashb
 ### Testing
 - Auth API tests live in `apps/auth/tests/` with one module per endpoint. Reuse shared user/company/station fixtures and `apps/auth/tests/helpers.py` (`set_login_password`, URL reverses, JWT helpers).
 - Cover successful logins by email and phone, JWT claims, wrong-role/inactive/unknown credentials, profile balances per role, reset email/outbox, expired tokens, and refresh-token claim copying. Mock SendGrid only.
+
+## Notifications App Overview
+
+The `notifications` app (`apps/notifications`) stores in-app notifications and fans them out over FCM.
+
+- **`NotificationViewSet`**: Authenticated list + PATCH. Queryset is `user=request.user`. Search `title`/`description`; filter `is_read` and `type` (iexact). List adds `unread_count` for dashboard roles only (always `0` for company/station). PATCH serializer accepts `is_read` only. No retrieve/create/delete.
+- Creating a `Notification` fires `post_save` → `FCMManager.send_fcm_message` with that user's Firebase tokens. Updates do not resend. `user=None` raises on send because the signal dereferences `instance.user.firebase_tokens`.
+- Tests live in `apps/notifications/tests/`. Mock FCM at `FCMManager.send_fcm_message`; unit-test the real sender via `ORIGINAL_SEND_FCM`.
+
+## Geo App Overview
+
+The `geo` app (`apps/geo`) is the country → city → district catalog.
+
+- **`CityViewSet`** / **`DistrictViewSet`**: Unauthenticated GET-only. Filter cities by `country`, districts by `city`; search by `name`; order by `-id`. District list/retrieve nest the full city (`id`, `name`, `country` PK). There is no Country API.
+- Tests live in `apps/geo/tests/`. Reuse root `geo_data` plus `other_country` / `other_city` / `other_district` from that package's conftest.
 
 ## Stations App Overview
 
