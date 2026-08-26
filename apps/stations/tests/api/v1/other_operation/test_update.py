@@ -6,6 +6,7 @@ from rest_framework import status
 from apps.accounting.models import CompanyKhaznaTransaction, StationKhaznaTransaction
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
+from apps.stations.models.service_models import Service
 from apps.stations.tests.helpers import (
     image_file,
     notification_user_ids,
@@ -372,3 +373,195 @@ def test_station_owner_cannot_complete_other_operation_fail(
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.data["code"] == "not_found"
+
+
+def test_post_and_put_not_allowed_fail(
+    auth_client, station_worker, station, other_operation
+):
+    client = worker_client(auth_client, station_worker, station)
+
+    assert (
+        client.post(other_url(other_operation.id), {}, format="json").status_code
+        == status.HTTP_405_METHOD_NOT_ALLOWED
+    )
+    assert (
+        client.put(other_url(other_operation.id), {}, format="json").status_code
+        == status.HTTP_405_METHOD_NOT_ALLOWED
+    )
+
+
+def test_patch_missing_service_fail(
+    auth_client, station_worker, station, other_operation, branch_other_service
+):
+    response = worker_client(auth_client, station_worker, station).patch(
+        other_url(other_operation.id),
+        {"cost": "50", "car_image": image_file("car.png")},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    other_operation.refresh_from_db()
+    assert other_operation.status == CarOperation.OperationStatus.PENDING
+
+
+def test_patch_missing_cost_fail(
+    auth_client,
+    station_worker,
+    station,
+    other_operation,
+    other_service,
+    branch_other_service,
+):
+    response = worker_client(auth_client, station_worker, station).patch(
+        other_url(other_operation.id),
+        {"service": other_service.id, "car_image": image_file("car.png")},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    other_operation.refresh_from_db()
+    assert other_operation.status == CarOperation.OperationStatus.PENDING
+
+
+def test_patch_negative_cost_fail(
+    auth_client,
+    station_worker,
+    station,
+    other_operation,
+    other_service,
+    branch_other_service,
+):
+    response = complete_other(
+        worker_client(auth_client, station_worker, station),
+        other_operation,
+        other_service,
+        "-10",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    other_operation.refresh_from_db()
+    assert other_operation.status == CarOperation.OperationStatus.PENDING
+
+
+@pytest.mark.parametrize(
+    "role_fixture", ["branch_manager", "company_owner", "admin_user"]
+)
+def test_patch_non_assigned_worker_role_fail(
+    role_fixture,
+    request,
+    auth_client,
+    company,
+    station,
+    other_operation,
+    other_service,
+    branch_other_service,
+):
+    user = request.getfixturevalue(role_fixture)
+    kwargs = {"station_id": station.id}
+    if role_fixture == "company_owner":
+        kwargs = {"company_id": company.id, "station_id": station.id}
+
+    response = complete_other(
+        auth_client(user, **kwargs), other_operation, other_service
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data["code"] == "not_found"
+
+
+def test_complete_when_car_balance_equals_company_cost_success(
+    auth_client,
+    station_worker,
+    station,
+    other_operation,
+    other_service,
+    branch_other_service,
+    car,
+    company_branch,
+    branch,
+):
+    configure_other_money(company_branch, branch, car, station, car_balance="55.00")
+    expected = other_costs("50", company_branch, branch)
+    assert expected["company_cost"] == Decimal("55.00")
+
+    response = complete_other(
+        worker_client(auth_client, station_worker, station),
+        other_operation,
+        other_service,
+        "50",
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    car.refresh_from_db()
+    assert car.balance == Decimal("0.00")
+
+
+def test_complete_with_zero_other_service_fees_success(
+    auth_client,
+    station_worker,
+    station,
+    other_operation,
+    other_service,
+    branch_other_service,
+    car,
+    company_branch,
+    branch,
+):
+    configure_other_money(
+        company_branch,
+        branch,
+        car,
+        station,
+        company_fees="0.00",
+        station_fees="0.00",
+    )
+    expected = other_costs("50", company_branch, branch)
+
+    response = complete_other(
+        worker_client(auth_client, station_worker, station),
+        other_operation,
+        other_service,
+        "50",
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    car.refresh_from_db()
+    assert expected["company_cost"] == Decimal("50.00")
+    assert expected["station_cost"] == Decimal("50.00")
+    assert car.balance == Decimal("950.00")
+    txn = StationKhaznaTransaction.objects.get()
+    assert txn.amount == Decimal("50.00")
+
+
+def test_complete_other_type_service_success(
+    auth_client,
+    station_worker,
+    station,
+    other_operation,
+    car,
+    company_branch,
+    branch,
+    admin_user,
+    station_branch_service_factory,
+):
+    extra = Service.objects.create(
+        name="Oil Filter",
+        unit=Service.ServiceUnit.UNIT,
+        type=Service.ServiceType.OTHER,
+        cost=30,
+        created_by=admin_user,
+    )
+    station_branch_service_factory(branch, extra)
+    configure_other_money(company_branch, branch, car, station)
+
+    response = complete_other(
+        worker_client(auth_client, station_worker, station),
+        other_operation,
+        extra,
+        "30",
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    other_operation.refresh_from_db()
+    assert other_operation.service_id == extra.id
+    assert other_operation.status == CarOperation.OperationStatus.COMPLETED

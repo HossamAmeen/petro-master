@@ -119,3 +119,69 @@ def test_home_worker_zero_balances_success(
     assert response.data["branches_count"] == 0
     last_ids = {item["id"] for item in response.data["last_operations"]}
     assert gas_operation.id in last_ids
+
+
+def test_home_owner_excludes_other_station_operations_success(
+    auth_client,
+    station_owner,
+    station,
+    gas_operation,
+    other_station_branch,
+    car_operation_factory,
+):
+    foreign = car_operation_factory(station_branch=other_station_branch)
+
+    response = auth_client(station_owner, station_id=station.id).get(home_url())
+
+    assert response.status_code == status.HTTP_200_OK
+    last_ids = {item["id"] for item in response.data["last_operations"]}
+    assert gas_operation.id in last_ids
+    assert foreign.id not in last_ids
+
+
+def test_home_owner_with_no_branches_success(auth_client, admin_user, geo_data):
+    from apps.stations.models.stations_models import Station
+    from apps.users.models import StationOwner, User
+
+    empty_station = Station.objects.create(
+        name="Empty Home Station",
+        address="Empty Address",
+        lang=31.2,
+        lat=30.0,
+        district=geo_data["district"],
+        balance=Decimal("15.00"),
+        created_by=admin_user,
+    )
+    owner = StationOwner.objects.create(
+        name="Empty Station Owner",
+        phone_number="01000000991",
+        email="empty-home-owner@example.com",
+        password="password123",
+        role=User.UserRoles.StationOwner,
+        station=empty_station,
+        created_by=admin_user,
+    )
+
+    response = auth_client(owner, station_id=empty_station.id).get(home_url())
+
+    assert response.status_code == status.HTTP_200_OK
+    assert Decimal(str(response.data["balance"])) == Decimal("15.00")
+    assert response.data["branches_balance"] in (0, None)
+    assert Decimal(str(response.data["distributed_balance"] or 0)) == Decimal("0")
+    assert response.data["branches_count"] == 0
+    assert response.data["workers_count"] == 0
+    assert response.data["last_operations"] == []
+
+
+def test_home_last_operations_capped_at_five_success(
+    auth_client, station_owner, station, car_operation_factory
+):
+    ops = [car_operation_factory() for _ in range(6)]
+
+    response = auth_client(station_owner, station_id=station.id).get(home_url())
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.data["last_operations"]) == 5
+    returned = [item["id"] for item in response.data["last_operations"]]
+    assert ops[-1].id in returned
+    assert ops[0].id not in returned

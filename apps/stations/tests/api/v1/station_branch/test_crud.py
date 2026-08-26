@@ -522,3 +522,235 @@ def test_list_branch_services_filter_category_success(
     assert other.status_code == status.HTTP_200_OK
     assert returned_ids(petrol) == {service.id}
     assert returned_ids(other) == {other_service.id}
+
+
+def test_list_filter_by_city_success(
+    api_client, branch, other_station_branch, geo_data, station_branch_factory
+):
+    from apps.geo.models import City, District
+
+    city = City.objects.create(name="Giza City", country=geo_data["country"])
+    district = District.objects.create(name="Dokki Filter", city=city)
+    giza_branch = station_branch_factory(name="Giza Branch", district=district)
+
+    response = api_client.get(
+        branches_list_url(city=geo_data["city"].id, no_paginate="true")
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    ids = returned_ids(response)
+    assert branch.id in ids
+    assert giza_branch.id not in ids
+
+
+def test_list_filter_by_landing_page_success(
+    api_client, branch, station_branch_factory
+):
+    landing = station_branch_factory(name="Landing Branch", is_for_landing_page=True)
+
+    response = api_client.get(
+        branches_list_url(is_for_landing_page="true", no_paginate="true")
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    ids = returned_ids(response)
+    assert landing.id in ids
+    assert branch.id not in ids
+
+
+def test_list_as_worker_unscoped_success(
+    auth_client, station_worker, station, branch, other_station_branch
+):
+    response = auth_client(station_worker, station_id=station.id).get(
+        branches_list_url(no_paginate="true")
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    ids = returned_ids(response)
+    assert branch.id in ids
+    assert other_station_branch.id in ids
+
+
+def test_retrieve_without_authentication_fail(api_client, branch):
+    response = api_client.get(branches_detail_url(branch.id))
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_retrieve_other_station_as_owner_fail(
+    auth_client, station_owner, station, other_station_branch
+):
+    response = auth_client(station_owner, station_id=station.id).get(
+        branches_detail_url(other_station_branch.id)
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_as_station_owner_success(auth_client, station_owner, station, branch):
+    response = auth_client(station_owner, station_id=station.id).patch(
+        branches_detail_url(branch.id),
+        {"name": "Owner Renamed Branch"},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    branch.refresh_from_db()
+    assert branch.name == "Owner Renamed Branch"
+
+
+def test_update_balance_invalid_type_fail(auth_client, station_owner, station, branch):
+    response = auth_client(station_owner, station_id=station.id).post(
+        update_balance_url(branch.id),
+        {"type": "transfer", "amount": "10.00"},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_update_balance_other_station_branch_fail(
+    auth_client, station_owner, station, other_station_branch
+):
+    response = auth_client(station_owner, station_id=station.id).post(
+        update_balance_url(other_station_branch.id),
+        {"type": "add", "amount": "10.00"},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_assign_managers_without_authentication_fail(api_client, branch, branch_manager):
+    response = api_client.post(
+        assign_managers_url(branch.id),
+        {"managers": [branch_manager.id]},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_assign_services_empty_clears_existing_success(
+    auth_client, admin_user, branch, branch_petrol_service, service
+):
+    assert StationBranchService.objects.filter(station_branch=branch).exists()
+
+    response = auth_client(admin_user).post(
+        assign_services_url(branch.id),
+        {"services": []},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    assert not StationBranchService.objects.filter(station_branch=branch).exists()
+
+
+def test_delete_service_empty_list_success(
+    auth_client, admin_user, branch, service, branch_petrol_service
+):
+    response = auth_client(admin_user).post(
+        delete_service_url(branch.id),
+        {"services": []},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    assert StationBranchService.objects.filter(
+        station_branch=branch, service=service
+    ).exists()
+
+
+def test_add_multiple_services_success(
+    auth_client, admin_user, branch, other_service, diesel_service, branch_petrol_service
+):
+    response = auth_client(admin_user).post(
+        add_service_url(branch.id),
+        {"services": [other_service.id, diesel_service.id]},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    linked = set(
+        StationBranchService.objects.filter(station_branch=branch).values_list(
+            "service_id", flat=True
+        )
+    )
+    assert {other_service.id, diesel_service.id}.issubset(linked)
+
+
+def test_list_branch_services_types_and_search_success(
+    auth_client,
+    station_owner,
+    station,
+    branch,
+    service,
+    other_service,
+    branch_petrol_service,
+    branch_other_service,
+):
+    types_resp = auth_client(station_owner, station_id=station.id).get(
+        services_url(branch.id, types="petrol", no_paginate="true")
+    )
+    search_resp = auth_client(station_owner, station_id=station.id).get(
+        services_url(branch.id, search=service.name, no_paginate="true")
+    )
+
+    assert types_resp.status_code == status.HTTP_200_OK
+    assert search_resp.status_code == status.HTTP_200_OK
+    assert returned_ids(types_resp) == {service.id}
+    assert returned_ids(search_resp) == {service.id}
+
+
+def test_list_branch_services_as_manager_excludes_unmanaged_success(
+    auth_client,
+    branch_manager,
+    station,
+    branch,
+    second_station_branch,
+    service,
+    other_service,
+    branch_petrol_service,
+    station_branch_service_factory,
+):
+    station_branch_service_factory(second_station_branch, other_service)
+
+    own = auth_client(branch_manager, station_id=station.id).get(
+        services_url(branch.id, no_paginate="true")
+    )
+    other = auth_client(branch_manager, station_id=station.id).get(
+        services_url(second_station_branch.id, no_paginate="true")
+    )
+
+    assert own.status_code == status.HTTP_200_OK
+    assert service.id in returned_ids(own)
+    assert other.status_code == status.HTTP_200_OK
+    assert returned_ids(other) == set()
+
+
+def test_available_services_search_and_category_success(
+    auth_client,
+    station_owner,
+    station,
+    branch,
+    service,
+    other_service,
+    diesel_service,
+    branch_petrol_service,
+):
+    search = auth_client(station_owner, station_id=station.id).get(
+        available_services_url(branch.id, search=other_service.name, no_paginate="true")
+    )
+    category = auth_client(station_owner, station_id=station.id).get(
+        available_services_url(
+            branch.id, service_category="petrol", no_paginate="true"
+        )
+    )
+
+    assert search.status_code == status.HTTP_200_OK
+    assert category.status_code == status.HTTP_200_OK
+    assert other_service.id in returned_ids(search)
+    assert service.id not in returned_ids(search)
+    assert diesel_service.id in returned_ids(category)
+    assert other_service.id not in returned_ids(category)
+    assert service.id not in returned_ids(category)

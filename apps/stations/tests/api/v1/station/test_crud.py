@@ -232,3 +232,109 @@ def test_delete_empty_station_as_admin_success(
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert not Station.objects.filter(id=empty.id).exists()
+
+
+@pytest.mark.parametrize("role_fixture", ["station_worker", "branch_manager"])
+def test_retrieve_as_station_role_success(
+    role_fixture, request, auth_client, station
+):
+    user = request.getfixturevalue(role_fixture)
+
+    response = auth_client(user, station_id=station.id).get(
+        stations_detail_url(station.id)
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["id"] == station.id
+
+
+def test_retrieve_unknown_station_fail(auth_client, admin_user):
+    response = auth_client(admin_user).get(stations_detail_url(999_999))
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_create_missing_name_fail(auth_client, admin_user, station_payload_factory):
+    payload = station_payload_factory()
+    payload.pop("name")
+
+    response = auth_client(admin_user).post(
+        reverse("stations-list"), payload, format="json"
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.parametrize("role_fixture", ["finance_user", "customer_support_user"])
+def test_create_as_dashboard_role_success(
+    role_fixture, request, auth_client, station_payload_factory
+):
+    user = request.getfixturevalue(role_fixture)
+    payload = station_payload_factory()
+
+    response = auth_client(user).post(
+        reverse("stations-list"), payload, format="json"
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.data
+    assert Station.objects.filter(name=payload["name"]).exists()
+
+
+def test_update_forbidden_company_role_fail(
+    auth_client, company_owner, company, station
+):
+    response = auth_client(company_owner, company_id=company.id).patch(
+        stations_detail_url(station.id),
+        {"name": "Hacked"},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    station.refresh_from_db()
+    assert station.name == "Station 1"
+
+
+@pytest.mark.parametrize("role_fixture", ["station_worker", "branch_manager"])
+def test_update_as_station_role_success(
+    role_fixture, request, auth_client, station
+):
+    user = request.getfixturevalue(role_fixture)
+
+    response = auth_client(user, station_id=station.id).patch(
+        stations_detail_url(station.id),
+        {"address": f"Updated by {role_fixture}"},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    station.refresh_from_db()
+    assert station.address == f"Updated by {role_fixture}"
+
+
+def test_list_filter_by_name_success(
+    auth_client, admin_user, station, other_station
+):
+    response = auth_client(admin_user).get(
+        stations_list_url(name=station.name, no_paginate="true")
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    ids = returned_ids(response)
+    assert station.id in ids
+    assert other_station.id not in ids
+
+
+def test_list_search_by_address_success(
+    auth_client, admin_user, station, other_station
+):
+    station.address = "UniqueStationStreet"
+    station.save(update_fields=["address"])
+
+    response = auth_client(admin_user).get(
+        stations_list_url(search="UniqueStationStreet", no_paginate="true")
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    ids = returned_ids(response)
+    assert station.id in ids
+    assert other_station.id not in ids

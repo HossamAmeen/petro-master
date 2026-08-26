@@ -84,3 +84,21 @@ def test_delete_unknown_operation_fail(auth_client, station_worker, station):
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.data["code"] == "not_found"
+
+
+def test_delete_in_progress_unblocks_car_success(
+    auth_client, station_worker, station, other_operation, car
+):
+    other_operation.status = CarOperation.OperationStatus.IN_PROGRESS
+    other_operation.save(update_fields=["status"])
+    car.is_blocked_balance_update = True
+    car.save(update_fields=["is_blocked_balance_update"])
+
+    response = worker_client(auth_client, station_worker, station).delete(
+        other_url(other_operation.id)
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert not CarOperation.objects.filter(id=other_operation.id).exists()
+    car.refresh_from_db()
+    assert car.is_blocked_balance_update is False

@@ -29,6 +29,7 @@
 - Station API tests live in `apps/stations/tests/api/v1/` (`station`, `station_branch`, `service`, `home`, `operations`, `reports`, `gas_operation`, `other_operation`). Test function names end in `_success` or `_fail`.
 - Reuse `station`, `branch`, `station_owner`, `branch_manager`, `station_worker`, `service`, `other_service`, `gas_operation`, `other_operation`, and factories from `apps/stations/tests/conftest.py`. Image helpers and cost/notification asserts live in `apps/stations/tests/helpers.py`.
 - Gas PATCH is authenticated (not worker-scoped): `start_time`, then `car_meter`+`motor_image`, then `amount`+`fuel_image` within 60s. Assert car and station-branch balance deductions, khazna rows, oil-change GENERAL recipients, and MONEY recipients (station owners + actor; car-branch company managers + actor). Other-op PATCH is the assigned worker only; company MONEY goes to every `CompanyUser` for that company plus the worker.
+- Also cover empty/invalid payloads, meter-vs-amount precedence, the 60s window, zero fees, exact oil-change km, diesel vs wash/other types, exact car-balance completion, dashboard/station role retrieve-update, branch city/landing-page filters, operations petrol/diesel totals, and reports `date_to` / time windows.
 
 ## API conventions
 

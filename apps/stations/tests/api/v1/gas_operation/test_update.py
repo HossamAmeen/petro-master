@@ -627,3 +627,226 @@ def test_complete_can_drive_station_branch_balance_negative_success(
     branch.refresh_from_db()
     assert branch.balance == Decimal("1.00") - expected["station_cost"]
     assert branch.balance < 0
+
+
+def test_post_and_put_not_allowed_fail(
+    auth_client, station_worker, station, gas_operation
+):
+    client = worker_client(auth_client, station_worker, station)
+
+    assert (
+        client.post(gas_url(gas_operation.id), {}, format="json").status_code
+        == status.HTTP_405_METHOD_NOT_ALLOWED
+    )
+    assert (
+        client.put(gas_url(gas_operation.id), {}, format="json").status_code
+        == status.HTTP_405_METHOD_NOT_ALLOWED
+    )
+
+
+def test_patch_empty_payload_leaves_pending_success(
+    auth_client, station_worker, station, gas_operation
+):
+    response = worker_client(auth_client, station_worker, station).patch(
+        gas_url(gas_operation.id), {}, format="json"
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    gas_operation.refresh_from_db()
+    assert gas_operation.status == CarOperation.OperationStatus.PENDING
+    assert gas_operation.start_time is None
+    assert gas_operation.amount is None
+
+
+def test_patch_car_meter_takes_precedence_over_amount_success(
+    auth_client, station_worker, station, gas_operation, car, company_branch, branch
+):
+    configure_fuel_money(company_branch, branch, car, station)
+    prepare_gas_for_amount(gas_operation)
+
+    response = worker_client(auth_client, station_worker, station).patch(
+        gas_url(gas_operation.id),
+        {
+            "car_meter": "10100",
+            "motor_image": image_file("motor.png"),
+            "amount": "20",
+            "fuel_image": image_file("fuel.png"),
+        },
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    gas_operation.refresh_from_db()
+    car.refresh_from_db()
+    assert gas_operation.status == CarOperation.OperationStatus.IN_PROGRESS
+    assert car.balance == Decimal("1000.00")
+    assert CompanyKhaznaTransaction.objects.count() == 0
+
+
+def test_patch_amount_within_sixty_seconds_success(
+    auth_client, station_worker, station, gas_operation, car, company_branch, branch
+):
+    configure_fuel_money(company_branch, branch, car, station)
+    gas_operation.start_time = timezone.localtime() - timedelta(seconds=59)
+    gas_operation.car_meter = Decimal("10100")
+    gas_operation.save(update_fields=["start_time", "car_meter"])
+
+    response = complete_amount(
+        worker_client(auth_client, station_worker, station), gas_operation, "20"
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    gas_operation.refresh_from_db()
+    assert gas_operation.status == CarOperation.OperationStatus.COMPLETED
+
+
+def test_patch_car_meter_zero_success(
+    auth_client, station_worker, station, gas_operation, car
+):
+    car.is_with_odometer = False
+    car.save(update_fields=["is_with_odometer"])
+
+    response = worker_client(auth_client, station_worker, station).patch(
+        gas_url(gas_operation.id),
+        {"car_meter": "0", "motor_image": image_file("motor.png")},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    gas_operation.refresh_from_db()
+    assert gas_operation.car_meter == Decimal("0.00")
+    assert gas_operation.status == CarOperation.OperationStatus.IN_PROGRESS
+
+
+def test_complete_with_zero_fees_success(
+    auth_client, station_worker, station, gas_operation, car, company_branch, branch
+):
+    configure_fuel_money(
+        company_branch, branch, car, station, company_fees="0.00", station_fees="0.00"
+    )
+    prepare_gas_for_amount(gas_operation)
+    expected = gas_costs("20", gas_operation.service, company_branch, branch)
+
+    response = complete_amount(
+        worker_client(auth_client, station_worker, station), gas_operation, "20"
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    gas_operation.refresh_from_db()
+    car.refresh_from_db()
+    assert expected["company_cost"] == Decimal("200.00")
+    assert expected["station_cost"] == Decimal("200.00")
+    assert expected["profits"] == Decimal("0.00")
+    assert gas_operation.profits == Decimal("0.00")
+    assert car.balance == Decimal("800.00")
+
+
+def test_oil_change_at_exact_meter_threshold_success(
+    auth_client,
+    station_worker,
+    station,
+    gas_operation,
+    car,
+    company_branch,
+    branch,
+    company_owner,
+    company_branch_manager,
+):
+    car.next_oil_change_km = 10100
+    car.save(update_fields=["next_oil_change_km"])
+    configure_fuel_money(company_branch, branch, car, station)
+    prepare_gas_for_amount(gas_operation, meter="10100")
+
+    response = complete_amount(
+        worker_client(auth_client, station_worker, station), gas_operation, "20"
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    oil_users = notification_user_ids(
+        Notification.NotificationType.GENERAL, "يجب تغيير زيت"
+    )
+    assert oil_users == {company_owner.id, company_branch_manager.id}
+
+
+def test_oil_change_skipped_when_next_km_is_zero_success(
+    auth_client, station_worker, station, gas_operation, car, company_branch, branch
+):
+    car.next_oil_change_km = 0
+    car.save(update_fields=["next_oil_change_km"])
+    configure_fuel_money(company_branch, branch, car, station)
+    prepare_gas_for_amount(gas_operation)
+
+    response = complete_amount(
+        worker_client(auth_client, station_worker, station), gas_operation, "20"
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    assert (
+        Notification.objects.filter(type=Notification.NotificationType.GENERAL).count()
+        == 0
+    )
+
+
+@pytest.mark.parametrize("role_fixture", ["admin_user", "company_owner"])
+def test_complete_as_authenticated_non_worker_success(
+    role_fixture,
+    request,
+    auth_client,
+    station,
+    gas_operation,
+    car,
+    company_branch,
+    branch,
+    company,
+):
+    user = request.getfixturevalue(role_fixture)
+    configure_fuel_money(company_branch, branch, car, station)
+    prepare_gas_for_amount(gas_operation)
+    kwargs = {"station_id": station.id}
+    if role_fixture == "company_owner":
+        kwargs["company_id"] = company.id
+
+    response = complete_amount(auth_client(user, **kwargs), gas_operation, "20")
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    gas_operation.refresh_from_db()
+    assert gas_operation.status == CarOperation.OperationStatus.COMPLETED
+    assert user.id in notification_user_ids(
+        Notification.NotificationType.MONEY, "تم تفويل"
+    )
+
+
+def test_complete_diesel_service_success(
+    auth_client,
+    station_worker,
+    station,
+    car,
+    driver,
+    branch,
+    diesel_service,
+    company_branch,
+    car_operation_factory,
+):
+    operation = car_operation_factory(
+        car=car,
+        driver=driver,
+        station_branch=branch,
+        worker=station_worker,
+        service=diesel_service,
+        status=CarOperation.OperationStatus.PENDING,
+        amount=None,
+    )
+    configure_fuel_money(company_branch, branch, car, station)
+    prepare_gas_for_amount(operation)
+    expected = gas_costs("10", diesel_service, company_branch, branch)
+
+    response = complete_amount(
+        worker_client(auth_client, station_worker, station), operation, "10"
+    )
+
+    assert response.status_code == status.HTTP_200_OK, response.data
+    operation.refresh_from_db()
+    car.refresh_from_db()
+    assert operation.status == CarOperation.OperationStatus.COMPLETED
+    assert operation.company_cost == expected["company_cost"]
+    assert car.balance == Decimal("1000.00") - expected["company_cost"]
