@@ -13,6 +13,9 @@
 - `VerifyDriverView` tests authenticate as a station worker via `auth_client(..., station_id=...)`. Cover petrol and non-petrol quotes, code/company/driver ownership, in-progress operations, allowed fuel days, balance, and daily petrol/diesel fueling limits.
 - Driver API tests live in `apps/companies/tests/api/v1/driver/`, with one module per CRUD action. Test function names end in `_success` or `_fail`.
 - Reuse `driver_factory`, `driver_payload_factory`, and `company_driver` from `apps/companies/tests/conftest.py` instead of creating driver graphs inside tests.
+- Company API tests live in `apps/companies/tests/api/v1/company/`, with one module per CRUD action. Test function names end in `_success` or `_fail`.
+- Reuse `company_factory`, `company_payload_factory`, `company`, and `other_company` from `apps/companies/tests/conftest.py` instead of creating company graphs inside tests.
+- `CompanyViewSet` is authenticated but not role-scoped: any logged-in user can list, retrieve, create, update, or delete companies. Cover annotated branch/car/driver/manager counts, district/city filters, name/phone search, `no_paginate`, ignored writable-balance, and PROTECT deletes when branches or owners exist.
 
 ## API conventions
 

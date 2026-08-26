@@ -20,6 +20,51 @@ from apps.users.models import CompanyBranchManager, CompanyUser, User
 
 
 @pytest.fixture
+def company_factory(db, admin_user, geo_data):
+    counter = {"n": 0}
+
+    def create_company(**overrides):
+        counter["n"] += 1
+        token = uuid4().hex
+        defaults = {
+            "name": f"Factory Company {counter['n']}",
+            "address": f"Factory Address {counter['n']}",
+            "email": f"factory-company-{token[:10]}@example.com",
+            "phone_number": f"015{token[:8]}",
+            "district": geo_data["district"],
+            "is_active": True,
+            "balance": Decimal("0.00"),
+            "created_by": admin_user,
+            "updated_by": admin_user,
+        }
+        defaults.update(overrides)
+        return CompanyFactory(**defaults)
+
+    return create_company
+
+
+@pytest.fixture
+def company_payload_factory(geo_data):
+    counter = {"n": 0}
+
+    def build_company_payload(**overrides):
+        counter["n"] += 1
+        token = uuid4().hex
+        payload = {
+            "name": f"New Company {counter['n']}",
+            "email": f"new-company-{token[:10]}@example.com",
+            "phone_number": f"016{token[:8]}",
+            "address": f"New Company Address {counter['n']}",
+            "district": geo_data["district"].id,
+            "is_active": True,
+        }
+        payload.update(overrides)
+        return payload
+
+    return build_company_payload
+
+
+@pytest.fixture
 def company(db, admin_user, geo_data):
     return Company.objects.create(
         name="Company 1",
