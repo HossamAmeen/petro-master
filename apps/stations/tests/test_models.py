@@ -50,3 +50,12 @@ class TestServiceModels:
         assert service.name == "Super Petrol"
         assert service.cost == 12.50
         assert str(service) == "Super Petrol"
+
+
+@pytest.mark.django_db
+class TestStationBranchServiceModels:
+    def test_branch_service_link(self, branch_petrol_service, branch, service):
+        from apps.stations.models.stations_models import StationBranchService
+
+        assert StationBranchService.objects.count() == 1
+        assert str(branch_petrol_service) == f"{service.name} - {branch.name}"

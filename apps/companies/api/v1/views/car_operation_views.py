@@ -61,9 +61,9 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "export":
-            return [CompanyPermission()]
+            return [IsAuthenticated(), CompanyPermission()]
         if self.action == "download_excel":
-            return [CompanyPermission()]
+            return [IsAuthenticated(), CompanyPermission()]
         if self.action == "list":
             return [
                 IsAuthenticated(),
@@ -79,12 +79,12 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 ),
             ]
         if self.action == "create":
-            return [DashboardPermission()]
+            return [IsAuthenticated(), DashboardPermission()]
         if self.action == "partial_update":
             return [
                 IsAuthenticated(),
                 EitherPermission(
-                    [CompanyPermission, DashboardPermission, StationPermission()]
+                    [CompanyPermission, DashboardPermission, StationPermission]
                 ),
             ]
         return super().get_permissions()
