@@ -22,6 +22,7 @@ class Company(AbstractBaseModel):
         "geo.District", on_delete=models.SET_NULL, null=True, blank=True
     )
     is_active = models.BooleanField(default=True)
+    is_available = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -48,6 +49,7 @@ class CompanyBranch(AbstractBaseModel):
         max_digits=5, decimal_places=2, default=0.0
     )
     cash_request_fees = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    is_available = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name + " - " + self.company.name

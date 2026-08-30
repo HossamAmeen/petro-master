@@ -80,6 +80,12 @@ When writing tests (especially using Pytest) for this project, you **must** adhe
 - **Avoid Repetition**: Utilize `@pytest.mark.parametrize` where applicable to test multiple roles or conditions within the same test method.
 - **Fixture Reusability**: Do not duplicate data creation in test methods. Create and utilize standard fixtures in `conftest.py` that fully model business requirements (e.g. `company`, `car`, `car_operation`).
 
+## Entity availability
+
+`Company`, `CompanyBranch`, `Station`, and `StationBranch` each have an `is_available` boolean that defaults to `True`. Use this field to mark an entity unavailable without deleting it.
+
+The stations list API returns available stations by default. Supplying the `is_available` query parameter explicitly overrides that default, including `is_available=false` for unavailable stations.
+
 ## Companies App Overview
 
 The `companies` app (`apps/companies`) manages company accounts, branches, cars, drivers, and their related operations and cash requests.

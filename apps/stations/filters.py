@@ -5,9 +5,18 @@ from apps.stations.models.stations_models import StationBranch, Station
 
 
 class StationFilter(django_filters.FilterSet):
+    is_available = django_filters.BooleanFilter(field_name="is_available")
+
+    def __init__(self, data=None, *args, **kwargs):
+        if data is not None:
+            data = data.copy()
+            data.setdefault("is_available", "true")
+
+        super().__init__(data, *args, **kwargs)
+
     class Meta:
         model = Station
-        fields = ["name", "address", "district"]
+        fields = ["name", "address", "district", "is_available"]
 
 
 class StationBranchFilter(django_filters.FilterSet):
