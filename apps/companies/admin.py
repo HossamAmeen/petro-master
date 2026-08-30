@@ -567,6 +567,9 @@ class CreatedDateRangeFilter(admin.SimpleListFilter):
     parameter_name = "created_range"
     template = "admin/caroperation_date_filter.html"
 
+    def expected_parameters(self):
+        return [self.parameter_name, "created_from", "created_to"]
+
     def lookups(self, request, model_admin):
         # required by Django admin, but not really used
         return (("custom", _("Custom range")),)
