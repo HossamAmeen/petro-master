@@ -1,0 +1,23 @@
+{% load i18n %}
+<h3>{% blocktrans with filter_title=title %} By {{ filter_title }} {% endblocktrans %}</h3>
+<ul style="padding: 10px;">
+    <li>
+        <form method="GET" action="">
+            {% for k, v in request.GET.items %}
+                {% if k != "created_from" and k != "created_to" %}
+                    <input type="hidden" name="{{ k }}" value="{{ v }}">
+                {% endif %}
+            {% endfor %}
+            <div style="margin-bottom: 5px;">
+                <label for="created_from" style="display: block; font-size: 11px;">{% trans "From:" %}</label>
+                <input type="date" name="created_from" id="created_from" value="{{ request.GET.created_from }}" style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label for="created_to" style="display: block; font-size: 11px;">{% trans "To:" %}</label>
+                <input type="date" name="created_to" id="created_to" value="{{ request.GET.created_to }}" style="width: 100%;">
+            </div>
+            <button type="submit" class="button" style="width: 100%; margin-bottom: 5px;">{% trans "Filter" %}</button>
+            <a href="?" class="button" style="width: 100%; text-align: center; display: block; box-sizing: border-box; background: var(--button-bg, #79aec8);">{% trans "Clear" %}</a>
+        </form>
+    </li>
+</ul>
