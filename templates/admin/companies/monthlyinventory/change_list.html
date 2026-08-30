@@ -36,6 +36,12 @@
     </style>
 {% endblock %}
 
+{% block extrajs %}
+    {{ block.super }}
+    {# fills the station-branch filter when a station is picked, no reload #}
+    {% include "admin/accounting/includes/dependent_branch.html" %}
+{% endblock %}
+
 {% block result_list %}
     <div class="row" id="total-summary">
         <div class="col-12 col-md-6 col-xl-3">

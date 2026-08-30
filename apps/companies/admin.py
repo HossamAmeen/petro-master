@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.db.models import Count, DecimalField, F, OuterRef, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
+from django.http import JsonResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
@@ -16,6 +17,7 @@ from apps.companies.models.ai_api_response_model import AIApiResponse
 from apps.geo.models import District
 from apps.shared.generate_code import generate_unique_code
 from apps.stations.models.service_models import Service
+from apps.stations.models.stations_models import StationBranch
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, CarCode, Company, CompanyBranch, Driver
@@ -696,19 +698,47 @@ class CreatedDateRangeFilter(admin.SimpleListFilter):
         return queryset
 
 
-class StationBranchListFilter(admin.RelatedFieldListFilter):
+STATION_PARENT_FILTER = "station_branch__station"
+
+
+def station_branch_options(station_id):
     """
-    `StationBranch.__str__` reads `station.name`, so the stock filter runs one
-    query per option while building the dropdown. Build the choices from a
-    single joined query instead.
+    (pk, label) pairs for one station. `select_related` keeps
+    `StationBranch.__str__`, which reads `station.name`, from querying per row.
+    """
+    branches = (
+        StationBranch.objects.filter(station_id=station_id)
+        .select_related("station")
+        .order_by("name")
+    )
+    return [(branch.pk, str(branch)) for branch in branches]
+
+
+class StationBranchByStationListFilter(admin.RelatedFieldListFilter):
+    """
+    Branch dropdown scoped to the station chosen in the `STATION_PARENT_FILTER`
+    filter, loaded over AJAX. Never lists every branch in the system.
     """
 
+    template = "admin/accounting/dependent_branch_filter.html"
+
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+        self.parent_filter = STATION_PARENT_FILTER
+        self.branches_url = reverse(
+            "admin:companies_monthlyinventory_branches_by_station"
+        )
+
+    def has_output(self):
+        # render the empty select anyway, so picking a station fills it over
+        # AJAX instead of requiring a Search round trip
+        return True
+
     def field_choices(self, field, request, model_admin):
-        ordering = self.field_admin_ordering(field, request, model_admin)
-        queryset = field.remote_field.model._default_manager.select_related("station")
-        if ordering:
-            queryset = queryset.order_by(*ordering)
-        return [(branch.pk, str(branch)) for branch in queryset]
+        station_id = request.GET.get(f"{STATION_PARENT_FILTER}__id__exact")
+        if not station_id:
+            return []
+        return station_branch_options(station_id)
 
 
 @admin.register(AIApiResponse)
@@ -930,7 +960,8 @@ class MonthlyInventoryAdmin(CarOperationAdmin):
         CreatedDateRangeFilter,
         "status",
         "car__branch__company",
-        ("station_branch", StationBranchListFilter),
+        STATION_PARENT_FILTER,
+        ("station_branch", StationBranchByStationListFilter),
         "service",
     )
     # skips the extra unfiltered COUNT(*) over the whole operations table
@@ -938,6 +969,32 @@ class MonthlyInventoryAdmin(CarOperationAdmin):
 
     def has_add_permission(self, request):
         return False
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "branches-by-station/",
+                self.admin_site.admin_view(self.branches_by_station),
+                name="companies_monthlyinventory_branches_by_station",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def branches_by_station(self, request):
+        """Options for the dependent station-branch filter."""
+        try:
+            station_id = int(request.GET.get(STATION_PARENT_FILTER, ""))
+        except (TypeError, ValueError):
+            return JsonResponse({"results": []})
+
+        return JsonResponse(
+            {
+                "results": [
+                    {"id": pk, "name": label}
+                    for pk, label in station_branch_options(station_id)
+                ]
+            }
+        )
 
     def get_queryset(self, request):
         # every relation touched by list_display, including the `station` that
