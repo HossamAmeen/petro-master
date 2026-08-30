@@ -1,23 +1,86 @@
 {% load i18n %}
-<h3>{% blocktrans with filter_title=title %} By {{ filter_title }} {% endblocktrans %}</h3>
-<ul style="padding: 10px;">
-    <li>
-        <form method="GET" action="">
-            {% for k, v in request.GET.items %}
-                {% if k != "created_from" and k != "created_to" %}
-                    <input type="hidden" name="{{ k }}" value="{{ v }}">
-                {% endif %}
-            {% endfor %}
-            <div style="margin-bottom: 5px;">
-                <label for="created_from" style="display: block; font-size: 11px;">{% trans "From:" %}</label>
-                <input type="date" name="created_from" id="created_from" value="{{ request.GET.created_from }}" style="width: 100%;">
+
+<style>
+    #changelist-search .date-range-filter {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+
+    #changelist-search .date-range-filter .input-group-text {
+        font-size: .8125rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+        background-color: #f4f6f9;
+        border-color: #ced4da;
+        color: #6c757d;
+    }
+
+    #changelist-search .date-range-filter input[type="date"] {
+        min-width: 9.5rem;
+        height: calc(2.25rem + 2px);
+    }
+
+    #changelist-search .date-range-filter .btn-clear-dates {
+        white-space: nowrap;
+    }
+</style>
+
+<div class="form-group date-range-filter">
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <span class="input-group-text">
+                <i class="fas fa-calendar-alt mr-2"></i>{{ title }}
+            </span>
+        </div>
+        <input type="date"
+               class="form-control"
+               name="created_from"
+               id="created_from"
+               aria-label="{% trans 'From' %}"
+               title="{% trans 'From' %}"
+               value="{{ spec.used_parameters.created_from|default:'' }}">
+        <div class="input-group-prepend input-group-append">
+            <span class="input-group-text">{% trans "to" %}</span>
+        </div>
+        <input type="date"
+               class="form-control"
+               name="created_to"
+               id="created_to"
+               aria-label="{% trans 'To' %}"
+               title="{% trans 'To' %}"
+               value="{{ spec.used_parameters.created_to|default:'' }}">
+        {% if spec.used_parameters.created_from or spec.used_parameters.created_to %}
+            <div class="input-group-append">
+                <button type="button" class="btn btn-outline-secondary btn-clear-dates">
+                    <i class="fas fa-times mr-1"></i>{% trans "Clear" %}
+                </button>
             </div>
-            <div style="margin-bottom: 10px;">
-                <label for="created_to" style="display: block; font-size: 11px;">{% trans "To:" %}</label>
-                <input type="date" name="created_to" id="created_to" value="{{ request.GET.created_to }}" style="width: 100%;">
-            </div>
-            <button type="submit" class="button" style="width: 100%; margin-bottom: 5px;">{% trans "Filter" %}</button>
-            <a href="?" class="button" style="width: 100%; text-align: center; display: block; box-sizing: border-box; background: var(--button-bg, #79aec8);">{% trans "Clear" %}</a>
-        </form>
-    </li>
-</ul>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    (function () {
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('.btn-clear-dates');
+            if (!button) {
+                return;
+            }
+            var group = button.closest('.date-range-filter');
+            group.querySelectorAll('input[type="date"]').forEach(function (input) {
+                input.value = '';
+            });
+            button.closest('form').submit();
+        });
+
+        // keep empty dates out of the query string, like the select2 filters do
+        document.addEventListener('submit', function (event) {
+            event.target.querySelectorAll('.date-range-filter input[type="date"]').forEach(
+                function (input) {
+                    input.disabled = !input.value;
+                }
+            );
+        }, true);
+    })();
+</script>

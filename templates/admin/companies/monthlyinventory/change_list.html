@@ -1,15 +1,84 @@
 {% extends "admin/change_list.html" %}
 {% load i18n admin_urls %}
 
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        #total-summary .info-box {
+            border-radius: .5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+            min-height: 5rem;
+        }
+
+        #total-summary .info-box-icon {
+            border-radius: .5rem 0 0 .5rem;
+            font-size: 1.6rem;
+        }
+
+        #total-summary .info-box-text {
+            font-size: .75rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: #6c757d;
+        }
+
+        #total-summary .info-box-number {
+            font-size: 1.35rem;
+            font-weight: 700;
+        }
+
+        #total-summary .info-box-unit {
+            font-size: .75rem;
+            font-weight: 500;
+            color: #6c757d;
+        }
+    </style>
+{% endblock %}
+
 {% block result_list %}
-    <div id="total-summary" style="margin: 10px 0; padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; display: flex; justify-content: space-around;">
-        <div>
-            <h3 style="margin: 0 0 5px 0; color: #495057; font-size: 14px; text-transform: uppercase;">Total Amount</h3>
-            <p style="margin: 0; font-size: 24px; font-weight: bold; color: #007bff;">{{ sum_amount|floatformat:2 }}</p>
+    <div class="row" id="total-summary">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-primary"><i class="fas fa-gas-pump"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">{% trans "Total Amount" %}</span>
+                    <span class="info-box-number">{{ sum_amount|floatformat:2 }}</span>
+                </div>
+            </div>
         </div>
-        <div>
-            <h3 style="margin: 0 0 5px 0; color: #495057; font-size: 14px; text-transform: uppercase;">Total Profits</h3>
-            <p style="margin: 0; font-size: 24px; font-weight: bold; color: #28a745;">{{ sum_profits|floatformat:2 }} <span style="font-size: 14px;">EGP</span></p>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-success"><i class="fas fa-chart-line"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">{% trans "Total Profits" %}</span>
+                    <span class="info-box-number">
+                        {{ sum_profits|floatformat:2 }} <span class="info-box-unit">EGP</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-info"><i class="fas fa-building"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">{% trans "Total Company Cost" %}</span>
+                    <span class="info-box-number">
+                        {{ sum_company_cost|floatformat:2 }} <span class="info-box-unit">EGP</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-warning"><i class="fas fa-charging-station"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">{% trans "Total Station Cost" %}</span>
+                    <span class="info-box-number">
+                        {{ sum_station_cost|floatformat:2 }} <span class="info-box-unit">EGP</span>
+                    </span>
+                </div>
+            </div>
         </div>
     </div>
     {{ block.super }}
