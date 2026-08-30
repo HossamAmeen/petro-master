@@ -8,7 +8,7 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from apps.companies.models.operation_model import CarOperation
+from apps.companies.models.operation_model import CarOperation, MonthlyInventory
 from apps.companies.models.ai_api_response_model import AIApiResponse
 from apps.geo.models import District
 from apps.shared.generate_code import generate_unique_code
@@ -793,3 +793,49 @@ class CarOperationAdmin(admin.ModelAdmin):
                 "created_by",
             )
         )
+
+@admin.register(MonthlyInventory)
+class MonthlyInventoryAdmin(CarOperationAdmin):
+    list_display = (
+        "id",
+        "code",
+        "status",
+        "start_time",
+        "end_time",
+        "amount",
+        "profits",
+        "car",
+        "driver",
+        "station_branch",
+        "service",
+        "branch_company",
+    )
+    list_filter = (
+        CreatedDateRangeFilter,
+        "status",
+        "car__branch__company",
+        "station_branch",
+        "service",
+    )
+    
+    def has_add_permission(self, request):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        queryset = self.get_queryset(request)
+        
+        # Apply filters manually to the queryset for the aggregate calculation
+        # This ensures we get the totals *after* applying the list_filter
+        cl = self.get_changelist_instance(request)
+        queryset = cl.get_queryset(request)
+        
+        totals = queryset.aggregate(
+            total_amount=Sum("amount"), total_profits=Sum("profits")
+        )
+        extra_context["sum_amount"] = totals["total_amount"] or 0
+        extra_context["sum_profits"] = totals["total_profits"] or 0
+        
+        # Note: We use super(CarOperationAdmin, self) because we are overriding 
+        # CarOperationAdmin's changelist_view but still want the base ModelAdmin behavior
+        return super(CarOperationAdmin, self).changelist_view(request, extra_context=extra_context)

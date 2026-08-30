@@ -1,0 +1,16 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block result_list %}
+    <div id="total-summary" style="margin: 10px 0; padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; display: flex; justify-content: space-around;">
+        <div>
+            <h3 style="margin: 0 0 5px 0; color: #495057; font-size: 14px; text-transform: uppercase;">Total Amount</h3>
+            <p style="margin: 0; font-size: 24px; font-weight: bold; color: #007bff;">{{ sum_amount|floatformat:2 }}</p>
+        </div>
+        <div>
+            <h3 style="margin: 0 0 5px 0; color: #495057; font-size: 14px; text-transform: uppercase;">Total Profits</h3>
+            <p style="margin: 0; font-size: 24px; font-weight: bold; color: #28a745;">{{ sum_profits|floatformat:2 }} <span style="font-size: 14px;">EGP</span></p>
+        </div>
+    </div>
+    {{ block.super }}
+{% endblock %}

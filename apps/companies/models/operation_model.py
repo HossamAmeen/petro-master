@@ -93,3 +93,9 @@ class CompanyOperationReport(CarOperation):
         proxy = True
         verbose_name = "Company Operations Report"
         verbose_name_plural = "Company Operations Reports"
+
+class MonthlyInventory(CarOperation):
+    class Meta:
+        proxy = True
+        verbose_name = "Monthly Inventory"
+        verbose_name_plural = "Monthly Inventories"
