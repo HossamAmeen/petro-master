@@ -88,7 +88,7 @@ def other_service(db, admin_user):
     )
 
 @pytest.fixture
-def car(db, company_branch, service):
+def car(db, admin_user, company_branch, service):
     from apps.companies.models.company_models import Car
     return Car.objects.create(
         code="C-123",
@@ -108,10 +108,11 @@ def car(db, company_branch, service):
         branch=company_branch,
         service=service,
         last_meter=10000,
+        created_by=admin_user,
     )
 
 @pytest.fixture
-def driver(db, company_branch):
+def driver(db, admin_user, company_branch):
     from apps.companies.models.company_models import Driver
     import datetime
     return Driver.objects.create(
@@ -121,10 +122,11 @@ def driver(db, company_branch):
         lincense_number="L-123",
         lincense_expiration_date=datetime.date(2030, 1, 1),
         branch=company_branch,
+        created_by=admin_user,
     )
 
 @pytest.fixture
-def gas_operation(db, car, driver, branch, station_worker, service):
+def gas_operation(db, admin_user, car, driver, branch, station_worker, service):
     from apps.companies.models.operation_model import CarOperation
     return CarOperation.objects.create(
         car=car,
@@ -133,10 +135,11 @@ def gas_operation(db, car, driver, branch, station_worker, service):
         worker=station_worker,
         service=service,
         status=CarOperation.OperationStatus.PENDING,
+        created_by=admin_user,
     )
 
 @pytest.fixture
-def other_operation(db, car, driver, branch, station_worker):
+def other_operation(db, admin_user, car, driver, branch, station_worker):
     from apps.companies.models.operation_model import CarOperation
     return CarOperation.objects.create(
         car=car,
@@ -144,4 +147,5 @@ def other_operation(db, car, driver, branch, station_worker):
         station_branch=branch,
         worker=station_worker,
         status=CarOperation.OperationStatus.PENDING,
+        created_by=admin_user,
     )
