@@ -33,6 +33,7 @@ class TestAdminUserAPI:
             "phone_number": "01102056",
             "email": "user56@gmail.com",
             "password": "user1",
+            "confirm_password": "user1",
             "role": "admin",
         }
         response = self.client.post(
@@ -50,6 +51,7 @@ class TestAdminUserAPI:
             "phone_number": "01102058",
             "email": "user58@gmail.com",
             "password": "user1",
+            "confirm_password": "user1",
             "role": "admin",
         }
         response = self.client.patch(

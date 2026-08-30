@@ -33,6 +33,7 @@ class TestUserAPI:
             phone_number="01000005693",
             email="owner1@gmail.com",
             password="owner1",
+            role=User.UserRoles.StationOwner,
             created_by=self.user,
             updated_by=self.user,
             station=self.station,
@@ -159,23 +160,30 @@ class TestStationBranchManager:
             phone_number="011020221",
             email="owner1@gmail.com",
             password="user1",
-            role="admin",
+            role=User.UserRoles.StationOwner,
             station=self.station,
+            created_by=self.user,
         )
-        self.station_branch_manager = StationBranchManager.objects.create(
+        self.station_branch_manager_user = StationOwner.objects.create(
             name="manager1",
             phone_number="01102000",
             email="manager1@gmail.com",
             password="user1",
-            role="admin",
-            station_branch=self.station_branch,
-            user=self.station_owner,
+            role=User.UserRoles.StationBranchManager,
+            station=self.station,
+            created_by=self.user,
         )
-        access_token = AccessToken.for_user(self.station_branch_manager)
+        self.station_branch_manager = StationBranchManager.objects.create(
+            station_branch=self.station_branch,
+            user=self.station_branch_manager_user,
+            created_by=self.user,
+        )
+        access_token = AccessToken.for_user(self.station_branch_manager_user)
+        access_token["station_id"] = self.station.id
         self.client.defaults["HTTP_AUTHORIZATION"] = f"Bearer {str(access_token)}"
         self.url_list = reverse("station-branch-managers-list")
         self.url_detail = reverse(
-            "station-branch-managers-detail", args=[self.station_branch_manager.id]
+            "station-branch-managers-detail", args=[self.station_branch_manager_user.id]
         )
 
     def test_list_station_branch_manager(self):
@@ -183,16 +191,18 @@ class TestStationBranchManager:
         assert response.status_code == 200
 
     def test_create_station_branch_manager(self):
+        access_token = AccessToken.for_user(self.station_owner)
+        access_token["station_id"] = self.station.id
+        client = Client(HTTP_AUTHORIZATION=f"Bearer {str(access_token)}")
         data = {
             "name": "manager2",
             "phone_number": "011020004",
             "email": "manager2@gmail.com",
             "password": "user1",
-            "role": "admin",
-            "station_branch": self.station_branch.id,
-            "user": self.station_owner.id,
+            "confirm_password": "user1",
+            "station_branches": [self.station_branch.id],
         }
-        response = self.client.post(
+        response = client.post(
             self.url_list, data=data, content_type="application/json"
         )
         assert response.status_code == 201
@@ -203,9 +213,8 @@ class TestStationBranchManager:
             "phone_number": "0110200044",
             "email": "manager2@gmail.com",
             "password": "manager22",
-            "role": "admin",
-            "station_branch": self.station_branch.id,
-            "user": self.station_owner.id,
+            "confirm_password": "manager22",
+            "station_branches": [self.station_branch.id],
         }
         response = self.client.put(
             self.url_detail, data=update_data, content_type="application/json"
@@ -213,21 +222,16 @@ class TestStationBranchManager:
         assert response.status_code == 200
 
     def test_retrieve_station_branch_manager(self):
-        update_data = {
-            "name": "manager22",
-            "phone_number": "0110200044",
-            "email": "manager2@gmail.com",
-            "password": "manager22",
-            "role": "admin",
-            "station_branch": self.station_branch.id,
-            "user": self.station_owner.id,
-        }
-
         response = self.client.get(
-            self.url_detail, data=update_data, content_type="application/json"
+            self.url_detail, content_type="application/json"
         )
         assert response.status_code == 200
 
-    def test_delete_station_branch_manager(self):
+    def test_delete_station_branch_manager_fails_if_has_branches(self):
+        response = self.client.delete(self.url_detail)
+        assert response.status_code == 400
+
+    def test_delete_station_branch_manager_success_when_unassigned(self):
+        self.station_branch_manager.delete()
         response = self.client.delete(self.url_detail)
         assert response.status_code == 204
