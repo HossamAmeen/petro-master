@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django import forms
 from django.contrib import admin, messages
+from django.contrib.admin.options import IncorrectLookupParameters
 from django.db import transaction
 from django.db.models import Count, Sum
 from django.urls import path, reverse
@@ -567,30 +568,44 @@ class CreatedDateRangeFilter(admin.SimpleListFilter):
     parameter_name = "created_range"
     template = "admin/caroperation_date_filter.html"
 
+    date_parameters = ("created_from", "created_to")
+
+    def __init__(self, request, params, model, model_admin):
+        super().__init__(request, params, model, model_admin)
+        # SimpleListFilter only consumes `parameter_name`; the extra range
+        # params must be removed here or the changelist passes them to the ORM.
+        for param in self.date_parameters:
+            if param in params:
+                value = params.pop(param)
+                if isinstance(value, list):
+                    value = value[-1] if value else ""
+                self.used_parameters[param] = value
+
     def expected_parameters(self):
-        return [self.parameter_name, "created_from", "created_to"]
+        return [self.parameter_name, *self.date_parameters]
 
     def lookups(self, request, model_admin):
         # required by Django admin, but not really used
         return (("custom", _("Custom range")),)
 
+    def parsed_date(self, param):
+        value = self.used_parameters.get(param)
+        if not value:
+            return None
+        try:
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+
     def queryset(self, request, queryset):
-        start_date = request.GET.get("created_from")
-        end_date = request.GET.get("created_to")
+        start_date = self.parsed_date("created_from")
+        end_date = self.parsed_date("created_to")
 
         if start_date:
-            try:
-                start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-                queryset = queryset.filter(created__date__gte=start_date)
-            except ValueError:
-                pass
+            queryset = queryset.filter(created__date__gte=start_date)
 
         if end_date:
-            try:
-                end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
-                queryset = queryset.filter(created__date__lte=end_date)
-            except ValueError:
-                pass
+            queryset = queryset.filter(created__date__lte=end_date)
 
         return queryset
 
@@ -826,19 +841,21 @@ class MonthlyInventoryAdmin(CarOperationAdmin):
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
-        queryset = self.get_queryset(request)
-        
-        # Apply filters manually to the queryset for the aggregate calculation
-        # This ensures we get the totals *after* applying the list_filter
-        cl = self.get_changelist_instance(request)
-        queryset = cl.get_queryset(request)
-        
+
+        try:
+            # totals must reflect the active list_filter selection
+            queryset = self.get_changelist_instance(request).get_queryset(request)
+        except IncorrectLookupParameters:
+            # let ModelAdmin.changelist_view handle it (redirects to ?e=1)
+            queryset = self.model._default_manager.none()
+
         totals = queryset.aggregate(
             total_amount=Sum("amount"), total_profits=Sum("profits")
         )
         extra_context["sum_amount"] = totals["total_amount"] or 0
         extra_context["sum_profits"] = totals["total_profits"] or 0
-        
-        # Note: We use super(CarOperationAdmin, self) because we are overriding 
-        # CarOperationAdmin's changelist_view but still want the base ModelAdmin behavior
-        return super(CarOperationAdmin, self).changelist_view(request, extra_context=extra_context)
+
+        # skip CarOperationAdmin.changelist_view, which computes different totals
+        return super(CarOperationAdmin, self).changelist_view(
+            request, extra_context=extra_context
+        )
