@@ -1,4 +1,8 @@
-.PHONY: run migrate makemigrations shell process_ai
+.PHONY: run migrate makemigrations shell process_ai restart stop
+
+-include .env
+
+SERVICE_NAME ?= petromaster-staging
 
 run:
 	python3 manage.py runserver
@@ -24,3 +28,11 @@ endif
 
 process_ai:
 	python3 manage.py process_ai_operations $(limit)
+
+restart:
+	sudo systemctl restart $(SERVICE_NAME)
+	sudo systemctl --no-pager --full status $(SERVICE_NAME)
+
+stop:
+	sudo systemctl stop $(SERVICE_NAME)
+	sudo systemctl --no-pager --full status $(SERVICE_NAME)

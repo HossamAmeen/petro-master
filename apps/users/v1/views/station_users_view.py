@@ -2,6 +2,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticated
 
+from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.permissions import (
     DashboardPermission,
     EitherPermission,
@@ -63,6 +64,14 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
         if self.request.method == "GET":
             return ListStationBranchManagerSerializer
         return StationBranchManagerCreationSerializer
+
+    def perform_destroy(self, instance):
+        if instance.station_branch_managers.exists():
+            raise CustomValidationError(
+                message="لا يمكن حذف مدير الفرع لأنه مرتبط بفروع محطة",
+                code="protected",
+            )
+        instance.delete()
 
 
 class WorkerViewSet(viewsets.ModelViewSet):

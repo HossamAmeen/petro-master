@@ -177,7 +177,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CSRF_TRUSTED_ORIGINS = ["https://api.petro-master.org", "https://petro-master.org"]
+CSRF_TRUSTED_ORIGINS = ["https://api.petro-master.org", "https://api.staging.petro-master.org", "https://petro-master.org"]
 
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.shared.exceptions.custom_exception_handler",

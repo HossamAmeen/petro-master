@@ -86,3 +86,16 @@ class CarOperation(AbstractBaseModel):
         if not self.code:
             self.code = generate_unique_code(self.__class__)
         super().save(*args, **kwargs)
+
+
+class CompanyOperationReport(CarOperation):
+    class Meta:
+        proxy = True
+        verbose_name = "Company Operations Report"
+        verbose_name_plural = "Company Operations Reports"
+
+class MonthlyInventory(CarOperation):
+    class Meta:
+        proxy = True
+        verbose_name = "Monthly Inventory"
+        verbose_name_plural = "Monthly Inventories"
