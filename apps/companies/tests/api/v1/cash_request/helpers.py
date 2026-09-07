@@ -63,6 +63,15 @@ def expected_station_branch_payload(station_branch):
     }
 
 
+def expected_company_payload(company):
+    if company is None:
+        return None
+    return {
+        "id": company.id,
+        "name": company.name,
+    }
+
+
 def expected_user_payload(user):
     if user is None:
         return None
@@ -78,6 +87,8 @@ def assert_cash_request_payload(data, cash_request, user):
     cash_request.refresh_from_db()
     driver = cash_request.driver
     approved_by = cash_request.approved_by
+    created_by = cash_request.created_by
+    company = cash_request.company
     assert data["id"] == cash_request.id
     assert data["code"] == cash_request.code
     assert data["otp"] == cash_request.otp
@@ -86,12 +97,13 @@ def assert_cash_request_payload(data, cash_request, user):
     assert _as_decimal(data["company_cost"]) == _as_decimal(cash_request.company_cost)
     assert _as_decimal(data["station_cost"]) == _as_decimal(cash_request.station_cost)
     assert data["status"] == cash_request.status
-    assert data["company"] == cash_request.company_id
+    assert data["company"] == expected_company_payload(company)
     assert data["is_owner"] is expected_is_owner(cash_request, user)
     assert data["station_branch"] == expected_station_branch_payload(
         cash_request.station_branch
     )
     assert data["approved_by"] == expected_user_payload(approved_by)
+    assert data["created_by"] == expected_user_payload(created_by)
     assert data["worker"] == data["approved_by"]
     assert data["created"]
     assert data["modified"]

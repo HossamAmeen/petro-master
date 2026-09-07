@@ -113,6 +113,27 @@ The `companies` app (`apps/companies`) manages company accounts, branches, cars,
   - **`partial_update`**: Used by Station Workers to approve an in-progress request (validating via OTP). Finalizes the workflow, deducts station costs (amount + station fees) from the station branch balance, logs transactions for both the company and the station, and sends out notifications.
   - **`destroy`**: Cancels a pending request, changes its status to `REJECTED`, and refunds the deducted balance back to the company or branch.
 
+## Accounting App Overview
+
+The `accounting` app (`apps/accounting`) tracks khazna (cash-box) transactions for companies and stations.
+
+### Models (`apps/accounting/models.py`)
+- **`KhaznaTransaction`**: Concrete base model (multi-table inheritance). `is_incoming=True` **decreases** the linked balance; `False` increases it (`update_company_balance`/`update_station_balance`).
+- **`CompanyKhaznaTransaction`**: Adds `company` (required FK) and `company_branch` (nullable FK) plus `for_what`.
+- **`StationKhaznaTransaction`**: Adds `station` (required FK) and `station_branch` (nullable FK).
+
+### Views (`apps/accounting/api/v1/views.py`)
+- **`KhaznaTransactionViewSet`**: `IsAuthenticated` only, full CRUD, no `InjectUserMixin` — clients must supply `created_by` themselves. `get_queryset` only special-cases `CompanyOwner`/`CompanyBranchManager` by filtering `.filter(company=...)`, but the base model has no `company` field, so those two roles get an unhandled `FieldError` (500), not a scoped list. Every other authenticated role (dashboard, station roles) gets the fully unscoped queryset.
+- **`CompanyKhaznaTransactionViewSet`**: `EitherPermission([CompanyPermission, DashboardPermission])` for every action (create/update/destroy included — no per-action override). Owners are scoped to their company; branch managers to `company_branch__managers__user_id` (their specific branch only). `CreateCompanyKhaznaTransactionSerializer` redeclares `company_branch` as `required=True`, so branch-less company-level charges cannot be created through the API. On `status=APPROVED`, it deducts/credits the branch (or company, if no branch) balance and notifies branch managers (or company owners).
+- **`StationKhaznaTransactionViewSet`**: `EitherPermission([StationPermission, DashboardPermission])`. Station owners scoped to their station; **station branch managers are scoped to the whole station** (`station__branches__managers__user`), not just their managed branch — unlike the company side; workers are scoped to `created_by=self.request.user`.
+- **Known bug (both `Update*Serializer`s)**: `validate()` does `attrs["company_branch"]` / `attrs["station_branch"]` with direct indexing, not `.get()`. Since that field is not required on partial update, a typical approve/decline PATCH like `{"status": "approved"}` that omits the branch raises an unhandled `KeyError` (500) instead of a clean validation error.
+- Deleting a transaction never reverses the balance change it caused — mutation only happens in `create`/`partial_update`.
+
+### Testing (`apps/accounting/tests/`)
+- Tests live in `apps/accounting/tests/api/v1/`, one package per viewset (`khazna_transaction`, `company_transaction`, `station_transaction`), each with `helpers.py` plus `test_list.py` / `test_retrieve.py` / `test_create.py` / `test_update.py` / `test_destroy.py`. Wrap tests in a `Test*` class; method names end in `_success` or `_fail`.
+- `apps/accounting/tests/conftest.py` adds `khazna_transaction_factory` and `station_transaction_factory` (no model factory existed for the station side); reuse `company_transaction_factory` from `apps/companies/tests/conftest.py`.
+- The known `KeyError`/`FieldError` bugs above are asserted with `pytest.raises`, per the "assert actual behavior" standard — do not silently "fix" the test by avoiding the buggy payload shape.
+
 ## Auth App Overview
 
 The `auth` app (`apps/auth`) issues JWT sessions for company, station, and dashboard users and handles profile + password-reset flows.

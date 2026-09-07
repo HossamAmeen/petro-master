@@ -52,7 +52,7 @@ class TestCashRequestRetrieve:
         assert response.data["company_cost"] == "50.00"
         assert response.data["station_cost"] is None
         assert response.data["status"] == CompanyCashRequest.Status.IN_PROGRESS
-        assert response.data["company"] == company.id
+        assert response.data["company"] == {"id": company.id, "name": company.name}
         assert response.data["is_owner"] is True
         assert response.data["station_branch"] is None
         assert response.data["approved_by"] is None

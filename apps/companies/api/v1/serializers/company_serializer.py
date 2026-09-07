@@ -1,8 +1,5 @@
 from rest_framework import serializers
 
-from apps.accounting.api.v1.serializers.company_transaction_serializer import (
-    ListCompanyKhaznaTransactionSerializer,
-)
 from apps.accounting.models import CompanyKhaznaTransaction
 from apps.companies.models.company_models import Company
 from apps.geo.v1.serializers import ListDistrictSerializer
@@ -69,6 +66,10 @@ class CompanyWalletSerializer(serializers.ModelSerializer):
         ]
 
     def to_representation(self, instance):
+        from apps.accounting.api.v1.serializers.company_transaction_serializer import (
+            ListCompanyKhaznaTransactionSerializer,
+        )
+
         data = super().to_representation(instance)
         data["company_transactions"] = ListCompanyKhaznaTransactionSerializer(
             CompanyKhaznaTransaction.objects.filter(company=instance).order_by("-id")[

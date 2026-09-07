@@ -5,7 +5,7 @@ from apps.geo.models import City, Country, District
 from unittest.mock import patch
 
 pytest_plugins = [
-    "apps.users.test.conftest",
+    "apps.users.tests.conftest",
     "apps.companies.tests.conftest",
     "apps.stations.tests.conftest",
 ]

@@ -41,7 +41,12 @@ from apps.users.models import (
 
 class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
     queryset = CompanyCashRequest.objects.select_related(
-        "driver", "station", "station_branch__district__city", "approved_by"
+        "company",
+        "created_by",
+        "driver",
+        "station",
+        "station_branch__district__city",
+        "approved_by",
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CashRequestFilter
