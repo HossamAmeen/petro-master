@@ -207,3 +207,5 @@ class TestDriverList:
         assert [item["id"] for item in response.data["results"]] == [company_driver.id]
         assert response.data["results"][0]["name"] == company_driver.name
         assert response.data["results"][0]["company_name"] == company.name
+        assert "created" in response.data["results"][0]
+        assert response.data["results"][0]["created_by"]["id"] == company_driver.created_by_id

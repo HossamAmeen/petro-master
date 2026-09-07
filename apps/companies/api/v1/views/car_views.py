@@ -45,7 +45,7 @@ from apps.users.models import User
 class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
     filterset_class = DriverFilter
     queryset = Driver.objects.select_related(
-        "branch__district", "branch__company"
+        "branch__district__city", "branch__company", "created_by"
     ).order_by("-id")
     search_fields = [
         "name",
