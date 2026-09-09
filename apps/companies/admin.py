@@ -1,18 +1,23 @@
 from datetime import datetime, time, timedelta
+from decimal import Decimal
 
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.options import IncorrectLookupParameters
+from django.contrib.admin.utils import unquote
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Count, DecimalField, F, OuterRef, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from apps.companies.models.operation_model import CarOperation, MonthlyInventory
+from apps.companies.operation_clone import CloneError, clone_car_operation
 from apps.companies.models.ai_api_response_model import AIApiResponse
 from apps.geo.models import District
 from apps.shared.generate_code import generate_unique_code
@@ -851,6 +856,18 @@ class AIApiResponseAdmin(admin.ModelAdmin):
         obj.updated_by = request.user
         obj.save()
 
+
+class CloneCarOperationForm(forms.Form):
+    """Only the amount is editable; every other field is copied as-is."""
+
+    amount = forms.DecimalField(
+        label=_("Amount"),
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+    )
+
+
 @admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
@@ -907,6 +924,7 @@ class CarOperationAdmin(admin.ModelAdmin):
         "worker",
         "service",
         "branch_company",
+        "clone_button",
     )
     search_fields = ("code", "car__code", "car__plate_number")
     list_filter = (
@@ -929,6 +947,85 @@ class CarOperationAdmin(admin.ModelAdmin):
         return obj.car.branch.company.name
 
     branch_company.short_description = "Company"
+
+    def clone_url_name(self):
+        # named per concrete admin so the MonthlyInventory proxy does not
+        # register a second url under the CarOperation name
+        return f"{self.opts.app_label}_{self.opts.model_name}_clone"
+
+    def clone_button(self, obj):
+        url = reverse(f"admin:{self.clone_url_name()}", args=[obj.pk])
+        return format_html('<a class="button" href="{}">{}</a>', url, _("Clone"))
+
+    clone_button.short_description = _("Clone")
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "<path:object_id>/clone/",
+                self.admin_site.admin_view(self.clone_view),
+                name=self.clone_url_name(),
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def clone_view(self, request, object_id):
+        """
+        Duplicate one operation: every field is carried over untouched except
+        the amount, which is re-entered here and drives a fresh cost calculation.
+        """
+        obj = self.get_object(request, unquote(object_id))
+        if obj is None:
+            raise Http404(
+                _("Car operation with ID %(key)r does not exist.")
+                % {"key": object_id}
+            )
+        if not self.has_add_permission(request) or not self.has_view_permission(
+            request, obj
+        ):
+            raise PermissionDenied
+
+        if request.method == "POST":
+            form = CloneCarOperationForm(request.POST)
+            if form.is_valid():
+                try:
+                    clone = clone_car_operation(
+                        source=obj,
+                        amount=form.cleaned_data["amount"],
+                        user=request.user,
+                    )
+                except CloneError as error:
+                    form.add_error("amount", str(error))
+                else:
+                    self.log_addition(
+                        request,
+                        clone,
+                        [{"added": {"name": str(clone._meta.verbose_name)}}],
+                    )
+                    messages.success(
+                        request,
+                        f"تم إنشاء العملية {clone.code} كنسخة من العملية {obj.code}.",
+                    )
+                    return redirect(
+                        reverse(
+                            f"admin:{self.opts.app_label}_{self.opts.model_name}_change",
+                            args=[clone.pk],
+                        )
+                    )
+        else:
+            form = CloneCarOperationForm(initial={"amount": obj.amount})
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": _("Clone operation %(code)s") % {"code": obj.code},
+            "opts": self.opts,
+            "original": obj,
+            "form": form,
+            "media": self.media + form.media,
+        }
+        return TemplateResponse(
+            request, "admin/companies/caroperation/clone_form.html", context
+        )
 
     def get_queryset(self, request):
         return (
