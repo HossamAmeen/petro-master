@@ -414,7 +414,7 @@ def cash_request_factory(db, admin_user):
         }
         defaults.update(overrides)
         defaults.setdefault("company_cost", defaults["amount"])
-        with patch("apps.companies.helper.send_sms"):
+        with patch("apps.notifications.tasks.send_sms"):
             return CompanyCashRequestFactory(**defaults)
 
     return create_cash_request

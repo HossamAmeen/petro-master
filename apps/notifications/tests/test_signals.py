@@ -26,6 +26,31 @@ class TestSignals:
         assert set(kwargs["device_tokens"]) == {"fcm-token-a", "fcm-token-b"}
         assert note.id
 
+    def test_create_notification_queues_fcm_after_commit_with_celery_success(
+        self,
+        settings,
+        django_capture_on_commit_callbacks,
+        mock_firebase_notifications,
+        admin_user,
+        notification_factory,
+    ):
+        settings.USE_CELERY = True
+        FirebaseToken.objects.create(user=admin_user, token="fcm-token-a")
+
+        with django_capture_on_commit_callbacks(execute=True) as callbacks:
+            notification_factory(
+                user=admin_user,
+                title="Fuel done",
+                description="Operation completed",
+            )
+
+        assert len(callbacks) == 1
+        mock_firebase_notifications.assert_called_once_with(
+            title="Fuel done",
+            body="Operation completed",
+            device_tokens=["fcm-token-a"],
+        )
+
     def test_create_notification_without_tokens_still_sends_empty_list_success(
         self, mock_firebase_notifications, admin_user, notification_factory
     ):

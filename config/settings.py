@@ -334,6 +334,10 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 
+# Run background tasks (push notifications, SMS, emails) on Celery workers. When
+# off they run inline in the request, so no broker or worker is needed.
+USE_CELERY = env.bool("USE_CELERY", default=False)
+
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 

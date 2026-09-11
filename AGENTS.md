@@ -108,6 +108,13 @@ class TestCarUpdateBalance:
 - **Avoid Repetition**: Utilize `@pytest.mark.parametrize` where applicable to test multiple roles or conditions within the same test method.
 - **Fixture Reusability**: Do not duplicate data creation in test methods. Create and utilize standard fixtures in `conftest.py` that fully model business requirements (e.g. `company`, `car`, `car_operation`).
 
+## Background tasks (Celery)
+
+- Calls to external services that should stay off the request path (push, SMS, email) are Celery tasks in their app's `tasks.py`: `apps/notifications/tasks.py` (`send_fcm_message_task`, `send_sms_task`) and `apps/auth/tasks.py` (`send_password_reset_email_task`). Keep tasks in installed apps so the worker autodiscovers them — `apps/shared` is not an installed app.
+- Start a task with `run_task(task, *args, **kwargs)` from `apps/shared/task_runner.py`, never `.delay()` directly. `USE_CELERY` (env, default off) picks the mode: on → queued once the current transaction commits (nothing is sent for rolled-back work; a broker failure is logged, not raised); off → runs inline like a plain call (one attempt, no retries, exceptions reach the caller).
+- Pass the JSON-serializable data the task needs (titles, phone numbers, tokens), not model instances. Retry only transient network errors (`autoretry_for`). Fire-and-forget tasks set `ignore_result=True`.
+- Tests run inline (`USE_CELERY = False` in `config/settings_test.py`). Mock the adapter where the task module looks it up: `FCMManager.send_fcm_message` (root autouse), `apps.notifications.tasks.send_sms`, `apps.auth.tasks.send_mail`. To cover the Celery path, set `settings.USE_CELERY = True` and wrap the act in `django_capture_on_commit_callbacks(execute=True)`; `CELERY_TASK_ALWAYS_EAGER` then runs the queued task in-process. Exercise retries with `task.apply(...)`.
+
 ## Entity availability
 
 `Company`, `CompanyBranch`, `Station`, and `StationBranch` each have an `is_available` boolean that defaults to `True`. Use this field to mark an entity unavailable without deleting it.
@@ -172,7 +179,7 @@ The `auth` app (`apps/auth`) issues JWT sessions for company, station, and dashb
 - **`DashboardLoginAPIView`**: Unauthenticated. Allows `DASHBOARD_ROLES` (admin, finance, customer_support). Tokens do not embed company/station claims.
 - **`CustomTokenRefreshView`**: Copies `company_id` / `station_id` from the refresh token onto the new access token. Company/station roles without those claims are rejected.
 - **`ProfileAPIView`**: Authenticated retrieve/update of the current user. Password is write-only; phone and role are read-only. `to_representation` adds role-specific `balance` and `available_balance`.
-- **`PasswordResetRequestAPIView`** / **`PasswordResetConfirmAPIView`**: Unauthenticated. Request emails a 24-hour token via Django `send_mail`. Confirm GET renders HTML; POST sets the password and clears the token.
+- **`PasswordResetRequestAPIView`** / **`PasswordResetConfirmAPIView`**: Unauthenticated. Request emails a 24-hour token via `send_password_reset_email_task` (Django `send_mail`), through `run_task`. Confirm GET renders HTML; POST sets the password and clears the token.
 
 ### Testing
 - Auth API tests live in `apps/auth/tests/` with one module per endpoint. Reuse shared user/company/station fixtures and `apps/auth/tests/helpers.py` (`set_login_password`, URL reverses, JWT helpers).
@@ -183,7 +190,7 @@ The `auth` app (`apps/auth`) issues JWT sessions for company, station, and dashb
 The `notifications` app (`apps/notifications`) stores in-app notifications and fans them out over FCM.
 
 - **`NotificationViewSet`**: Authenticated list + PATCH. Queryset is `user=request.user`. Search `title`/`description`; filter `is_read` and `type` (iexact). List adds `unread_count` for dashboard roles only (always `0` for company/station). PATCH serializer accepts `is_read` only. No retrieve/create/delete.
-- Creating a `Notification` fires `post_save` → `FCMManager.send_fcm_message` with that user's Firebase tokens. Updates do not resend. `user=None` raises on send because the signal dereferences `instance.user.firebase_tokens`.
+- Creating a `Notification` fires `post_save` → `run_task(send_fcm_message_task, ...)` → `FCMManager.send_fcm_message` with that user's Firebase tokens. Updates do not resend. `user=None` raises on send because the signal dereferences `instance.user.firebase_tokens`.
 - Tests live in `apps/notifications/tests/`. Mock FCM at `FCMManager.send_fcm_message`; unit-test the real sender via `ORIGINAL_SEND_FCM`.
 
 ## Geo App Overview

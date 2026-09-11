@@ -8,7 +8,7 @@ from apps.users.models import User, Worker
 
 @pytest.fixture(autouse=True)
 def mock_cash_request_sms():
-    with patch("apps.companies.helper.send_sms") as send_sms:
+    with patch("apps.notifications.tasks.send_sms") as send_sms:
         yield send_sms
 
 
