@@ -2,4 +2,6 @@
 # Keep in sync with [tool.black] / [tool.isort] in pyproject.toml.
 max-line-length = 88
 ignore = E203, E266, E501, W503
-extend-exclude = venv, migrations, settings.py
+# */migrations/* rather than migrations: flake8 matches files passed by name
+# (pre-commit) on their own path, not their parent directories.
+extend-exclude = venv, */migrations/*, settings.py
