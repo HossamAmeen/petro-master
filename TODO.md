@@ -26,3 +26,23 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
     - Pick one source of truth (a `pyproject.toml` with `[tool.black]` + `[tool.isort]`) and use the same line length and the same exclude list (venv, migrations, settings.py) everywhere.
   - [.pre-commit-config.yaml](.pre-commit-config.yaml) pins older versions than dev.txt (isort 5.13.2 vs 6.0.0, flake8 6.0.0 vs 7.1.2) and has an empty `rev: ''` on the remove-print-statements hook — bump them to match so pre-commit and `make format` produce identical output.
   - Then run the formatters across the whole repo once and commit the reformat on its own, so it doesn't get mixed into feature diffs.
+
+- [ ] **Customer support role: view only (no create / update / delete)**
+  - The role already exists (`User.UserRoles.CustomerSupport` in [apps/users/models.py](apps/users/models.py)) and is in `DASHBOARD_ROLES` in [apps/shared/constants.py](apps/shared/constants.py), so today it passes `DashboardPermission` and can **write** everywhere an admin can.
+  - Rules for the whole task:
+    - Block writes with a permission class, not by overriding `create` / `update` / `destroy` in the views. Only override a view method if the permission approach really doesn't work for that endpoint.
+    - Small cleanups in the transaction and car-operation viewsets are fine while touching them (e.g. merging the repeated `get_permissions` branches), but keep them small.
+  - **Phase 1 — model, viewset, admin**
+    - Add a `CustomerSupport` model as a **proxy** of `User` (`class Meta: proxy = True`). No extra fields and no new table, unlike `Supervisor` / `Agent` which use multi-table inheritance.
+    - Give it a manager / `get_queryset` filtered on `role=CustomerSupport`, and set the role in `save()` the same way `Worker` / `Supervisor` do.
+    - Add a viewset + serializer under [apps/users/v1/](apps/users/v1/) (admin-only via `AdminPermission`, same as `UserViewSet`) and register it in [apps/users/v1/urls.py](apps/users/v1/urls.py).
+    - Register it in [apps/users/admin.py](apps/users/admin.py).
+    - Tests: CRUD by admin, and no other role can create customer-support users.
+  - **Phase 2 — view only on `CarOperationViewSet`**
+    - [apps/companies/api/v1/views/car_operation_views.py](apps/companies/api/v1/views/car_operation_views.py): `list` / `retrieve` stay open to customer support; `create` / `partial_update` (which use `DashboardPermission`) must reject it.
+    - Proposed solution: add a reusable permission in [apps/shared/permissions.py](apps/shared/permissions.py) (e.g. `CustomerSupportReadOnlyPermission`) that allows customer support only on `SAFE_METHODS`. Use it in `get_permissions` next to the existing classes. Once it works here, reuse it for the other `DashboardPermission` viewsets (company, station, users, station branches).
+    - Tests: customer support gets 200 on list/retrieve and 403 on create/patch; admin and finance behave as before.
+  - **Phase 3 — view only on transaction viewsets (company, station)**
+    - [apps/accounting/api/v1/views.py](apps/accounting/api/v1/views.py): `CompanyKhaznaTransactionViewSet` and `StationKhaznaTransactionViewSet`. Apply the same permission from phase 2.
+    - Also check `KhaznaTransactionViewSet`: it only has `IsAuthenticated`, so any role (customer support included) can write there right now.
+    - Tests: same matrix as phase 2 for both company and station transactions.
