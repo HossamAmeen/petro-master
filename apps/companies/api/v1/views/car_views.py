@@ -140,6 +140,13 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 message="لا يمكن تحديث رصيد السيارة حاليا لانها في منتصف عملية، يرجى اتمام العملية اولا",
                 code="not_found",
             )
+        if car.balance_source != Car.BalanceSource.CAR:
+            raise CustomValidationError(
+                message="لا يمكن شحن رصيد السيارة لانها تخصم من رصيد الفرع أو الشركة",
+                code="balance_source_not_car",
+                errors=[],
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
         serializer = CarBalanceUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -242,6 +249,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 code="not_found",
             )
         instance.delete()
+
 
 class VerifyDriverView(APIView):
     permission_classes = [IsAuthenticated, StationWorkerPermission]
@@ -360,7 +368,7 @@ class VerifyDriverView(APIView):
             liter_cost = (
                 car_service.cost * company_branch.fees / 100
             ) + car_service.cost
-            if car.balance < liter_cost:
+            if car.available_balance < liter_cost:
                 raise CustomValidationError(
                     message="السيارة لا تمتلك كافٍ من المال",
                     code="not_enough_balance",
@@ -373,7 +381,7 @@ class VerifyDriverView(APIView):
                 if car.permitted_fuel_amount
                 else car.tank_capacity
             )
-            available_liters = math.floor(car.balance / liter_cost)
+            available_liters = math.floor(car.available_balance / liter_cost)
             available_liters = min(liters_count, available_liters)
             available_cost = available_liters * liter_cost
             if (
@@ -398,7 +406,7 @@ class VerifyDriverView(APIView):
             car_service = None
             available_liters = 0
             liter_cost = 0
-            available_cost = car.balance
+            available_cost = car.available_balance
 
         station_branch = request.user.worker.station_branch
         car_operation = CarOperation.objects.create(

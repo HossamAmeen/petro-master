@@ -1,12 +1,8 @@
 from decimal import Decimal
 
+from apps.companies.tests.helpers import set_balance  # noqa: F401  (re-exported)
 from apps.shared.constants import COMPANY_ROLES, STATION_ROLES
 from apps.users.models import User
-
-
-def set_balance(instance, amount):
-    instance.balance = Decimal(amount)
-    instance.save(update_fields=["balance"])
 
 
 def cash_request_list_url():

@@ -318,6 +318,7 @@ class CarAdmin(admin.ModelAdmin):
         "permitted_fuel_amount",
         "fuel_type",
         "balance",
+        "balance_source",
         "branch",
         "company_name",
         "operations_link",
@@ -337,6 +338,7 @@ class CarAdmin(admin.ModelAdmin):
         "is_with_odometer",
         "tank_capacity",
         "fuel_type",
+        "balance_source",
         "city",
         "branch",
         "branch__company",
@@ -1040,6 +1042,7 @@ class CarOperationAdmin(admin.ModelAdmin):
                 "created_by",
             )
         )
+
 
 @admin.register(MonthlyInventory)
 class MonthlyInventoryAdmin(CarOperationAdmin):

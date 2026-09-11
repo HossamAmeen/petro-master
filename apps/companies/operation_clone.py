@@ -47,7 +47,7 @@ def company_liter_cost_for(service, company_branch):
 def available_liters_for(car, company_liter_cost):
     """Litres the car can still take, capped by its tank and its balance."""
     tank_capacity = car.permitted_fuel_amount or car.tank_capacity
-    affordable = math.floor(as_decimal(car.balance) / company_liter_cost)
+    affordable = math.floor(as_decimal(car.available_balance) / company_liter_cost)
     return min(tank_capacity, affordable)
 
 
@@ -227,8 +227,7 @@ def clone_car_operation(*, source, amount, user):
     clone.save()
 
     if clone.status == CarOperation.OperationStatus.COMPLETED:
-        car.balance = as_decimal(car.balance) - clone.company_cost
-        car.save(update_fields=["balance"])
+        car.deduct_balance(clone.company_cost)
         apply_financial_effects(
             clone=clone,
             car=car,

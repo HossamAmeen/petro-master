@@ -1,14 +1,17 @@
 from datetime import timedelta
 from decimal import Decimal
+from functools import partial
 
 import pytest
 from django.utils import timezone
 from rest_framework import status
 
 from apps.accounting.models import CompanyKhaznaTransaction, StationKhaznaTransaction
+from apps.companies.models.company_models import Car
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.stations.tests.helpers import (
+    fund_balance_source,
     gas_costs,
     gas_url,
     image_file,
@@ -34,16 +37,23 @@ def configure_fuel_money(company_branch, branch, car, station, **overrides):
     car.save(update_fields=["balance", "is_blocked_balance_update"])
 
 
-def complete_amount(client, operation, amount="20"):
-    return client.patch(
-        gas_url(operation.id),
-        {"amount": amount, "fuel_image": image_file("fuel.png")},
-        format="multipart",
-    )
-
-
-
 class TestStationGasOperationUpdate:
+    @pytest.fixture(autouse=True)
+    def setup(self, auth_client, station_worker, station, company_branch, branch, car):
+        self.worker = station_worker
+        self.client = worker_client(auth_client, station_worker, station)
+        self.configure_money = partial(
+            configure_fuel_money, company_branch, branch, car, station
+        )
+        self.configure_money()
+
+    def complete_amount(self, operation, amount="20", client=None):
+        return (client or self.client).patch(
+            gas_url(operation.id),
+            {"amount": amount, "fuel_image": image_file("fuel.png")},
+            format="multipart",
+        )
+
     def test_patch_without_authentication_fail(self, api_client, gas_operation):
         response = api_client.patch(
             gas_url(gas_operation.id),
@@ -56,17 +66,15 @@ class TestStationGasOperationUpdate:
         assert gas_operation.start_time is None
         assert gas_operation.status == CarOperation.OperationStatus.PENDING
 
-
-    def test_get_not_allowed_fail(self, auth_client, station_worker, station, gas_operation):
-        response = worker_client(auth_client, station_worker, station).get(
+    def test_get_not_allowed_fail(self, gas_operation):
+        response = self.client.get(
             gas_url(gas_operation.id)
         )
 
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
-
-    def test_patch_unknown_operation_fail(self, auth_client, station_worker, station):
-        response = worker_client(auth_client, station_worker, station).patch(
+    def test_patch_unknown_operation_fail(self):
+        response = self.client.patch(
             gas_url(999_999),
             {"start_time": timezone.localtime().isoformat()},
             format="json",
@@ -75,7 +83,6 @@ class TestStationGasOperationUpdate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "not_found"
 
-
     @pytest.mark.parametrize(
         "op_status",
         [
@@ -83,13 +90,11 @@ class TestStationGasOperationUpdate:
             CarOperation.OperationStatus.CANCELLED,
         ],
     )
-    def test_patch_finished_operation_fail(self,
-        op_status, auth_client, station_worker, station, gas_operation
-    ):
+    def test_patch_finished_operation_fail(self, op_status, gas_operation):
         gas_operation.status = op_status
         gas_operation.save(update_fields=["status"])
 
-        response = worker_client(auth_client, station_worker, station).patch(
+        response = self.client.patch(
             gas_url(gas_operation.id),
             {"start_time": timezone.localtime().isoformat()},
             format="json",
@@ -98,13 +103,10 @@ class TestStationGasOperationUpdate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "not_found"
 
-
-    def test_patch_start_time_success(self,
-        auth_client, station_worker, station, gas_operation
-    ):
+    def test_patch_start_time_success(self, gas_operation):
         before = timezone.localtime()
 
-        response = worker_client(auth_client, station_worker, station).patch(
+        response = self.client.patch(
             gas_url(gas_operation.id),
             {"start_time": "2020-01-01T00:00:00Z"},
             format="json",
@@ -116,11 +118,8 @@ class TestStationGasOperationUpdate:
         assert gas_operation.start_time >= before
         assert gas_operation.status == CarOperation.OperationStatus.PENDING
 
-
-    def test_patch_car_meter_without_motor_image_fail(self,
-        auth_client, station_worker, station, gas_operation
-    ):
-        response = worker_client(auth_client, station_worker, station).patch(
+    def test_patch_car_meter_without_motor_image_fail(self, gas_operation):
+        response = self.client.patch(
             gas_url(gas_operation.id),
             {"car_meter": "10100"},
             format="multipart",
@@ -131,11 +130,8 @@ class TestStationGasOperationUpdate:
         assert gas_operation.car_meter is None
         assert gas_operation.status == CarOperation.OperationStatus.PENDING
 
-
-    def test_patch_car_meter_negative_fail(self,
-        auth_client, station_worker, station, gas_operation
-    ):
-        response = worker_client(auth_client, station_worker, station).patch(
+    def test_patch_car_meter_negative_fail(self, gas_operation):
+        response = self.client.patch(
             gas_url(gas_operation.id),
             {"car_meter": "-1", "motor_image": image_file("motor.png")},
             format="multipart",
@@ -145,11 +141,8 @@ class TestStationGasOperationUpdate:
         gas_operation.refresh_from_db()
         assert gas_operation.car_meter is None
 
-
-    def test_patch_car_meter_below_last_meter_fail(self,
-        auth_client, station_worker, station, gas_operation, car
-    ):
-        response = worker_client(auth_client, station_worker, station).patch(
+    def test_patch_car_meter_below_last_meter_fail(self, gas_operation, car):
+        response = self.client.patch(
             gas_url(gas_operation.id),
             {"car_meter": "9999", "motor_image": image_file("motor.png")},
             format="multipart",
@@ -162,11 +155,8 @@ class TestStationGasOperationUpdate:
         car.refresh_from_db()
         assert car.last_meter == 10000
 
-
-    def test_patch_car_meter_equal_to_last_meter_success(self,
-        auth_client, station_worker, station, gas_operation
-    ):
-        response = worker_client(auth_client, station_worker, station).patch(
+    def test_patch_car_meter_equal_to_last_meter_success(self, gas_operation):
+        response = self.client.patch(
             gas_url(gas_operation.id),
             {"car_meter": "10000", "motor_image": image_file("motor.png")},
             format="multipart",
@@ -178,14 +168,13 @@ class TestStationGasOperationUpdate:
         assert gas_operation.car_meter == Decimal("10000.00")
         assert gas_operation.motor_image
 
-
-    def test_patch_car_meter_without_odometer_below_last_meter_success(self,
-        auth_client, station_worker, station, gas_operation, car
+    def test_patch_car_meter_without_odometer_below_last_meter_success(
+        self, gas_operation, car
     ):
         car.is_with_odometer = False
         car.save(update_fields=["is_with_odometer"])
 
-        response = worker_client(auth_client, station_worker, station).patch(
+        response = self.client.patch(
             gas_url(gas_operation.id),
             {"car_meter": "10", "motor_image": image_file("motor.png")},
             format="multipart",
@@ -196,13 +185,10 @@ class TestStationGasOperationUpdate:
         assert gas_operation.status == CarOperation.OperationStatus.IN_PROGRESS
         assert gas_operation.car_meter == Decimal("10.00")
 
-
-    def test_patch_amount_without_fuel_image_fail(self,
-        auth_client, station_worker, station, gas_operation
-    ):
+    def test_patch_amount_without_fuel_image_fail(self, gas_operation):
         prepare_gas_for_amount(gas_operation)
 
-        response = worker_client(auth_client, station_worker, station).patch(
+        response = self.client.patch(
             gas_url(gas_operation.id),
             {"amount": "20"},
             format="multipart",
@@ -213,61 +199,42 @@ class TestStationGasOperationUpdate:
         assert gas_operation.status == CarOperation.OperationStatus.PENDING
         assert gas_operation.amount is None
 
-
-    def test_patch_amount_zero_fail(self, auth_client, station_worker, station, gas_operation):
+    def test_patch_amount_zero_fail(self, gas_operation):
         prepare_gas_for_amount(gas_operation)
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "0"
-        )
+        response = self.complete_amount(gas_operation, "0")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         gas_operation.refresh_from_db()
         assert gas_operation.status == CarOperation.OperationStatus.PENDING
 
-
-    def test_patch_amount_without_start_time_fail(self,
-        auth_client, station_worker, station, gas_operation
-    ):
+    def test_patch_amount_without_start_time_fail(self, gas_operation):
         gas_operation.car_meter = Decimal("10100")
         gas_operation.save(update_fields=["car_meter"])
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation
-        )
+        response = self.complete_amount(gas_operation)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "not_found"
         gas_operation.refresh_from_db()
         assert gas_operation.status == CarOperation.OperationStatus.PENDING
 
-
-    def test_patch_amount_after_sixty_seconds_fail(self,
-        auth_client, station_worker, station, gas_operation
-    ):
+    def test_patch_amount_after_sixty_seconds_fail(self, gas_operation):
         gas_operation.start_time = timezone.localtime() - timedelta(seconds=61)
         gas_operation.car_meter = Decimal("10100")
         gas_operation.save(update_fields=["start_time", "car_meter"])
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation
-        )
+        response = self.complete_amount(gas_operation)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "not_found"
         gas_operation.refresh_from_db()
         assert gas_operation.status == CarOperation.OperationStatus.PENDING
 
-
-    def test_patch_amount_above_tank_fail(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
-    ):
-        configure_fuel_money(company_branch, branch, car, station)
+    def test_patch_amount_above_tank_fail(self, gas_operation, car, branch):
         prepare_gas_for_amount(gas_operation)
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "51"
-        )
+        response = self.complete_amount(gas_operation, "51")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "not_found"
@@ -281,46 +248,32 @@ class TestStationGasOperationUpdate:
         assert StationKhaznaTransaction.objects.count() == 0
         assert Notification.objects.count() == 0
 
-
-    def test_patch_amount_above_permitted_fuel_fail(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
-    ):
+    def test_patch_amount_above_permitted_fuel_fail(self, gas_operation, car):
         car.permitted_fuel_amount = 10
         car.save(update_fields=["permitted_fuel_amount"])
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation)
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "11"
-        )
+        response = self.complete_amount(gas_operation, "11")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "not_found"
         gas_operation.refresh_from_db()
         assert gas_operation.status == CarOperation.OperationStatus.PENDING
 
-
-    def test_patch_amount_above_balance_liters_fail(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
-    ):
-        configure_fuel_money(
-            company_branch, branch, car, station, car_balance="100.00"
-        )
+    def test_patch_amount_above_balance_liters_fail(self, gas_operation, car):
+        self.configure_money(car_balance="100.00")
         prepare_gas_for_amount(gas_operation)
         # company liter cost = 11, floor(100/11) = 9
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "10"
-        )
+        response = self.complete_amount(gas_operation, "10")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "not_found"
         car.refresh_from_db()
         assert car.balance == Decimal("100.00")
 
-
-    def test_full_flow_completes_balances_transactions_and_notifications_success(self,
-        auth_client,
+    def test_full_flow_completes_balances_transactions_and_notifications_success(
+        self,
         station_worker,
         station,
         gas_operation,
@@ -338,18 +291,16 @@ class TestStationGasOperationUpdate:
         second_branch_company_manager,
         finance_user,
     ):
-        configure_fuel_money(company_branch, branch, car, station)
         expected = gas_costs("20", gas_operation.service, company_branch, branch)
-        client = worker_client(auth_client, station_worker, station)
 
-        start_response = client.patch(
+        start_response = self.client.patch(
             gas_url(gas_operation.id),
             {"start_time": timezone.localtime().isoformat()},
             format="json",
         )
         assert start_response.status_code == status.HTTP_200_OK, start_response.data
 
-        meter_response = client.patch(
+        meter_response = self.client.patch(
             gas_url(gas_operation.id),
             {"car_meter": "10100", "motor_image": image_file("motor.png")},
             format="multipart",
@@ -358,7 +309,7 @@ class TestStationGasOperationUpdate:
         gas_operation.refresh_from_db()
         assert gas_operation.status == CarOperation.OperationStatus.IN_PROGRESS
 
-        amount_response = complete_amount(client, gas_operation, "20")
+        amount_response = self.complete_amount(gas_operation, "20")
         assert amount_response.status_code == status.HTTP_200_OK, amount_response.data
 
         gas_operation.refresh_from_db()
@@ -447,15 +398,11 @@ class TestStationGasOperationUpdate:
             Notification.objects.filter(user_id=station_worker.id).count() == 2
         )
 
-
-    def test_complete_sends_oil_change_to_company_owner_and_branch_manager_success(self,
-        auth_client,
+    def test_complete_sends_oil_change_to_company_owner_and_branch_manager_success(
+        self,
         station_worker,
-        station,
         gas_operation,
         car,
-        company_branch,
-        branch,
         company_owner,
         company_branch_manager,
         second_branch_company_manager,
@@ -464,12 +411,9 @@ class TestStationGasOperationUpdate:
     ):
         car.next_oil_change_km = 10050
         car.save(update_fields=["next_oil_change_km"])
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation, meter="10100")
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "20"
-        )
+        response = self.complete_amount(gas_operation, "20")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         oil_users = notification_user_ids(
@@ -486,25 +430,14 @@ class TestStationGasOperationUpdate:
         assert "ABC 1234" in oil.title
         assert "20" in oil.title
 
-
-    def test_complete_does_not_send_oil_change_when_meter_below_threshold_success(self,
-        auth_client,
-        station_worker,
-        station,
-        gas_operation,
-        car,
-        company_branch,
-        branch,
-        company_owner,
+    def test_complete_does_not_send_oil_change_when_meter_below_threshold_success(
+        self, gas_operation, car, company_owner
     ):
         car.next_oil_change_km = 20000
         car.save(update_fields=["next_oil_change_km"])
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation)
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "20"
-        )
+        response = self.complete_amount(gas_operation, "20")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         assert (
@@ -517,19 +450,15 @@ class TestStationGasOperationUpdate:
             Notification.NotificationType.MONEY, "وخصم مبلغ"
         )
 
-
-    def test_complete_at_available_liter_limit_success(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
+    def test_complete_at_available_liter_limit_success(
+        self, gas_operation, car, company_branch, branch
     ):
         car.permitted_fuel_amount = 10
         car.save(update_fields=["permitted_fuel_amount"])
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation)
         expected = gas_costs("10", gas_operation.service, company_branch, branch)
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "10"
-        )
+        response = self.complete_amount(gas_operation, "10")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         gas_operation.refresh_from_db()
@@ -538,63 +467,45 @@ class TestStationGasOperationUpdate:
         assert gas_operation.company_cost == expected["company_cost"]
         assert car.balance == Decimal("1000.00") - expected["company_cost"]
 
-
-    def test_complete_uses_tank_capacity_when_permitted_is_zero_success(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
+    def test_complete_uses_tank_capacity_when_permitted_is_zero_success(
+        self, gas_operation, car
     ):
         car.permitted_fuel_amount = 0
         car.tank_capacity = 15
         car.save(update_fields=["permitted_fuel_amount", "tank_capacity"])
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation)
 
-        too_much = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "16"
-        )
+        too_much = self.complete_amount(gas_operation, "16")
         assert too_much.status_code == status.HTTP_400_BAD_REQUEST
 
         prepare_gas_for_amount(gas_operation)
-        ok = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "15"
-        )
+        ok = self.complete_amount(gas_operation, "15")
         assert ok.status_code == status.HTTP_200_OK, ok.data
 
-
-    def test_complete_without_odometer_skips_consumption_rate_success(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
+    def test_complete_without_odometer_skips_consumption_rate_success(
+        self, gas_operation, car
     ):
         car.is_with_odometer = False
         car.fuel_consumption_rate = 9
         car.save(update_fields=["is_with_odometer", "fuel_consumption_rate"])
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation, meter="10100")
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "20"
-        )
+        response = self.complete_amount(gas_operation, "20")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         car.refresh_from_db()
         assert car.last_meter == 10100
         assert car.fuel_consumption_rate == 9
 
-
-    def test_complete_by_another_authenticated_worker_success(self,
-        auth_client,
-        second_station_worker,
-        station,
-        gas_operation,
-        car,
-        company_branch,
-        branch,
+    def test_complete_by_another_authenticated_worker_success(
+        self, auth_client, second_station_worker, station, gas_operation
     ):
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation)
 
-        response = complete_amount(
-            auth_client(second_station_worker, station_id=station.id),
+        response = self.complete_amount(
             gas_operation,
             "20",
+            client=auth_client(second_station_worker, station_id=station.id),
         )
 
         assert response.status_code == status.HTTP_200_OK, response.data
@@ -611,30 +522,22 @@ class TestStationGasOperationUpdate:
         )
         assert second_station_worker.id in station_money_users
 
-
-    def test_complete_can_drive_station_branch_balance_negative_success(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
+    def test_complete_can_drive_station_branch_balance_negative_success(
+        self, gas_operation, company_branch, branch
     ):
-        configure_fuel_money(
-            company_branch, branch, car, station, branch_balance="1.00"
-        )
+        self.configure_money(branch_balance="1.00")
         prepare_gas_for_amount(gas_operation)
         expected = gas_costs("20", gas_operation.service, company_branch, branch)
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "20"
-        )
+        response = self.complete_amount(gas_operation, "20")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         branch.refresh_from_db()
         assert branch.balance == Decimal("1.00") - expected["station_cost"]
         assert branch.balance < 0
 
-
-    def test_post_and_put_not_allowed_fail(self,
-        auth_client, station_worker, station, gas_operation
-    ):
-        client = worker_client(auth_client, station_worker, station)
+    def test_post_and_put_not_allowed_fail(self, gas_operation):
+        client = self.client
 
         assert (
             client.post(gas_url(gas_operation.id), {}, format="json").status_code
@@ -645,11 +548,8 @@ class TestStationGasOperationUpdate:
             == status.HTTP_405_METHOD_NOT_ALLOWED
         )
 
-
-    def test_patch_empty_payload_leaves_pending_success(self,
-        auth_client, station_worker, station, gas_operation
-    ):
-        response = worker_client(auth_client, station_worker, station).patch(
+    def test_patch_empty_payload_leaves_pending_success(self, gas_operation):
+        response = self.client.patch(
             gas_url(gas_operation.id), {}, format="json"
         )
 
@@ -659,14 +559,12 @@ class TestStationGasOperationUpdate:
         assert gas_operation.start_time is None
         assert gas_operation.amount is None
 
-
-    def test_patch_car_meter_takes_precedence_over_amount_success(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
+    def test_patch_car_meter_takes_precedence_over_amount_success(
+        self, gas_operation, car
     ):
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation)
 
-        response = worker_client(auth_client, station_worker, station).patch(
+        response = self.client.patch(
             gas_url(gas_operation.id),
             {
                 "car_meter": "10100",
@@ -684,31 +582,22 @@ class TestStationGasOperationUpdate:
         assert car.balance == Decimal("1000.00")
         assert CompanyKhaznaTransaction.objects.count() == 0
 
-
-    def test_patch_amount_within_sixty_seconds_success(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
-    ):
-        configure_fuel_money(company_branch, branch, car, station)
+    def test_patch_amount_within_sixty_seconds_success(self, gas_operation):
         gas_operation.start_time = timezone.localtime() - timedelta(seconds=59)
         gas_operation.car_meter = Decimal("10100")
         gas_operation.save(update_fields=["start_time", "car_meter"])
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "20"
-        )
+        response = self.complete_amount(gas_operation, "20")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         gas_operation.refresh_from_db()
         assert gas_operation.status == CarOperation.OperationStatus.COMPLETED
 
-
-    def test_patch_car_meter_zero_success(self,
-        auth_client, station_worker, station, gas_operation, car
-    ):
+    def test_patch_car_meter_zero_success(self, gas_operation, car):
         car.is_with_odometer = False
         car.save(update_fields=["is_with_odometer"])
 
-        response = worker_client(auth_client, station_worker, station).patch(
+        response = self.client.patch(
             gas_url(gas_operation.id),
             {"car_meter": "0", "motor_image": image_file("motor.png")},
             format="multipart",
@@ -719,19 +608,14 @@ class TestStationGasOperationUpdate:
         assert gas_operation.car_meter == Decimal("0.00")
         assert gas_operation.status == CarOperation.OperationStatus.IN_PROGRESS
 
-
-    def test_complete_with_zero_fees_success(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
+    def test_complete_with_zero_fees_success(
+        self, gas_operation, car, company_branch, branch
     ):
-        configure_fuel_money(
-            company_branch, branch, car, station, company_fees="0.00", station_fees="0.00"
-        )
+        self.configure_money(company_fees="0.00", station_fees="0.00")
         prepare_gas_for_amount(gas_operation)
         expected = gas_costs("20", gas_operation.service, company_branch, branch)
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "20"
-        )
+        response = self.complete_amount(gas_operation, "20")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         gas_operation.refresh_from_db()
@@ -742,26 +626,14 @@ class TestStationGasOperationUpdate:
         assert gas_operation.profits == Decimal("0.00")
         assert car.balance == Decimal("800.00")
 
-
-    def test_oil_change_at_exact_meter_threshold_success(self,
-        auth_client,
-        station_worker,
-        station,
-        gas_operation,
-        car,
-        company_branch,
-        branch,
-        company_owner,
-        company_branch_manager,
+    def test_oil_change_at_exact_meter_threshold_success(
+        self, gas_operation, car, company_owner, company_branch_manager
     ):
         car.next_oil_change_km = 10100
         car.save(update_fields=["next_oil_change_km"])
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation, meter="10100")
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "20"
-        )
+        response = self.complete_amount(gas_operation, "20")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         oil_users = notification_user_ids(
@@ -769,18 +641,12 @@ class TestStationGasOperationUpdate:
         )
         assert oil_users == {company_owner.id, company_branch_manager.id}
 
-
-    def test_oil_change_skipped_when_next_km_is_zero_success(self,
-        auth_client, station_worker, station, gas_operation, car, company_branch, branch
-    ):
+    def test_oil_change_skipped_when_next_km_is_zero_success(self, gas_operation, car):
         car.next_oil_change_km = 0
         car.save(update_fields=["next_oil_change_km"])
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation)
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), gas_operation, "20"
-        )
+        response = self.complete_amount(gas_operation, "20")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         assert (
@@ -788,27 +654,19 @@ class TestStationGasOperationUpdate:
             == 0
         )
 
-
     @pytest.mark.parametrize("role_fixture", ["admin_user", "company_owner"])
-    def test_complete_as_authenticated_non_worker_success(self,
-        role_fixture,
-        request,
-        auth_client,
-        station,
-        gas_operation,
-        car,
-        company_branch,
-        branch,
-        company,
+    def test_complete_as_authenticated_non_worker_success(
+        self, role_fixture, request, auth_client, station, gas_operation, company
     ):
         user = request.getfixturevalue(role_fixture)
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(gas_operation)
         kwargs = {"station_id": station.id}
         if role_fixture == "company_owner":
             kwargs["company_id"] = company.id
 
-        response = complete_amount(auth_client(user, **kwargs), gas_operation, "20")
+        response = self.complete_amount(
+            gas_operation, "20", client=auth_client(user, **kwargs)
+        )
 
         assert response.status_code == status.HTTP_200_OK, response.data
         gas_operation.refresh_from_db()
@@ -817,11 +675,9 @@ class TestStationGasOperationUpdate:
             Notification.NotificationType.MONEY, "تم تفويل"
         )
 
-
-    def test_complete_diesel_service_success(self,
-        auth_client,
+    def test_complete_diesel_service_success(
+        self,
         station_worker,
-        station,
         car,
         driver,
         branch,
@@ -838,13 +694,10 @@ class TestStationGasOperationUpdate:
             status=CarOperation.OperationStatus.PENDING,
             amount=None,
         )
-        configure_fuel_money(company_branch, branch, car, station)
         prepare_gas_for_amount(operation)
         expected = gas_costs("10", diesel_service, company_branch, branch)
 
-        response = complete_amount(
-            worker_client(auth_client, station_worker, station), operation, "10"
-        )
+        response = self.complete_amount(operation, "10")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         operation.refresh_from_db()
@@ -852,3 +705,134 @@ class TestStationGasOperationUpdate:
         assert operation.status == CarOperation.OperationStatus.COMPLETED
         assert operation.company_cost == expected["company_cost"]
         assert car.balance == Decimal("1000.00") - expected["company_cost"]
+
+    @pytest.mark.parametrize(
+        "balance_source",
+        [Car.BalanceSource.BRANCH, Car.BalanceSource.COMPANY],
+    )
+    def test_complete_deducts_from_the_configured_holder_success(
+        self, balance_source, gas_operation, car, company_branch, branch, company
+    ):
+        holder = fund_balance_source(car, company_branch, company, balance_source)
+        expected = gas_costs("20", gas_operation.service, company_branch, branch)
+        prepare_gas_for_amount(gas_operation)
+
+        response = self.complete_amount(gas_operation, "20")
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        gas_operation.refresh_from_db()
+        car.refresh_from_db()
+        holder.refresh_from_db()
+        assert gas_operation.status == CarOperation.OperationStatus.COMPLETED
+        assert gas_operation.company_cost == expected["company_cost"]
+        assert car.balance == Decimal("0.00")
+        assert car.is_blocked_balance_update is False
+        assert holder.balance == Decimal("1000.00") - expected["company_cost"]
+
+    @pytest.mark.parametrize(
+        "balance_source",
+        [Car.BalanceSource.BRANCH, Car.BalanceSource.COMPANY],
+    )
+    def test_complete_leaves_the_other_company_balances_untouched_success(
+        self, balance_source, gas_operation, car, company_branch, company
+    ):
+        fund_balance_source(
+            car, company_branch, company, balance_source, car_balance="500.00"
+        )
+        untouched = (
+            company if balance_source == Car.BalanceSource.BRANCH else company_branch
+        )
+        set_balance(untouched, "700.00")
+
+        response = self.complete_amount(prepare_gas_for_amount(gas_operation), "20")
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        car.refresh_from_db()
+        untouched.refresh_from_db()
+        assert car.balance == Decimal("500.00")
+        assert untouched.balance == Decimal("700.00")
+
+    @pytest.mark.parametrize(
+        "balance_source",
+        [Car.BalanceSource.BRANCH, Car.BalanceSource.COMPANY],
+    )
+    def test_patch_amount_above_holder_balance_fail(
+        self, balance_source, gas_operation, car, company_branch, company
+    ):
+        holder = fund_balance_source(
+            car, company_branch, company, balance_source, holder_balance="100.00"
+        )
+        prepare_gas_for_amount(gas_operation)
+        # company liter cost = 11, floor(100/11) = 9
+
+        response = self.complete_amount(gas_operation, "10")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["code"] == "not_found"
+        holder.refresh_from_db()
+        gas_operation.refresh_from_db()
+        assert holder.balance == Decimal("100.00")
+        assert gas_operation.status == CarOperation.OperationStatus.PENDING
+
+    @pytest.mark.parametrize(
+        "balance_source",
+        [Car.BalanceSource.BRANCH, Car.BalanceSource.COMPANY],
+    )
+    def test_patch_amount_ignores_car_balance_when_funded_elsewhere_fail(
+        self, balance_source, gas_operation, car, company_branch, company
+    ):
+        fund_balance_source(
+            car,
+            company_branch,
+            company,
+            balance_source,
+            car_balance="5000.00",
+            holder_balance="0.00",
+        )
+        prepare_gas_for_amount(gas_operation)
+
+        response = self.complete_amount(gas_operation, "10")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["code"] == "not_found"
+        car.refresh_from_db()
+        assert car.balance == Decimal("5000.00")
+
+    @pytest.mark.parametrize(
+        "balance_source",
+        [Car.BalanceSource.BRANCH, Car.BalanceSource.COMPANY],
+    )
+    def test_complete_at_exact_holder_balance_success(
+        self, balance_source, gas_operation, car, company_branch, company
+    ):
+        holder = fund_balance_source(
+            car, company_branch, company, balance_source, holder_balance="110.00"
+        )
+        prepare_gas_for_amount(gas_operation)
+        # company liter cost = 11, floor(110/11) = 10
+
+        response = self.complete_amount(gas_operation, "10")
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        holder.refresh_from_db()
+        assert holder.balance == Decimal("0.00")
+
+    @pytest.mark.parametrize(
+        "balance_source",
+        [Car.BalanceSource.BRANCH, Car.BalanceSource.COMPANY],
+    )
+    def test_complete_still_records_the_company_transaction_success(
+        self, balance_source, gas_operation, car, company_branch, branch, company
+    ):
+        fund_balance_source(car, company_branch, company, balance_source)
+        expected = gas_costs("20", gas_operation.service, company_branch, branch)
+        prepare_gas_for_amount(gas_operation)
+
+        response = self.complete_amount(gas_operation, "20")
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        company_txn = CompanyKhaznaTransaction.objects.get()
+        assert company_txn.company_id == company.id
+        assert company_txn.company_branch_id == company_branch.id
+        assert company_txn.amount == expected["company_cost"]
+        assert StationKhaznaTransaction.objects.count() == 1

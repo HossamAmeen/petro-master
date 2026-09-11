@@ -8,6 +8,7 @@
 - Reuse factories from `apps/companies/factories.py`; add a factory before repeating model setup in tests.
 - API tests must cover successful requests and relevant authentication, authorization, validation, and ownership boundaries.
 - Wrap tests in a `Test*` class per module. Keep `pytestmark`, URL helpers, and non-test helpers at module level. Method names end in `_success` or `_fail`.
+- Keep code shared by the tests in a class in a setup method on that class, not repeated in every test. Use an autouse fixture named `setup` when it needs fixtures or the database (`setup_method` cannot request fixtures); use plain `setup_method` only for fixture-free setup. Put only what most tests in the class need in it, never assert in it, and leave anything one or two tests need in those tests.
 - Exercise application code against the test database. Mock only network-bound third-party adapters, such as Firebase Cloud Messaging and email/SMS providers.
 - Car API tests live in `apps/companies/tests/api/v1/car/`, with one module per CRUD action plus custom-action modules (`test_update_balance.py`, `test_verify_driver.py`). Wrap tests in a `Test*` class; method names end in `_success` or `_fail`.
 - Reuse `car_factory`, `car_code_factory`, `car_payload_factory`, `company_car`, and `car_operation_factory` from `apps/companies/tests/conftest.py` instead of creating car graphs inside tests.
@@ -35,7 +36,8 @@
 ## API conventions
 
 - Tests target the versioned `/api/v1/` endpoints and use DRF's `APIClient`.
-- Set `company_id` or `station_id` JWT claims through the shared `auth_client` fixture for scoped endpoints.
+- Set `company_id` or `station_id` JWT claims through the shared `auth_client` fixture for scoped endpoints. `auth_client(user, ...)` returns a fresh authenticated client per call; `api_client` is always the unauthenticated one, so a class can build `self.client` in `setup` and still assert 401s with `api_client`.
+- Shared test helpers: `set_balance` in `apps/companies/tests/helpers.py`, car URL builders in `apps/companies/tests/api/v1/car/helpers.py`, and station helpers (`worker_client`, `gas_url`, `other_url`, `fund_balance_source`, cost helpers) in `apps/stations/tests/helpers.py`. Import them instead of redefining them per module.
 - Auth API tests live in `apps/auth/tests/`, with one module per endpoint (`test_company_login.py`, `test_station_login.py`, `test_dashboard_login.py`, `test_profile.py`, `test_password_reset_request.py`, `test_password_reset_confirm.py`, `test_token_refresh.py`) plus `test_utils.py` for SendGrid. Wrap tests in a `Test*` class; method names end in `_success` or `_fail`.
 - Reuse `company_owner`, `company_branch_manager`, `station_owner`, `branch_manager`, `station_worker`, and dashboard user fixtures. Hash passwords with `set_login_password` before login assertions — most user fixtures store a raw password string.
 - Company login is owner/branch-manager only and embeds `company_id` plus all company branch IDs. Station login is owner/manager/worker and embeds `station_id` (workers via `worker.station_branch.station_id`). Dashboard login is admin/finance/customer_support only. Wrong-role, inactive, and unknown-identifier attempts return 401 `invalid_credentials`.
@@ -76,6 +78,28 @@ Do not populate a branch dropdown with every branch in the system. Always scope 
 When writing tests (especially using Pytest) for this project, you **must** adhere to the following senior backend standards:
 - **URL Resolution**: Always use `django.urls.reverse` (e.g. `reverse("station-home")`) for endpoints. Never hardcode API URL strings.
 - **Test classes**: Put tests in a `Test*` class per module. Keep `pytestmark` and helpers at module level. Method names end in `_success` or `_fail`.
+- **Setup method**: Hold the code a class's tests share in a setup method on the class rather than repeating it per test. Use an autouse fixture named `setup` when it needs fixtures or the database — `setup_method` cannot request fixtures — and reserve plain `setup_method` for fixture-free setup (constants, payload templates). pytest builds a fresh instance per test, so `self` attributes never leak between tests.
+
+```python
+class TestCarUpdateBalance:
+    @pytest.fixture(autouse=True)
+    def setup(self, auth_client, company_owner, company, company_car):
+        self.company = company
+        self.car = company_car
+        self.client = auth_client(company_owner, company_id=company.id)
+        self.url = update_balance_url(company_car.id)
+
+    def test_add_balance_success(self):
+        set_balance(self.company, "100.00")
+
+        response = self.client.post(
+            self.url, {"amount": "40.00", "type": "add"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+```
+
+  Keep in setup only what most tests in the class need, never assert in it, and let each test still read as Arrange–Act–Assert.
 - **Comprehensive Coverage**: Tests must cover all logical edge cases. Do not just test validation errors; ensure you test the full "happy path" (successful creation, balance deductions, profits). Test different permission layers for user roles (Owner vs Manager vs Worker).
 - **Avoid Repetition**: Utilize `@pytest.mark.parametrize` where applicable to test multiple roles or conditions within the same test method.
 - **Fixture Reusability**: Do not duplicate data creation in test methods. Create and utilize standard fixtures in `conftest.py` that fully model business requirements (e.g. `company`, `car`, `car_operation`).

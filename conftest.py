@@ -17,15 +17,18 @@ def api_client():
 
 
 @pytest.fixture
-def auth_client(api_client):
+def auth_client():
+    """Build a client per call so `api_client` always stays unauthenticated."""
+
     def _auth_client(user, station_id=None, *, company_id=None):
         access_token = AccessToken.for_user(user)
         if company_id is not None:
             access_token["company_id"] = company_id
         if station_id is not None:
             access_token["station_id"] = station_id
-        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(access_token)}")
-        return api_client
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(access_token)}")
+        return client
 
     return _auth_client
 

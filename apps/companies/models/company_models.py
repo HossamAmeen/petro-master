@@ -1,5 +1,6 @@
 import base64
 import os
+from decimal import Decimal
 from io import BytesIO
 
 import qrcode
@@ -85,6 +86,11 @@ class Car(AbstractBaseModel):
         GREEN = "#008000", "GREEN"
         GOLD = "#FFD700", "GOLD"
 
+    class BalanceSource(models.TextChoices):
+        CAR = "car", "Car"
+        BRANCH = "branch", "Branch"
+        COMPANY = "company", "Company"
+
     code = models.CharField(max_length=10, unique=True, verbose_name="car code")
     plate_number = models.CharField(
         max_length=10, null=True, blank=True, verbose_name="car number plate"
@@ -131,6 +137,12 @@ class Car(AbstractBaseModel):
     )
     fuel_allowed_days = models.JSONField(default=list, blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    balance_source = models.CharField(
+        max_length=10,
+        choices=BalanceSource.choices,
+        default=BalanceSource.CAR,
+        help_text="من أين يخصم رصيد العمليات: من السيارة أو الفرع أو الشركة",
+    )
     is_blocked_balance_update = models.BooleanField(default=False)
     city = models.ForeignKey(
         "geo.City", on_delete=models.SET_NULL, null=True, blank=True
@@ -159,6 +171,32 @@ class Car(AbstractBaseModel):
         return (
             self.plate_character + " " + self.plate_number if self.plate_number else ""
         )
+
+    @property
+    def balance_holder(self):
+        """The object whose balance pays for this car's operations."""
+        if self.balance_source == self.BalanceSource.BRANCH:
+            return self.branch
+        if self.balance_source == self.BalanceSource.COMPANY:
+            return self.branch.company
+        return self
+
+    @property
+    def available_balance(self):
+        """Balance this car can actually spend, wherever it is held."""
+        return self.balance_holder.balance
+
+    def deduct_balance(self, amount):
+        """Subtract ``amount`` from the balance funding this car and persist it."""
+        amount = amount if isinstance(amount, Decimal) else Decimal(str(amount))
+        holder = self.balance_holder
+        holder.balance = (
+            holder.balance
+            if isinstance(holder.balance, Decimal)
+            else Decimal(str(holder.balance))
+        ) - amount
+        holder.save(update_fields=["balance"])
+        return holder.balance
 
     def is_available_today(self):
         today = timezone.localtime().date()

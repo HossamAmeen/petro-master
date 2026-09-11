@@ -69,6 +69,18 @@ class CarSerializer(serializers.ModelSerializer):
                     code="invalid",
                     errors=[],
                 )
+        balance_source = attrs.get("balance_source")
+        if (
+            balance_source
+            and self.instance
+            and balance_source != Car.BalanceSource.CAR
+            and self.instance.balance > 0
+        ):
+            raise CustomValidationError(
+                message="يجب سحب رصيد السيارة أولا قبل تحويلها للخصم من رصيد الفرع أو الشركة",
+                code="invalid",
+                errors=[],
+            )
         if attrs.get("service") and attrs.get("backup_service"):
             if attrs.get("service") == attrs.get("backup_service"):
                 raise CustomValidationError(
