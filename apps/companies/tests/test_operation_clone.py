@@ -17,7 +17,9 @@ NON_CAR_SOURCES = [Car.BalanceSource.BRANCH, Car.BalanceSource.COMPANY]
 
 
 @pytest.fixture
-def source_operation(car_operation_factory, company_car, company_branch, branch, service):
+def source_operation(
+    car_operation_factory, company_car, company_branch, branch, service
+):
     company_branch.fees = Decimal("10.00")
     company_branch.save(update_fields=["fees"])
     branch.fees = Decimal("2.00")
@@ -222,9 +224,7 @@ class TestCloneCarOperationBalanceSource(CloneTestCase):
         company_car.balance_source = balance_source
         company_car.save(update_fields=["balance_source"])
         holder = (
-            company_branch
-            if balance_source == Car.BalanceSource.BRANCH
-            else company
+            company_branch if balance_source == Car.BalanceSource.BRANCH else company
         )
         set_balance(holder, amount)
         return holder

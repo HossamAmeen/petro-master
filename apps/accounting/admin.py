@@ -240,12 +240,14 @@ class CompanyKhaznaTransactionAdmin(admin.ModelAdmin):
         if obj.created:
             return obj.created.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         return "-"
+
     created_with_ms.short_description = "Created (with ms)"
 
     def modified_with_ms(self, obj):
         if obj.modified:
             return obj.modified.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         return "-"
+
     modified_with_ms.short_description = "Modified (with ms)"
 
     def get_queryset(self, request):

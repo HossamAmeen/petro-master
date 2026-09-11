@@ -56,12 +56,8 @@ def calculate_costs(*, amount, service, company_branch, station_branch):
     amount = as_decimal(amount)
     service_cost = as_decimal(service.cost)
     cost = round(amount * service_cost, 2)
-    company_cost = round(
-        amount * company_liter_cost_for(service, company_branch), 2
-    )
-    station_cost = round(
-        amount * (service_cost + as_decimal(station_branch.fees)), 2
-    )
+    company_cost = round(amount * company_liter_cost_for(service, company_branch), 2)
+    station_cost = round(amount * (service_cost + as_decimal(station_branch.fees)), 2)
     return {
         "cost": cost,
         "company_cost": company_cost,
@@ -140,9 +136,7 @@ def apply_financial_effects(*, clone, car, station_branch, note, user):
     Mirrors the completed-operation side effects of the create flow: both
     khazna transactions, both balances and the two notification fan-outs.
     """
-    fueling_message = (
-        f"تم تفويل سيارة رقم {car.plate} بعدد {clone.amount} لتر"
-    )
+    fueling_message = f"تم تفويل سيارة رقم {car.plate} بعدد {clone.amount} لتر"
     description = f"{fueling_message} - {note}"
 
     generate_station_transaction(
@@ -177,10 +171,7 @@ def apply_financial_effects(*, clone, car, station_branch, note, user):
 
     notify(
         company_notification_users(company_branch.company_id, company_branch.id),
-        (
-            f"{fueling_message} "
-            f"وخصم مبلغ بمقدار {clone.company_cost:.2f} جنية"
-        ),
+        (f"{fueling_message} " f"وخصم مبلغ بمقدار {clone.company_cost:.2f} جنية"),
     )
 
 
@@ -205,9 +196,8 @@ def clone_car_operation(*, source, amount, user):
     # locked for the whole transaction so concurrent operations cannot both
     # read the same balance and overwrite each other's deduction
     car = Car.objects.select_for_update().select_related("branch").get(pk=source.car_id)
-    station_branch = (
-        StationBranch.objects.select_for_update()
-        .get(pk=source.worker.station_branch_id)
+    station_branch = StationBranch.objects.select_for_update().get(
+        pk=source.worker.station_branch_id
     )
     service = source.service
 

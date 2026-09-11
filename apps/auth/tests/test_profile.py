@@ -13,18 +13,15 @@ from apps.auth.tests.helpers import (
 from apps.stations.models.stations_models import StationBranch
 from apps.users.models import User
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestProfile:
 
-
     def test_profile_without_authentication_fail(self, api_client):
         response = api_client.get(profile_url())
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
 
     def test_profile_update_without_authentication_fail(self, api_client):
         response = api_client.patch(
@@ -35,9 +32,8 @@ class TestProfile:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_profile_company_owner_returns_company_balance_success(self,
-        auth_client, company_owner, company
+    def test_profile_company_owner_returns_company_balance_success(
+        self, auth_client, company_owner, company
     ):
         company.balance = Decimal("150.50")
         company.save(update_fields=["balance"])
@@ -54,8 +50,8 @@ class TestProfile:
         assert response.data["available_balance"] == 0
         assert "password" not in response.data
 
-
-    def test_profile_company_branch_manager_sums_managed_branch_balances_success(self,
+    def test_profile_company_branch_manager_sums_managed_branch_balances_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -69,18 +65,17 @@ class TestProfile:
         company.balance = Decimal("999.00")
         company.save(update_fields=["balance"])
 
-        response = auth_client(
-            company_branch_manager, company_id=company.id
-        ).get(profile_url())
+        response = auth_client(company_branch_manager, company_id=company.id).get(
+            profile_url()
+        )
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == company_branch_manager.id
         assert response.data["balance"] == Decimal("80.00")
         assert response.data["available_balance"] == 0
 
-
-    def test_profile_station_owner_returns_station_balance_success(self,
-        auth_client, station_owner, station
+    def test_profile_station_owner_returns_station_balance_success(
+        self, auth_client, station_owner, station
     ):
         station.balance = Decimal("220.00")
         station.save(update_fields=["balance"])
@@ -93,8 +88,8 @@ class TestProfile:
         assert response.data["balance"] == station.balance
         assert response.data["available_balance"] == 0
 
-
-    def test_profile_station_branch_manager_sums_managed_branch_balances_success(self,
+    def test_profile_station_branch_manager_sums_managed_branch_balances_success(
+        self,
         auth_client,
         admin_user,
         branch_manager,
@@ -123,9 +118,8 @@ class TestProfile:
         assert response.data["balance"] == Decimal("55.00")
         assert response.data["available_balance"] == 0
 
-
-    def test_profile_station_worker_balance_is_zero_success(self,
-        auth_client, station_worker, station, branch
+    def test_profile_station_worker_balance_is_zero_success(
+        self, auth_client, station_worker, station, branch
     ):
         station.balance = Decimal("300.00")
         station.save(update_fields=["balance"])
@@ -140,13 +134,12 @@ class TestProfile:
         assert response.data["balance"] == 0
         assert response.data["available_balance"] == 0
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["admin_user", "finance_user", "customer_support_user"],
     )
-    def test_profile_dashboard_user_omits_role_balance_success(self,
-        role_fixture, request, auth_client
+    def test_profile_dashboard_user_omits_role_balance_success(
+        self, role_fixture, request, auth_client
     ):
         user = request.getfixturevalue(role_fixture)
 
@@ -158,8 +151,9 @@ class TestProfile:
         assert response.data["available_balance"] == 0
         assert "password" not in response.data
 
-
-    def test_profile_updates_name_and_email_success(self, auth_client, company_owner, company):
+    def test_profile_updates_name_and_email_success(
+        self, auth_client, company_owner, company
+    ):
         response = auth_client(company_owner, company_id=company.id).patch(
             profile_url(),
             {"name": "Updated Owner", "email": "updated-owner@example.com"},
@@ -173,8 +167,9 @@ class TestProfile:
         assert response.data["name"] == "Updated Owner"
         assert response.data["email"] == "updated-owner@example.com"
 
-
-    def test_profile_updates_password_success(self, auth_client, api_client, company_owner, company):
+    def test_profile_updates_password_success(
+        self, auth_client, api_client, company_owner, company
+    ):
         response = auth_client(company_owner, company_id=company.id).patch(
             profile_url(),
             {"password": "a-new-password"},
@@ -194,9 +189,8 @@ class TestProfile:
         )
         assert login_response.status_code == status.HTTP_200_OK, login_response.data
 
-
-    def test_profile_put_updates_writable_fields_success(self,
-        auth_client, company_owner, company
+    def test_profile_put_updates_writable_fields_success(
+        self, auth_client, company_owner, company
     ):
         response = auth_client(company_owner, company_id=company.id).put(
             profile_url(),
@@ -214,9 +208,8 @@ class TestProfile:
         assert company_owner.email == "put-owner@example.com"
         assert company_owner.check_password("put-password-1")
 
-
-    def test_profile_ignores_read_only_phone_and_role_success(self,
-        auth_client, company_owner, company
+    def test_profile_ignores_read_only_phone_and_role_success(
+        self, auth_client, company_owner, company
     ):
         original_phone = company_owner.phone_number
 
@@ -236,7 +229,6 @@ class TestProfile:
         assert response.data["phone_number"] == original_phone
         assert response.data["role"] == User.UserRoles.CompanyOwner
 
-
     def test_profile_empty_patch_success(self, auth_client, company_owner, company):
         response = auth_client(company_owner, company_id=company.id).patch(
             profile_url(),
@@ -246,7 +238,6 @@ class TestProfile:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == company_owner.id
-
 
     def test_profile_post_method_fail(self, auth_client, company_owner, company):
         response = auth_client(company_owner, company_id=company.id).post(

@@ -3,33 +3,30 @@ from rest_framework import status
 
 from apps.users.tests.helpers import returned_ids, workers_list_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestWorkerList:
-
 
     def test_list_without_authentication_fail(self, api_client):
         response = api_client.get(workers_list_url())
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     def test_list_as_company_owner_fail(self, auth_client, company_owner, company):
-        response = auth_client(company_owner, company_id=company.id).get(workers_list_url())
+        response = auth_client(company_owner, company_id=company.id).get(
+            workers_list_url()
+        )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-
 
     def test_list_as_driver_fail(self, auth_client, driver_user):
         response = auth_client(driver_user).get(workers_list_url())
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-    def test_list_as_admin_sees_all_success(self,
-        auth_client, admin_user, station_worker, other_station_worker
+    def test_list_as_admin_sees_all_success(
+        self, auth_client, admin_user, station_worker, other_station_worker
     ):
         response = auth_client(admin_user).get(workers_list_url(no_paginate="true"))
 
@@ -37,9 +34,8 @@ class TestWorkerList:
         ids = returned_ids(response)
         assert {station_worker.id, other_station_worker.id}.issubset(ids)
 
-
-    def test_list_as_station_owner_is_station_scoped_success(self,
-        auth_client, station_owner, station, station_worker, other_station_worker
+    def test_list_as_station_owner_is_station_scoped_success(
+        self, auth_client, station_owner, station, station_worker, other_station_worker
     ):
         response = auth_client(station_owner, station_id=station.id).get(
             workers_list_url(no_paginate="true")
@@ -50,8 +46,8 @@ class TestWorkerList:
         assert station_worker.id in ids
         assert other_station_worker.id not in ids
 
-
-    def test_list_as_branch_manager_is_managed_branch_scoped_success(self,
+    def test_list_as_branch_manager_is_managed_branch_scoped_success(
+        self,
         auth_client,
         branch_manager,
         station,
@@ -92,9 +88,8 @@ class TestWorkerList:
         assert unmanaged_worker.id not in ids
         assert other_station_worker.id not in ids
 
-
-    def test_list_filter_by_station_branch_success(self,
-        auth_client, admin_user, branch, station_worker, other_station_worker
+    def test_list_filter_by_station_branch_success(
+        self, auth_client, admin_user, branch, station_worker, other_station_worker
     ):
         response = auth_client(admin_user).get(
             workers_list_url(station_branch=branch.id, no_paginate="true")
@@ -105,9 +100,8 @@ class TestWorkerList:
         assert station_worker.id in ids
         assert other_station_worker.id not in ids
 
-
-    def test_list_payload_includes_nested_branch_success(self,
-        auth_client, admin_user, station_worker, branch, station
+    def test_list_payload_includes_nested_branch_success(
+        self, auth_client, admin_user, station_worker, branch, station
     ):
         response = auth_client(admin_user).get(workers_list_url(no_paginate="true"))
 

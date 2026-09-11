@@ -10,7 +10,6 @@ from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Car
 from apps.stations.models.service_models import Service
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -20,19 +19,23 @@ def home_url():
 
 class TestCompanyHome:
 
-
     def test_home_without_authentication_fail(self, api_client):
         response = api_client.get(home_url())
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
-        ["admin_user", "finance_user", "customer_support_user", "station_owner", "station_worker"],
+        [
+            "admin_user",
+            "finance_user",
+            "customer_support_user",
+            "station_owner",
+            "station_worker",
+        ],
     )
-    def test_home_forbidden_role_fail(self,
-        role_fixture, request, auth_client, company, station
+    def test_home_forbidden_role_fail(
+        self, role_fixture, request, auth_client, company, station
     ):
         user = request.getfixturevalue(role_fixture)
         client_kwargs = {"company_id": company.id}
@@ -43,13 +46,11 @@ class TestCompanyHome:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
     def test_home_owner_without_company_claim_fail(self, auth_client, company_owner):
         response = auth_client(company_owner).get(home_url())
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["message"] == "Company not found"
-
 
     def test_home_owner_unknown_company_claim_fail(self, auth_client, company_owner):
         response = auth_client(company_owner, company_id=999_999).get(home_url())
@@ -57,14 +58,14 @@ class TestCompanyHome:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["message"] == "Company not found"
 
-
     def test_home_post_not_allowed_fail(self, auth_client, company_owner, company):
         response = auth_client(company_owner, company_id=company.id).post(home_url())
 
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
-
-    def test_home_owner_empty_company_success(self, auth_client, company_owner, company):
+    def test_home_owner_empty_company_success(
+        self, auth_client, company_owner, company
+    ):
         response = auth_client(company_owner, company_id=company.id).get(home_url())
 
         assert response.status_code == status.HTTP_200_OK
@@ -86,8 +87,8 @@ class TestCompanyHome:
         assert response.data["company_transactions"] == []
         assert list(response.data["branches"]) == []
 
-
-    def test_home_owner_aggregates_success(self,
+    def test_home_owner_aggregates_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -159,8 +160,8 @@ class TestCompanyHome:
             second_company_branch.id,
         }
 
-
-    def test_home_manager_scoped_to_assigned_branch_success(self,
+    def test_home_manager_scoped_to_assigned_branch_success(
+        self,
         auth_client,
         company_owner,
         company_branch_manager,
@@ -193,7 +194,9 @@ class TestCompanyHome:
             company=company, driver=unmanaged_driver, amount=Decimal("30.00")
         )
 
-        owner_response = auth_client(company_owner, company_id=company.id).get(home_url())
+        owner_response = auth_client(company_owner, company_id=company.id).get(
+            home_url()
+        )
         manager_response = auth_client(
             company_branch_manager, company_id=company.id
         ).get(home_url())
@@ -214,8 +217,8 @@ class TestCompanyHome:
         assert set(manager_response.data["branches"]) == {company_branch.id}
         assert second_company_branch.id not in set(manager_response.data["branches"])
 
-
-    def test_home_license_expiration_counts_success(self,
+    def test_home_license_expiration_counts_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -234,8 +237,8 @@ class TestCompanyHome:
         assert response.data["total_drivers_with_lincense_expiration_date"] == 2
         assert response.data["total_drivers_with_lincense_expiration_date_30_days"] == 1
 
-
-    def test_home_recent_operations_limited_and_scoped_success(self,
+    def test_home_recent_operations_limited_and_scoped_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -288,9 +291,8 @@ class TestCompanyHome:
         assert response.data["car_operations"][0]["car"]["id"] == owned_car.id
         assert response.data["car_operations"][0]["unit"] == "لتر"
 
-
-
-    def test_home_manager_operations_exclude_unassigned_branch_success(self,
+    def test_home_manager_operations_exclude_unassigned_branch_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -319,8 +321,8 @@ class TestCompanyHome:
         assert managed_op.id in operation_ids
         assert unmanaged_op.id not in operation_ids
 
-
-    def test_home_recent_transactions_limited_and_scoped_success(self,
+    def test_home_recent_transactions_limited_and_scoped_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -352,8 +354,8 @@ class TestCompanyHome:
         assert unbranched.id not in transaction_ids
         assert newest.id in transaction_ids
 
-
-    def test_home_rejected_cash_request_not_counted_success(self,
+    def test_home_rejected_cash_request_not_counted_success(
+        self,
         auth_client,
         company_owner,
         company,

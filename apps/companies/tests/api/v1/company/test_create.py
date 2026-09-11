@@ -6,7 +6,6 @@ from rest_framework import status
 
 from apps.companies.models.company_models import Company
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -15,8 +14,9 @@ REQUIRED_FIELDS = ["name", "address"]
 
 class TestCompanyCreate:
 
-
-    def test_create_without_authentication_fail(self, api_client, company_payload_factory):
+    def test_create_without_authentication_fail(
+        self, api_client, company_payload_factory
+    ):
         response = api_client.post(
             reverse("companies-list"),
             company_payload_factory(),
@@ -25,7 +25,6 @@ class TestCompanyCreate:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert Company.objects.count() == 0
-
 
     @pytest.mark.parametrize(
         "role_fixture",
@@ -36,7 +35,8 @@ class TestCompanyCreate:
             "station_worker",
         ],
     )
-    def test_create_company_success(self,
+    def test_create_company_success(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -68,9 +68,8 @@ class TestCompanyCreate:
         assert created_company.balance == Decimal("0.00")
         assert created_company.created_by_id == user.id
 
-
-    def test_create_without_optional_fields_success(self,
-        auth_client, admin_user, company_payload_factory
+    def test_create_without_optional_fields_success(
+        self, auth_client, admin_user, company_payload_factory
     ):
         payload = company_payload_factory()
         payload.pop("email")
@@ -92,9 +91,8 @@ class TestCompanyCreate:
         assert created_company.is_active is True
         assert created_company.created_by_id == admin_user.id
 
-
-    def test_create_inactive_company_success(self,
-        auth_client, admin_user, company_payload_factory
+    def test_create_inactive_company_success(
+        self, auth_client, admin_user, company_payload_factory
     ):
         payload = company_payload_factory(is_active=False)
 
@@ -108,9 +106,8 @@ class TestCompanyCreate:
         created_company = Company.objects.get(name=payload["name"])
         assert created_company.is_active is False
 
-
-    def test_create_submitted_balance_ignored_success(self,
-        auth_client, admin_user, company_payload_factory
+    def test_create_submitted_balance_ignored_success(
+        self, auth_client, admin_user, company_payload_factory
     ):
         payload = company_payload_factory()
         payload["balance"] = "999.00"
@@ -125,9 +122,9 @@ class TestCompanyCreate:
         created_company = Company.objects.get(name=payload["name"])
         assert created_company.balance == Decimal("0.00")
 
-
     @pytest.mark.parametrize("missing_field", REQUIRED_FIELDS)
-    def test_create_missing_required_field_fail(self,
+    def test_create_missing_required_field_fail(
+        self,
         missing_field,
         auth_client,
         admin_user,
@@ -146,7 +143,6 @@ class TestCompanyCreate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert set(Company.objects.values_list("id", flat=True)) == existing_ids
 
-
     @pytest.mark.parametrize(
         ("field", "invalid_value"),
         [
@@ -157,7 +153,8 @@ class TestCompanyCreate:
             ("address", "A" * 256),
         ],
     )
-    def test_create_invalid_field_fail(self,
+    def test_create_invalid_field_fail(
+        self,
         field,
         invalid_value,
         auth_client,

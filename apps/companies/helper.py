@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 
 def get_car_operations_data(*args, **kwargs):
     branches = kwargs.get("branches")
-    logger.info(f"get_car_operations_data called with branches: {branches}, company_id: {kwargs.get('company_id')}")
+    logger.info(
+        f"get_car_operations_data called with branches: {branches}, company_id: {kwargs.get('company_id')}"
+    )
     if not branches:
         raise CustomValidationError(
             message="Branches are required for this operation with company id {}".format(
@@ -67,7 +69,9 @@ def send_cash_request_otp(instance):
 
 def export_car_operations(*args, **kwargs):
     branches = kwargs.get("branches")
-    logger.info(f"export_car_operations called with branches: {branches}, company_id: {kwargs.get('company_id')}")
+    logger.info(
+        f"export_car_operations called with branches: {branches}, company_id: {kwargs.get('company_id')}"
+    )
     wb = Workbook()
     ws = wb.active
     ws.title = "Data Export"
@@ -89,7 +93,15 @@ def export_car_operations(*args, **kwargs):
         is_first_car = False
 
         # Row with car number + "العربية"
-        car_number_row = ["", "", "", str(car.branch.name), "الفرع", str(car), "العربية"]
+        car_number_row = [
+            "",
+            "",
+            "",
+            str(car.branch.name),
+            "الفرع",
+            str(car),
+            "العربية",
+        ]
         ws.append(car_number_row)
 
         # Style car row: black text + gray background

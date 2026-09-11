@@ -6,7 +6,6 @@ from rest_framework import status
 
 from apps.geo.models import District
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -16,8 +15,9 @@ def branch_detail_url(branch_id):
 
 class TestCompanyBranchUpdate:
 
-
-    def test_partial_update_without_authentication_fail(self, api_client, company_branch):
+    def test_partial_update_without_authentication_fail(
+        self, api_client, company_branch
+    ):
         response = api_client.patch(
             branch_detail_url(company_branch.id),
             {"name": "Updated Branch"},
@@ -26,8 +26,9 @@ class TestCompanyBranchUpdate:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_partial_update_branch_success(self, auth_client, admin_user, company_branch):
+    def test_partial_update_branch_success(
+        self, auth_client, admin_user, company_branch
+    ):
         response = auth_client(admin_user).patch(
             branch_detail_url(company_branch.id),
             {"name": "Updated Branch"},
@@ -38,7 +39,6 @@ class TestCompanyBranchUpdate:
         company_branch.refresh_from_db()
         assert company_branch.name == "Updated Branch"
         assert company_branch.updated_by_id == admin_user.id
-
 
     def test_partial_update_fees_success(self, auth_client, admin_user, company_branch):
         response = auth_client(admin_user).patch(
@@ -52,9 +52,8 @@ class TestCompanyBranchUpdate:
         assert company_branch.fees == Decimal("7.50")
         assert company_branch.cash_request_fees == Decimal("3.00")
 
-
-    def test_partial_update_owned_branch_as_company_owner_success(self,
-        auth_client, company_owner, company, company_branch
+    def test_partial_update_owned_branch_as_company_owner_success(
+        self, auth_client, company_owner, company, company_branch
     ):
         response = auth_client(company_owner, company_id=company.id).patch(
             branch_detail_url(company_branch.id),
@@ -67,9 +66,8 @@ class TestCompanyBranchUpdate:
         assert company_branch.name == "Owner Updated Branch"
         assert company_branch.updated_by_id == company_owner.id
 
-
-    def test_partial_update_other_company_branch_as_owner_fail(self,
-        auth_client, company_owner, company, other_company_branch
+    def test_partial_update_other_company_branch_as_owner_fail(
+        self, auth_client, company_owner, company, other_company_branch
     ):
         response = auth_client(company_owner, company_id=company.id).patch(
             branch_detail_url(other_company_branch.id),
@@ -81,9 +79,8 @@ class TestCompanyBranchUpdate:
         other_company_branch.refresh_from_db()
         assert other_company_branch.name != "Forbidden"
 
-
-    def test_partial_update_unmanaged_branch_as_branch_manager_fail(self,
-        auth_client, company_branch_manager, company, second_company_branch
+    def test_partial_update_unmanaged_branch_as_branch_manager_fail(
+        self, auth_client, company_branch_manager, company, second_company_branch
     ):
         response = auth_client(company_branch_manager, company_id=company.id).patch(
             branch_detail_url(second_company_branch.id),
@@ -95,9 +92,8 @@ class TestCompanyBranchUpdate:
         second_company_branch.refresh_from_db()
         assert second_company_branch.name != "Forbidden"
 
-
-    def test_partial_update_district_ignored_success(self,
-        auth_client, admin_user, company_branch, geo_data
+    def test_partial_update_district_ignored_success(
+        self, auth_client, admin_user, company_branch, geo_data
     ):
         other_district = District.objects.create(name="Zamalek", city=geo_data["city"])
         original_district_id = company_branch.district_id
@@ -112,8 +108,9 @@ class TestCompanyBranchUpdate:
         company_branch.refresh_from_db()
         assert company_branch.district_id == original_district_id
 
-
-    def test_partial_update_balance_success(self, auth_client, admin_user, company_branch):
+    def test_partial_update_balance_success(
+        self, auth_client, admin_user, company_branch
+    ):
         response = auth_client(admin_user).patch(
             branch_detail_url(company_branch.id),
             {"balance": "125.50"},
@@ -123,7 +120,6 @@ class TestCompanyBranchUpdate:
         assert response.status_code == status.HTTP_200_OK, response.data
         company_branch.refresh_from_db()
         assert company_branch.balance == Decimal("125.50")
-
 
     @pytest.mark.parametrize(
         ("field", "invalid_value"),
@@ -135,7 +131,8 @@ class TestCompanyBranchUpdate:
             ("company", 999_999),
         ],
     )
-    def test_partial_update_invalid_field_fail(self,
+    def test_partial_update_invalid_field_fail(
+        self,
         field,
         invalid_value,
         auth_client,
@@ -157,9 +154,8 @@ class TestCompanyBranchUpdate:
         else:
             assert getattr(company_branch, field) == original_value
 
-
-    def test_full_update_branch_success(self,
-        auth_client, admin_user, company, company_branch
+    def test_full_update_branch_success(
+        self, auth_client, admin_user, company, company_branch
     ):
         payload = {
             "name": "Fully Updated Branch",
@@ -178,9 +174,8 @@ class TestCompanyBranchUpdate:
         assert company_branch.name == "Fully Updated Branch"
         assert company_branch.updated_by_id == admin_user.id
 
-
-    def test_full_update_missing_required_field_fail(self,
-        auth_client, admin_user, company, company_branch
+    def test_full_update_missing_required_field_fail(
+        self, auth_client, admin_user, company, company_branch
     ):
         original_name = company_branch.name
 
@@ -193,7 +188,6 @@ class TestCompanyBranchUpdate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         company_branch.refresh_from_db()
         assert company_branch.name == original_name
-
 
     def test_partial_update_unknown_branch_fail(self, auth_client, admin_user):
         response = auth_client(admin_user).patch(

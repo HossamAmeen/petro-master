@@ -9,7 +9,6 @@ from apps.companies.tests.api.v1.car.helpers import update_balance_url
 from apps.companies.tests.helpers import set_balance
 from apps.notifications.models import Notification
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 NON_CAR_SOURCES = [Car.BalanceSource.BRANCH, Car.BalanceSource.COMPANY]

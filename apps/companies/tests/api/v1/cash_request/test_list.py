@@ -10,20 +10,18 @@ from apps.companies.tests.api.v1.cash_request.helpers import (
     returned_ids,
 )
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestCashRequestList:
-
 
     def test_list_without_authentication_fail(self, api_client):
         response = api_client.get(cash_request_list_url())
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_list_company_owner_scope_success(self,
+    def test_list_company_owner_scope_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -53,8 +51,8 @@ class TestCashRequestList:
         assert item["approved_by"] is None
         assert item["worker"] is None
 
-
-    def test_list_branch_manager_is_owner_only_for_own_requests_success(self,
+    def test_list_branch_manager_is_owner_only_for_own_requests_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -81,8 +79,8 @@ class TestCashRequestList:
         assert_cash_request_payload(by_id[other.id], other, company_branch_manager)
         assert by_id[other.id]["is_owner"] is False
 
-
-    def test_list_station_owner_only_station_linked_requests_success(self,
+    def test_list_station_owner_only_station_linked_requests_success(
+        self,
         auth_client,
         station_owner,
         station,
@@ -118,8 +116,8 @@ class TestCashRequestList:
         assert item["approved_by"]["id"] == station_owner.id
         assert item["worker"] == item["approved_by"]
 
-
-    def test_list_station_worker_without_driver_code_only_own_approved_success(self,
+    def test_list_station_worker_without_driver_code_only_own_approved_success(
+        self,
         auth_client,
         station_worker,
         station,
@@ -162,8 +160,8 @@ class TestCashRequestList:
             response.data["results"][0], own_approved, station_worker
         )
 
-
-    def test_list_station_worker_with_driver_code_in_progress_success(self,
+    def test_list_station_worker_with_driver_code_in_progress_success(
+        self,
         auth_client,
         station_worker,
         station,
@@ -196,8 +194,8 @@ class TestCashRequestList:
             CompanyCashRequest.Status.IN_PROGRESS
         )
 
-
-    def test_list_dashboard_sees_all_success(self,
+    def test_list_dashboard_sees_all_success(
+        self,
         auth_client,
         admin_user,
         company,
@@ -221,8 +219,8 @@ class TestCashRequestList:
         assert item["is_owner"] is False
         assert item["amount"] == "50.00"
 
-
-    def test_list_filter_status_success(self,
+    def test_list_filter_status_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -246,8 +244,8 @@ class TestCashRequestList:
         assert in_progress.id in returned_ids(response)
         assert approved.id not in returned_ids(response)
 
-
-    def test_list_filter_company_branch_success(self,
+    def test_list_filter_company_branch_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -271,8 +269,8 @@ class TestCashRequestList:
         assert matching.id in returned_ids(response)
         assert other.id not in returned_ids(response)
 
-
-    def test_list_station_branch_manager_only_station_linked_requests_success(self,
+    def test_list_station_branch_manager_only_station_linked_requests_success(
+        self,
         auth_client,
         branch_manager,
         station,
@@ -304,8 +302,8 @@ class TestCashRequestList:
         assert item["is_owner"] is False
         assert item["amount"] == "50.00"
 
-
-    def test_list_filter_driver_and_approved_by_success(self,
+    def test_list_filter_driver_and_approved_by_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -354,8 +352,8 @@ class TestCashRequestList:
         assert other_driver_request.id in returned_ids(by_approver)
         assert other_approver.id not in returned_ids(by_approver)
 
-
-    def test_list_search_driver_name_success(self,
+    def test_list_search_driver_name_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -375,10 +373,12 @@ class TestCashRequestList:
         assert response.status_code == status.HTTP_200_OK
         assert returned_ids(response) == {matching.id}
         assert other.id not in returned_ids(response)
-        assert_cash_request_payload(response.data["results"][0], matching, company_owner)
+        assert_cash_request_payload(
+            response.data["results"][0], matching, company_owner
+        )
 
-
-    def test_list_without_pagination_success(self,
+    def test_list_without_pagination_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -395,4 +395,6 @@ class TestCashRequestList:
         assert response.status_code == status.HTTP_200_OK
         assert "count" not in response.data
         assert [item["id"] for item in response.data["results"]] == [cash_request.id]
-        assert_cash_request_payload(response.data["results"][0], cash_request, company_owner)
+        assert_cash_request_payload(
+            response.data["results"][0], cash_request, company_owner
+        )

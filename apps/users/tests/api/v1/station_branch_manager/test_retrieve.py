@@ -4,21 +4,18 @@ from rest_framework import status
 from apps.users.models import StationBranchManager, StationOwner
 from apps.users.tests.helpers import station_branch_managers_detail_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestStationBranchManagerRetrieve:
-
 
     def test_retrieve_without_authentication_fail(self, api_client, branch_manager):
         response = api_client.get(station_branch_managers_detail_url(branch_manager.id))
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_retrieve_as_company_owner_fail(self,
-        auth_client, company_owner, company, branch_manager
+    def test_retrieve_as_company_owner_fail(
+        self, auth_client, company_owner, company, branch_manager
     ):
         response = auth_client(company_owner, company_id=company.id).get(
             station_branch_managers_detail_url(branch_manager.id)
@@ -26,8 +23,9 @@ class TestStationBranchManagerRetrieve:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-    def test_retrieve_success(self, auth_client, admin_user, branch_manager, station, branch):
+    def test_retrieve_success(
+        self, auth_client, admin_user, branch_manager, station, branch
+    ):
         response = auth_client(admin_user).get(
             station_branch_managers_detail_url(branch_manager.id)
         )
@@ -36,11 +34,12 @@ class TestStationBranchManagerRetrieve:
         assert response.data["id"] == branch_manager.id
         assert response.data["name"] == branch_manager.name
         assert response.data["station"] == {"id": station.id, "name": station.name}
-        assert any(item["id"] == branch.id for item in response.data["station_branches"])
+        assert any(
+            item["id"] == branch.id for item in response.data["station_branches"]
+        )
 
-
-    def test_retrieve_other_station_as_owner_fail(self,
-        auth_client, station_owner, station, other_station, admin_user
+    def test_retrieve_other_station_as_owner_fail(
+        self, auth_client, station_owner, station, other_station, admin_user
     ):
         from apps.users.models import User
 
@@ -60,7 +59,6 @@ class TestStationBranchManagerRetrieve:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
     def test_update_name_success(self, auth_client, admin_user, branch_manager):
         response = auth_client(admin_user).patch(
             station_branch_managers_detail_url(branch_manager.id),
@@ -72,9 +70,8 @@ class TestStationBranchManagerRetrieve:
         branch_manager.refresh_from_db()
         assert branch_manager.name == "Updated Station Manager"
 
-
-    def test_update_replaces_station_branches_success(self,
-        auth_client, admin_user, branch_manager, branch, station
+    def test_update_replaces_station_branches_success(
+        self, auth_client, admin_user, branch_manager, branch, station
     ):
         response = auth_client(admin_user).patch(
             station_branch_managers_detail_url(branch_manager.id),
@@ -90,8 +87,9 @@ class TestStationBranchManagerRetrieve:
         )
         assert assigned == {branch.id}
 
-
-    def test_update_password_mismatch_fail(self, auth_client, admin_user, branch_manager):
+    def test_update_password_mismatch_fail(
+        self, auth_client, admin_user, branch_manager
+    ):
         response = auth_client(admin_user).patch(
             station_branch_managers_detail_url(branch_manager.id),
             {"password": "new-pass-123", "confirm_password": "other-pass"},
@@ -99,7 +97,6 @@ class TestStationBranchManagerRetrieve:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-
 
     def test_delete_success(self, auth_client, admin_user, other_station, station):
         from apps.users.models import User

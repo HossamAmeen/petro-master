@@ -5,7 +5,6 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -15,14 +14,13 @@ def returned_ids(response):
 
 class TestDriverList:
 
-
     def test_list_without_authentication_fail(self, api_client):
         response = api_client.get(reverse("drivers-list"))
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_list_company_owner_scope_success(self,
+    def test_list_company_owner_scope_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -40,8 +38,8 @@ class TestDriverList:
         assert owned_driver.id in returned_ids(response)
         assert other_driver.id not in returned_ids(response)
 
-
-    def test_list_branch_manager_scope_success(self,
+    def test_list_branch_manager_scope_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -59,8 +57,8 @@ class TestDriverList:
         assert managed_driver.id in returned_ids(response)
         assert unmanaged_driver.id not in returned_ids(response)
 
-
-    def test_list_dashboard_user_sees_all_drivers_success(self,
+    def test_list_dashboard_user_sees_all_drivers_success(
+        self,
         auth_client,
         admin_user,
         driver_factory,
@@ -74,8 +72,8 @@ class TestDriverList:
         assert response.status_code == status.HTTP_200_OK
         assert {first_driver.id, second_driver.id}.issubset(returned_ids(response))
 
-
-    def test_list_filter_branch_success(self,
+    def test_list_filter_branch_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -94,8 +92,8 @@ class TestDriverList:
         assert matching_driver.id in returned_ids(response)
         assert non_matching_driver.id not in returned_ids(response)
 
-
-    def test_list_filter_city_success(self,
+    def test_list_filter_city_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -115,8 +113,8 @@ class TestDriverList:
         assert matching_driver.id in returned_ids(response)
         assert non_matching_driver.id not in returned_ids(response)
 
-
-    def test_list_filter_company_success(self,
+    def test_list_filter_company_success(
+        self,
         auth_client,
         admin_user,
         company,
@@ -135,7 +133,6 @@ class TestDriverList:
         assert matching_driver.id in returned_ids(response)
         assert non_matching_driver.id not in returned_ids(response)
 
-
     @pytest.mark.parametrize(
         ("days_until_expiry", "query_parameter", "query_offset_days", "should_match"),
         [
@@ -145,7 +142,8 @@ class TestDriverList:
             (10, "lincense_expiration_date__from", 90, False),
         ],
     )
-    def test_list_filter_license_expiration_success(self,
+    def test_list_filter_license_expiration_success(
+        self,
         days_until_expiry,
         query_parameter,
         query_offset_days,
@@ -171,8 +169,8 @@ class TestDriverList:
         else:
             assert driver.id not in returned_ids(response)
 
-
-    def test_list_search_success(self,
+    def test_list_search_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -190,8 +188,8 @@ class TestDriverList:
         assert returned_ids(response) == {matching_driver.id}
         assert non_matching_driver.id not in returned_ids(response)
 
-
-    def test_list_without_pagination_success(self,
+    def test_list_without_pagination_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -208,4 +206,7 @@ class TestDriverList:
         assert response.data["results"][0]["name"] == company_driver.name
         assert response.data["results"][0]["company_name"] == company.name
         assert "created" in response.data["results"][0]
-        assert response.data["results"][0]["created_by"]["id"] == company_driver.created_by_id
+        assert (
+            response.data["results"][0]["created_by"]["id"]
+            == company_driver.created_by_id
+        )

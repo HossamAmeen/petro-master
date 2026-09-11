@@ -12,15 +12,13 @@ from apps.companies.tests.api.v1.cash_request.helpers import (
 from apps.notifications.models import Notification
 from apps.users.models import CompanyUser, StationOwner
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestCashRequestUpdate:
 
-
-    def test_partial_update_without_authentication_fail(self,
-        api_client, company, company_driver, cash_request_factory
+    def test_partial_update_without_authentication_fail(
+        self, api_client, company, company_driver, cash_request_factory
     ):
         cash_request = cash_request_factory(company=company, driver=company_driver)
 
@@ -32,12 +30,12 @@ class TestCashRequestUpdate:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["company_owner", "company_branch_manager", "admin_user", "station_owner"],
     )
-    def test_partial_update_forbidden_role_fail(self,
+    def test_partial_update_forbidden_role_fail(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -64,8 +62,8 @@ class TestCashRequestUpdate:
         cash_request.refresh_from_db()
         assert cash_request.status == CompanyCashRequest.Status.IN_PROGRESS
 
-
-    def test_partial_update_approve_as_station_worker_success(self,
+    def test_partial_update_approve_as_station_worker_success(
+        self,
         auth_client,
         station_worker,
         station,
@@ -140,10 +138,14 @@ class TestCashRequestUpdate:
         assert station_worker.id in money_user_ids
         assert branch_manager.id in money_user_ids
         assert money_user_ids & set(
-            CompanyUser.objects.filter(company_id=company.id).values_list("pk", flat=True)
+            CompanyUser.objects.filter(company_id=company.id).values_list(
+                "pk", flat=True
+            )
         )
         assert money_user_ids & set(
-            StationOwner.objects.filter(station_id=station.id).values_list("pk", flat=True)
+            StationOwner.objects.filter(station_id=station.id).values_list(
+                "pk", flat=True
+            )
         )
         company_message = (
             f"تم تسليم طلب نقدي بقيمة {cash_request.company_cost:.2f} "
@@ -161,8 +163,8 @@ class TestCashRequestUpdate:
         assert company_message in titles
         assert station_message in titles
 
-
-    def test_partial_update_insufficient_station_balance_goes_negative_success(self,
+    def test_partial_update_insufficient_station_balance_goes_negative_success(
+        self,
         auth_client,
         station_worker,
         station,
@@ -194,8 +196,8 @@ class TestCashRequestUpdate:
         assert cash_request.station_cost == Decimal("50.00")
         assert branch.balance == Decimal("-40.00")
 
-
-    def test_partial_update_wrong_otp_fail(self,
+    def test_partial_update_wrong_otp_fail(
+        self,
         auth_client,
         station_worker,
         station,
@@ -218,8 +220,8 @@ class TestCashRequestUpdate:
         assert StationKhaznaTransaction.objects.count() == 0
         assert CompanyKhaznaTransaction.objects.count() == 0
 
-
-    def test_partial_update_already_approved_fail(self,
+    def test_partial_update_already_approved_fail(
+        self,
         auth_client,
         station_worker,
         station,
@@ -245,8 +247,8 @@ class TestCashRequestUpdate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert CompanyKhaznaTransaction.objects.count() == 0
 
-
-    def test_partial_update_missing_otp_fail(self,
+    def test_partial_update_missing_otp_fail(
+        self,
         auth_client,
         station_worker,
         station,
@@ -266,9 +268,8 @@ class TestCashRequestUpdate:
         cash_request.refresh_from_db()
         assert cash_request.status == CompanyCashRequest.Status.IN_PROGRESS
 
-
-    def test_partial_update_unknown_request_fail(self,
-        auth_client, station_worker, station
+    def test_partial_update_unknown_request_fail(
+        self, auth_client, station_worker, station
     ):
         response = auth_client(station_worker, station_id=station.id).patch(
             cash_request_detail_url(999_999),

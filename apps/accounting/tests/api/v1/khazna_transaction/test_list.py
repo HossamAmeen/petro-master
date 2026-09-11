@@ -45,7 +45,9 @@ class TestKhaznaTransactionList:
         assert company_tx.id in ids
         assert station_tx.id in ids
         # The base serializer only exposes base-model fields.
-        row = next(row for row in response.data["results"] if row["id"] == company_tx.id)
+        row = next(
+            row for row in response.data["results"] if row["id"] == company_tx.id
+        )
         assert "company" not in row
         assert "company_branch" not in row
 

@@ -19,14 +19,11 @@ from apps.stations.tests.helpers import (
     worker_client,
 )
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 def configure_other_money(company_branch, branch, car, station, **overrides):
-    company_branch.other_service_fees = Decimal(
-        overrides.get("company_fees", "10.00")
-    )
+    company_branch.other_service_fees = Decimal(overrides.get("company_fees", "10.00"))
     company_branch.save(update_fields=["other_service_fees"])
     branch.other_service_fees = Decimal(overrides.get("station_fees", "5.00"))
     branch.save(update_fields=["other_service_fees"])
@@ -69,9 +66,7 @@ class TestStationOtherOperationUpdate:
         assert other_operation.service_id is None
 
     def test_get_not_allowed_fail(self, other_operation):
-        response = self.client.get(
-            other_url(other_operation.id)
-        )
+        response = self.client.get(other_url(other_operation.id))
 
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 

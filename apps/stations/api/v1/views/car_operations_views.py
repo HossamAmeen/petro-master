@@ -1,3 +1,4 @@
+import logging
 import math
 from datetime import timedelta
 from decimal import Decimal
@@ -23,7 +24,7 @@ from apps.stations.api.station_serializers.car_operation_serializer import (
 )
 from apps.stations.models.service_models import Service
 from apps.users.models import CompanyUser, StationOwner
-import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -82,7 +83,9 @@ class StationGasOperationAPIView(APIView):
                     car_opertion.service.cost * (car.branch.fees / 100)
                     + car_opertion.service.cost
                 )
-                available_liters = math.floor(car.available_balance / company_liter_cost)
+                available_liters = math.floor(
+                    car.available_balance / company_liter_cost
+                )
                 available_liters = min(car_tank_capacity, available_liters)
                 if serializer.validated_data["amount"] > available_liters:
                     raise CustomValidationError(
@@ -211,10 +214,8 @@ class StationGasOperationAPIView(APIView):
                     notification_users = list(
                         CompanyUser.objects.filter(
                             company_id=company_id,
-                            company_branch_managers__company_branch=car.branch_id
-                        ).values_list(
-                            "id", flat=True
-                        )
+                            company_branch_managers__company_branch=car.branch_id,
+                        ).values_list("id", flat=True)
                     )
                 except Exception as e:
                     logger.error(e)

@@ -8,7 +8,14 @@ from apps.stations.models.stations_models import (
     StationBranch,
     StationBranchService,
 )
-from apps.users.models import CompanyUser, StationBranchManager, StationOwner, User, Worker
+from apps.users.models import (
+    CompanyUser,
+    StationBranchManager,
+    StationOwner,
+    User,
+    Worker,
+)
+
 
 @pytest.fixture
 def station(db, admin_user, geo_data):
@@ -20,6 +27,7 @@ def station(db, admin_user, geo_data):
         district=geo_data["district"],
         created_by=admin_user,
     )
+
 
 @pytest.fixture
 def branch(db, admin_user, geo_data, station):
@@ -33,6 +41,7 @@ def branch(db, admin_user, geo_data, station):
         created_by=admin_user,
     )
 
+
 @pytest.fixture
 def station_owner(db, admin_user, station):
     return StationOwner.objects.create(
@@ -44,6 +53,7 @@ def station_owner(db, admin_user, station):
         station=station,
         created_by=admin_user,
     )
+
 
 @pytest.fixture
 def branch_manager(db, admin_user, station, branch):
@@ -61,6 +71,7 @@ def branch_manager(db, admin_user, station, branch):
     )
     return manager
 
+
 @pytest.fixture
 def station_worker(db, admin_user, branch):
     return Worker.objects.create(
@@ -73,9 +84,11 @@ def station_worker(db, admin_user, branch):
         created_by=admin_user,
     )
 
+
 @pytest.fixture
 def service(db, admin_user):
     from apps.stations.models.service_models import Service
+
     return Service.objects.create(
         name="Gasoline 92",
         unit=Service.ServiceUnit.LITRE,
@@ -84,9 +97,11 @@ def service(db, admin_user):
         created_by=admin_user,
     )
 
+
 @pytest.fixture
 def other_service(db, admin_user):
     from apps.stations.models.service_models import Service
+
     return Service.objects.create(
         name="Car Wash",
         unit=Service.ServiceUnit.UNIT,
@@ -95,9 +110,11 @@ def other_service(db, admin_user):
         created_by=admin_user,
     )
 
+
 @pytest.fixture
 def car(db, admin_user, company_branch, service):
     from apps.companies.models.company_models import Car
+
     return Car.objects.create(
         code="C-123",
         plate_number="1234",
@@ -119,10 +136,13 @@ def car(db, admin_user, company_branch, service):
         created_by=admin_user,
     )
 
+
 @pytest.fixture
 def driver(db, admin_user, company_branch):
-    from apps.companies.models.company_models import Driver
     import datetime
+
+    from apps.companies.models.company_models import Driver
+
     return Driver.objects.create(
         name="Test Driver",
         phone_number="01234567890",
@@ -133,9 +153,11 @@ def driver(db, admin_user, company_branch):
         created_by=admin_user,
     )
 
+
 @pytest.fixture
 def gas_operation(db, admin_user, car, driver, branch, station_worker, service):
     from apps.companies.models.operation_model import CarOperation
+
     return CarOperation.objects.create(
         car=car,
         driver=driver,
@@ -146,9 +168,11 @@ def gas_operation(db, admin_user, car, driver, branch, station_worker, service):
         created_by=admin_user,
     )
 
+
 @pytest.fixture
 def other_operation(db, admin_user, car, driver, branch, station_worker):
     from apps.companies.models.operation_model import CarOperation
+
     return CarOperation.objects.create(
         car=car,
         driver=driver,

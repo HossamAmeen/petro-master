@@ -8,15 +8,13 @@ from apps.geo.tests.helpers import (
     returned_ids,
 )
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestDistricts:
 
-
-    def test_list_districts_without_authentication_success(self,
-        api_client, geo_data, other_district
+    def test_list_districts_without_authentication_success(
+        self, api_client, geo_data, other_district
     ):
         response = api_client.get(districts_list_url(no_paginate="true"))
 
@@ -24,9 +22,8 @@ class TestDistricts:
         ids = returned_ids(response)
         assert {geo_data["district"].id, other_district.id}.issubset(ids)
 
-
-    def test_list_districts_as_authenticated_user_success(self,
-        auth_client, company_owner, company, geo_data
+    def test_list_districts_as_authenticated_user_success(
+        self, auth_client, company_owner, company, geo_data
     ):
         response = auth_client(company_owner, company_id=company.id).get(
             districts_list_url(no_paginate="true")
@@ -34,7 +31,6 @@ class TestDistricts:
 
         assert response.status_code == status.HTTP_200_OK
         assert geo_data["district"].id in returned_ids(response)
-
 
     def test_list_districts_payload_nests_city_success(self, api_client, geo_data):
         district = geo_data["district"]
@@ -53,9 +49,8 @@ class TestDistricts:
             "country": geo_data["country"].id,
         }
 
-
-    def test_list_districts_filter_by_city_success(self,
-        api_client, geo_data, other_district, second_cairo_district
+    def test_list_districts_filter_by_city_success(
+        self, api_client, geo_data, other_district, second_cairo_district
     ):
         response = api_client.get(
             districts_list_url(city=geo_data["city"].id, no_paginate="true")
@@ -67,9 +62,8 @@ class TestDistricts:
         assert second_cairo_district.id in ids
         assert other_district.id not in ids
 
-
-    def test_list_districts_search_by_name_success(self,
-        api_client, geo_data, other_district
+    def test_list_districts_search_by_name_success(
+        self, api_client, geo_data, other_district
     ):
         response = api_client.get(
             districts_list_url(search="Al Olaya", no_paginate="true")
@@ -80,8 +74,9 @@ class TestDistricts:
         assert other_district.id in ids
         assert geo_data["district"].id not in ids
 
-
-    def test_list_districts_newest_first_success(self, api_client, geo_data, other_district):
+    def test_list_districts_newest_first_success(
+        self, api_client, geo_data, other_district
+    ):
         response = api_client.get(districts_list_url(no_paginate="true"))
 
         assert response.status_code == status.HTTP_200_OK
@@ -89,7 +84,6 @@ class TestDistricts:
         maadi_index = ids.index(geo_data["district"].id)
         olaya_index = ids.index(other_district.id)
         assert olaya_index < maadi_index
-
 
     def test_retrieve_district_success(self, api_client, geo_data):
         district = geo_data["district"]
@@ -106,12 +100,10 @@ class TestDistricts:
             "country": geo_data["country"].id,
         }
 
-
     def test_retrieve_unknown_district_fail(self, api_client):
         response = api_client.get(districts_detail_url(999_999))
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-
 
     def test_create_district_method_not_allowed_fail(self, api_client, geo_data):
         before = District.objects.count()
@@ -125,7 +117,6 @@ class TestDistricts:
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
         assert District.objects.count() == before
 
-
     def test_update_district_method_not_allowed_fail(self, api_client, geo_data):
         district = geo_data["district"]
 
@@ -138,7 +129,6 @@ class TestDistricts:
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
         district.refresh_from_db()
         assert district.name == "Maadi"
-
 
     def test_delete_district_method_not_allowed_fail(self, api_client, geo_data):
         district = geo_data["district"]

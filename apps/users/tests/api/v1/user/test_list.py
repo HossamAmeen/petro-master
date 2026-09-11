@@ -4,18 +4,15 @@ from rest_framework import status
 from apps.users.models import User
 from apps.users.tests.helpers import returned_ids, user_ref, users_list_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestUserList:
 
-
     def test_list_without_authentication_fail(self, api_client):
         response = api_client.get(users_list_url())
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
 
     @pytest.mark.parametrize(
         "role_fixture",
@@ -28,7 +25,9 @@ class TestUserList:
             "driver_user",
         ],
     )
-    def test_list_non_admin_fail(self, role_fixture, request, auth_client, company, station):
+    def test_list_non_admin_fail(
+        self, role_fixture, request, auth_client, company, station
+    ):
         user = request.getfixturevalue(role_fixture)
         client_kwargs = {}
         if role_fixture in {"company_owner"}:
@@ -40,8 +39,8 @@ class TestUserList:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-    def test_list_dashboard_users_success(self,
+    def test_list_dashboard_users_success(
+        self,
         auth_client,
         admin_user,
         finance_user,
@@ -59,8 +58,9 @@ class TestUserList:
         assert station_owner.id not in ids
         assert driver_user.id not in ids
 
-
-    def test_list_includes_audit_fields_success(self, auth_client, admin_user, finance_user):
+    def test_list_includes_audit_fields_success(
+        self, auth_client, admin_user, finance_user
+    ):
         response = auth_client(admin_user).get(users_list_url(no_paginate="true"))
 
         assert response.status_code == status.HTTP_200_OK
@@ -74,9 +74,8 @@ class TestUserList:
         assert row["created_by"] == user_ref(admin_user)
         assert "password" not in row
 
-
-    def test_list_filter_by_role_success(self,
-        auth_client, admin_user, finance_user, customer_support_user
+    def test_list_filter_by_role_success(
+        self, auth_client, admin_user, finance_user, customer_support_user
     ):
         response = auth_client(admin_user).get(
             users_list_url(role=User.UserRoles.Finance, no_paginate="true")
@@ -88,9 +87,8 @@ class TestUserList:
         assert admin_user.id not in ids
         assert customer_support_user.id not in ids
 
-
-    def test_list_filter_by_is_active_success(self,
-        auth_client, admin_user, finance_user, inactive_finance_user
+    def test_list_filter_by_is_active_success(
+        self, auth_client, admin_user, finance_user, inactive_finance_user
     ):
         response = auth_client(admin_user).get(
             users_list_url(is_active="false", no_paginate="true")

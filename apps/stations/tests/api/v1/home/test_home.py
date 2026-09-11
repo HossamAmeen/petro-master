@@ -6,9 +6,7 @@ from rest_framework import status
 from apps.companies.models.operation_model import CarOperation
 from apps.stations.tests.helpers import home_url, set_balance
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
-
 
 
 class TestStationHome:
@@ -17,13 +15,12 @@ class TestStationHome:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["admin_user", "finance_user", "company_owner", "company_branch_manager"],
     )
-    def test_home_forbidden_role_fail(self,
-        role_fixture, request, auth_client, company, station
+    def test_home_forbidden_role_fail(
+        self, role_fixture, request, auth_client, company, station
     ):
         user = request.getfixturevalue(role_fixture)
         client_kwargs = {"company_id": company.id} if "company" in role_fixture else {}
@@ -32,14 +29,13 @@ class TestStationHome:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
     def test_home_post_not_allowed_fail(self, auth_client, station_owner, station):
         response = auth_client(station_owner, station_id=station.id).post(home_url())
 
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
-
-    def test_home_owner_balances_and_counts_success(self,
+    def test_home_owner_balances_and_counts_success(
+        self,
         auth_client,
         station_owner,
         station,
@@ -72,8 +68,8 @@ class TestStationHome:
         assert len(response.data["last_operations"]) >= 1
         assert response.data["last_operations"][0]["id"] == gas_operation.id
 
-
-    def test_home_branch_manager_scoped_success(self,
+    def test_home_branch_manager_scoped_success(
+        self,
         auth_client,
         branch_manager,
         station,
@@ -101,9 +97,8 @@ class TestStationHome:
         assert gas_operation.id in last_ids
         assert other_op.id not in last_ids
 
-
-    def test_home_worker_zero_balances_success(self,
-        auth_client, station_worker, station, branch, gas_operation
+    def test_home_worker_zero_balances_success(
+        self, auth_client, station_worker, station, branch, gas_operation
     ):
         set_balance(station, "80.00")
         set_balance(branch, "30.00")
@@ -122,8 +117,8 @@ class TestStationHome:
         last_ids = {item["id"] for item in response.data["last_operations"]}
         assert gas_operation.id in last_ids
 
-
-    def test_home_owner_excludes_other_station_operations_success(self,
+    def test_home_owner_excludes_other_station_operations_success(
+        self,
         auth_client,
         station_owner,
         station,
@@ -140,8 +135,9 @@ class TestStationHome:
         assert gas_operation.id in last_ids
         assert foreign.id not in last_ids
 
-
-    def test_home_owner_with_no_branches_success(self, auth_client, admin_user, geo_data):
+    def test_home_owner_with_no_branches_success(
+        self, auth_client, admin_user, geo_data
+    ):
         from apps.stations.models.stations_models import Station
         from apps.users.models import StationOwner, User
 
@@ -174,9 +170,8 @@ class TestStationHome:
         assert response.data["workers_count"] == 0
         assert response.data["last_operations"] == []
 
-
-    def test_home_last_operations_capped_at_five_success(self,
-        auth_client, station_owner, station, car_operation_factory
+    def test_home_last_operations_capped_at_five_success(
+        self, auth_client, station_owner, station, car_operation_factory
     ):
         ops = [car_operation_factory() for _ in range(6)]
 

@@ -4,7 +4,6 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -14,14 +13,13 @@ def company_detail_url(company_id):
 
 class TestCompanyRetrieve:
 
-
     def test_retrieve_without_authentication_fail(self, api_client, company):
         response = api_client.get(company_detail_url(company.id))
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_retrieve_company_success(self,
+    def test_retrieve_company_success(
+        self,
         auth_client,
         admin_user,
         company,
@@ -43,8 +41,8 @@ class TestCompanyRetrieve:
         assert response.data["total_drivers"] == 0
         assert response.data["total_managers"] == 0
 
-
-    def test_retrieve_company_with_related_counts_success(self,
+    def test_retrieve_company_with_related_counts_success(
+        self,
         auth_client,
         admin_user,
         company,
@@ -62,8 +60,8 @@ class TestCompanyRetrieve:
         assert response.data["total_drivers"] == 1
         assert response.data["total_managers"] == 1
 
-
-    def test_retrieve_other_company_as_company_owner_success(self,
+    def test_retrieve_other_company_as_company_owner_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -75,7 +73,6 @@ class TestCompanyRetrieve:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == other_company.id
-
 
     def test_retrieve_unknown_company_fail(self, auth_client, admin_user):
         response = auth_client(admin_user).get(company_detail_url(999_999))

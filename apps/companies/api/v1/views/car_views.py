@@ -1,6 +1,7 @@
 import math
 
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -25,8 +26,6 @@ from apps.companies.api.v1.serializers.car_serializer import (
     CarWithPlateInfoSerializer,
     ListCarSerializer,
 )
-from django.db.models import F
-
 from apps.companies.api.v1.serializers.driver_serializer import (
     DriverSerializer,
     ListDriverSerializer,
@@ -175,7 +174,9 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     car.save()
 
                     parent_object.refresh_from_db()
-                    parent_object.balance = F("balance") - serializer.validated_data["amount"]
+                    parent_object.balance = (
+                        F("balance") - serializer.validated_data["amount"]
+                    )
                     parent_object.save()
                     message = f"تم شحن رصيد السيارة ({car.plate}) برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
                     generate_company_transaction(
@@ -210,7 +211,9 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     car.save()
 
                     parent_object.refresh_from_db()
-                    parent_object.balance = F("balance") + serializer.validated_data["amount"]
+                    parent_object.balance = (
+                        F("balance") + serializer.validated_data["amount"]
+                    )
                     parent_object.save()
                     message = f"تم سحب رصيد السيارة ({car.plate}) برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
                     generate_company_transaction(

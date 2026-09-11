@@ -11,7 +11,6 @@ from apps.auth.tests.helpers import (
 )
 from apps.users.models import CompanyUser, User
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -26,12 +25,12 @@ def _login(api_client, user, **payload_kwargs):
 
 class TestCompanyLogin:
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["company_owner", "company_branch_manager"],
     )
-    def test_company_login_with_email_success(self,
+    def test_company_login_with_email_success(
+        self,
         role_fixture,
         request,
         api_client,
@@ -65,25 +64,30 @@ class TestCompanyLogin:
         assert refresh["role"] == user.role
         assert refresh["company_id"] == company.id
 
-
-    def test_company_login_with_phone_number_success(self, api_client, company_owner, company):
-        response = _login(api_client, company_owner, identifier=company_owner.phone_number)
+    def test_company_login_with_phone_number_success(
+        self, api_client, company_owner, company
+    ):
+        response = _login(
+            api_client, company_owner, identifier=company_owner.phone_number
+        )
 
         assert response.status_code == status.HTTP_200_OK, response.data
         assert response.data["company_id"] == company.id
         assert decode_access(response.data["access"])["company_id"] == company.id
 
-
-    def test_company_login_without_branches_success(self, api_client, company_owner, company):
+    def test_company_login_without_branches_success(
+        self, api_client, company_owner, company
+    ):
         response = _login(api_client, company_owner)
 
         assert response.status_code == status.HTTP_200_OK, response.data
         assert list(response.data["branches"]) == []
         assert response.data["company_id"] == company.id
 
-
     @pytest.mark.parametrize("missing_field", ["identifier", "password"])
-    def test_company_login_missing_field_fail(self, api_client, company_owner, missing_field):
+    def test_company_login_missing_field_fail(
+        self, api_client, company_owner, missing_field
+    ):
         set_login_password(company_owner)
         payload = login_payload(company_owner)
         payload.pop(missing_field)
@@ -93,13 +97,11 @@ class TestCompanyLogin:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "validation_error"
 
-
     def test_company_login_empty_identifier_fail(self, api_client, company_owner):
         response = _login(api_client, company_owner, identifier="")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "validation_error"
-
 
     def test_company_login_wrong_password_fail(self, api_client, company_owner):
         response = _login(api_client, company_owner, password="wrong-password")
@@ -107,7 +109,6 @@ class TestCompanyLogin:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.data["code"] == "invalid_credentials"
         assert response.data["message"] == "Invalid credentials"
-
 
     def test_company_login_unknown_identifier_fail(self, api_client):
         response = api_client.post(
@@ -118,7 +119,6 @@ class TestCompanyLogin:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.data["code"] == "invalid_credentials"
-
 
     def test_company_login_inactive_user_fail(self, api_client, admin_user, company):
         owner = CompanyUser.objects.create(
@@ -142,7 +142,6 @@ class TestCompanyLogin:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.data["code"] == "invalid_credentials"
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         [
@@ -164,7 +163,6 @@ class TestCompanyLogin:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.data["code"] == "invalid_credentials"
-
 
     def test_company_login_get_method_fail(self, api_client):
         response = api_client.get(company_login_url())

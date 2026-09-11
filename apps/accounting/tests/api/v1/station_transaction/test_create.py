@@ -32,7 +32,9 @@ class TestStationKhaznaTransactionCreate:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_create_dashboard_user_success(self, auth_client, admin_user, station, branch):
+    def test_create_dashboard_user_success(
+        self, auth_client, admin_user, station, branch
+    ):
         response = auth_client(admin_user).post(
             station_transaction_list_url(),
             create_payload(station, branch),

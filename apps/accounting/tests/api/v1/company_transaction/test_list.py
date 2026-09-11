@@ -28,7 +28,12 @@ class TestCompanyKhaznaTransactionList:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_list_dashboard_user_success(
-        self, auth_client, admin_user, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         tx = company_transaction_factory(company=company, company_branch=company_branch)
 
@@ -69,7 +74,9 @@ class TestCompanyKhaznaTransactionList:
         other_company_branch,
         company_transaction_factory,
     ):
-        own_tx = company_transaction_factory(company=company, company_branch=company_branch)
+        own_tx = company_transaction_factory(
+            company=company, company_branch=company_branch
+        )
         other_tx = company_transaction_factory(
             company=other_company, company_branch=other_company_branch
         )
@@ -125,7 +132,12 @@ class TestCompanyKhaznaTransactionList:
         assert other_branch_tx.id not in ids
 
     def test_list_filter_by_status_success(
-        self, auth_client, admin_user, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         approved = company_transaction_factory(
             company=company, company_branch=company_branch, status="approved"
@@ -143,7 +155,12 @@ class TestCompanyKhaznaTransactionList:
         assert pending.id not in ids
 
     def test_list_filter_by_is_incoming_success(
-        self, auth_client, admin_user, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         incoming = company_transaction_factory(
             company=company, company_branch=company_branch, is_incoming=True
@@ -170,7 +187,9 @@ class TestCompanyKhaznaTransactionList:
         other_company_branch,
         company_transaction_factory,
     ):
-        own_tx = company_transaction_factory(company=company, company_branch=company_branch)
+        own_tx = company_transaction_factory(
+            company=company, company_branch=company_branch
+        )
         other_tx = company_transaction_factory(
             company=other_company, company_branch=other_company_branch
         )
@@ -193,7 +212,9 @@ class TestCompanyKhaznaTransactionList:
         other_company_branch,
         company_transaction_factory,
     ):
-        own_tx = company_transaction_factory(company=company, company_branch=company_branch)
+        own_tx = company_transaction_factory(
+            company=company, company_branch=company_branch
+        )
         other_tx = company_transaction_factory(
             company=other_company, company_branch=other_company_branch
         )
@@ -207,7 +228,12 @@ class TestCompanyKhaznaTransactionList:
         assert other_tx.id not in ids
 
     def test_list_filter_by_is_unpaid_success(
-        self, auth_client, admin_user, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         unpaid = company_transaction_factory(
             company=company, company_branch=company_branch, is_unpaid=True

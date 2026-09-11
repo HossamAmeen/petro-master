@@ -39,7 +39,12 @@ class TestCompanyKhaznaTransactionRetrieve:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_retrieve_dashboard_user_success(
-        self, auth_client, admin_user, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         tx = company_transaction_factory(
             company=company,

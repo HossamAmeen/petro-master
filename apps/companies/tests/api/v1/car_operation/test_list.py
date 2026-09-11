@@ -12,20 +12,18 @@ from apps.companies.tests.api.v1.car_operation.helpers import (
 )
 from apps.stations.models.service_models import Service
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestCarOperationList:
-
 
     def test_list_without_authentication_fail(self, api_client):
         response = api_client.get(operation_list_url())
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_list_company_owner_petrol_scope_success(self,
+    def test_list_company_owner_petrol_scope_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -36,7 +34,9 @@ class TestCarOperationList:
         car_operation_factory,
     ):
         petrol = car_operation_factory()
-        wash = car_operation_factory(service=other_service, unit=Service.ServiceUnit.UNIT)
+        wash = car_operation_factory(
+            service=other_service, unit=Service.ServiceUnit.UNIT
+        )
         other_company = car_operation_factory(
             car=car_factory(branch=other_company_branch),
             driver=driver_factory(branch=other_company_branch),
@@ -61,8 +61,8 @@ class TestCarOperationList:
         assert item["cost"] == "100.00"
         assert "profits" not in item
 
-
-    def test_list_branch_manager_managed_branch_scope_success(self,
+    def test_list_branch_manager_managed_branch_scope_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -89,8 +89,8 @@ class TestCarOperationList:
             item, managed, company_branch_manager, include_profits=False
         )
 
-
-    def test_list_dashboard_and_station_see_all_including_wash_success(self,
+    def test_list_dashboard_and_station_see_all_including_wash_success(
+        self,
         auth_client,
         admin_user,
         station_worker,
@@ -102,7 +102,9 @@ class TestCarOperationList:
         car_operation_factory,
     ):
         petrol = car_operation_factory()
-        wash = car_operation_factory(service=other_service, unit=Service.ServiceUnit.UNIT)
+        wash = car_operation_factory(
+            service=other_service, unit=Service.ServiceUnit.UNIT
+        )
         other_company = car_operation_factory(
             car=car_factory(branch=other_company_branch),
             driver=driver_factory(branch=other_company_branch),
@@ -130,9 +132,9 @@ class TestCarOperationList:
         assert wash_item["service_category"] == "خدمات أخرى"
         assert wash_item["unit"] == "وحدة"
 
-
     @pytest.mark.parametrize("role_fixture", ["station_owner", "branch_manager"])
-    def test_list_station_admin_roles_success(self,
+    def test_list_station_admin_roles_success(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -146,11 +148,13 @@ class TestCarOperationList:
 
         assert response.status_code == status.HTTP_200_OK
         assert operation.id in returned_ids(response)
-        item = next(row for row in response.data["results"] if row["id"] == operation.id)
+        item = next(
+            row for row in response.data["results"] if row["id"] == operation.id
+        )
         assert_operation_payload(item, operation, user, include_profits=True)
 
-
-    def test_list_filter_status_and_car_success(self,
+    def test_list_filter_status_and_car_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -180,8 +184,8 @@ class TestCarOperationList:
         assert by_car.status_code == status.HTTP_200_OK
         assert returned_ids(by_car) == {pending.id}
 
-
-    def test_list_filter_station_driver_worker_service_success(self,
+    def test_list_filter_station_driver_worker_service_success(
+        self,
         auth_client,
         admin_user,
         company_driver,
@@ -214,8 +218,8 @@ class TestCarOperationList:
         assert matching.id in returned_ids(response)
         assert other.id not in returned_ids(response)
 
-
-    def test_list_filter_start_and_end_date_success(self,
+    def test_list_filter_start_and_end_date_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -238,8 +242,8 @@ class TestCarOperationList:
         assert response.status_code == status.HTTP_200_OK
         assert matching.id in returned_ids(response)
 
-
-    def test_list_search_code_success(self,
+    def test_list_search_code_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -260,8 +264,8 @@ class TestCarOperationList:
             response.data["results"][0], matching, company_owner, include_profits=False
         )
 
-
-    def test_list_without_pagination_success(self,
+    def test_list_without_pagination_success(
+        self,
         auth_client,
         company_owner,
         company,

@@ -7,7 +7,6 @@ from rest_framework import status
 from apps.accounting.models import CompanyKhaznaTransaction
 from apps.notifications.models import Notification
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -22,8 +21,9 @@ def set_balance(instance, amount):
 
 class TestCompanyBranchUpdateBalance:
 
-
-    def test_update_balance_without_authentication_fail(self, api_client, company_branch):
+    def test_update_balance_without_authentication_fail(
+        self, api_client, company_branch
+    ):
         response = api_client.post(
             update_balance_url(company_branch.id),
             {"amount": "10.00", "type": "add"},
@@ -32,12 +32,12 @@ class TestCompanyBranchUpdateBalance:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["admin_user", "company_branch_manager", "station_worker"],
     )
-    def test_update_balance_forbidden_role_fail(self,
+    def test_update_balance_forbidden_role_fail(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -60,8 +60,8 @@ class TestCompanyBranchUpdateBalance:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-    def test_add_balance_as_company_owner_success(self,
+    def test_add_balance_as_company_owner_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -91,14 +91,14 @@ class TestCompanyBranchUpdateBalance:
             status=CompanyKhaznaTransaction.TransactionStatus.APPROVED,
         ).exists()
         notified = set(
-            Notification.objects.filter(type=Notification.NotificationType.MONEY).values_list(
-                "user_id", flat=True
-            )
+            Notification.objects.filter(
+                type=Notification.NotificationType.MONEY
+            ).values_list("user_id", flat=True)
         )
         assert notified == {company_owner.id, company_branch_manager.id}
 
-
-    def test_subtract_balance_as_company_owner_success(self,
+    def test_subtract_balance_as_company_owner_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -122,9 +122,8 @@ class TestCompanyBranchUpdateBalance:
             user_id=company_owner.id, type=Notification.NotificationType.MONEY
         ).exists()
 
-
-    def test_add_balance_insufficient_company_balance_fail(self,
-        auth_client, company_owner, company, company_branch
+    def test_add_balance_insufficient_company_balance_fail(
+        self, auth_client, company_owner, company, company_branch
     ):
         set_balance(company, "10.00")
 
@@ -142,9 +141,8 @@ class TestCompanyBranchUpdateBalance:
         assert company_branch.balance == Decimal("0.00")
         assert CompanyKhaznaTransaction.objects.count() == 0
 
-
-    def test_subtract_balance_insufficient_branch_balance_fail(self,
-        auth_client, company_owner, company, company_branch
+    def test_subtract_balance_insufficient_branch_balance_fail(
+        self, auth_client, company_owner, company, company_branch
     ):
         set_balance(company_branch, "10.00")
 
@@ -159,9 +157,8 @@ class TestCompanyBranchUpdateBalance:
         company_branch.refresh_from_db()
         assert company_branch.balance == Decimal("10.00")
 
-
-    def test_update_balance_other_company_branch_fail(self,
-        auth_client, company_owner, company, other_company_branch
+    def test_update_balance_other_company_branch_fail(
+        self, auth_client, company_owner, company, other_company_branch
     ):
         response = auth_client(company_owner, company_id=company.id).post(
             update_balance_url(other_company_branch.id),
@@ -170,7 +167,6 @@ class TestCompanyBranchUpdateBalance:
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-
 
     @pytest.mark.parametrize(
         "payload",
@@ -182,8 +178,8 @@ class TestCompanyBranchUpdateBalance:
             {"amount": "1.00"},
         ],
     )
-    def test_update_balance_invalid_payload_fail(self,
-        payload, auth_client, company_owner, company, company_branch
+    def test_update_balance_invalid_payload_fail(
+        self, payload, auth_client, company_owner, company, company_branch
     ):
         response = auth_client(company_owner, company_id=company.id).post(
             update_balance_url(company_branch.id),

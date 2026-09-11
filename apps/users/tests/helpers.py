@@ -73,9 +73,7 @@ def supervisors_list_url(**params):
 
 
 def supervisors_detail_url(user_id, **params):
-    return with_query(
-        reverse("supervisors-detail", kwargs={"pk": user_id}), **params
-    )
+    return with_query(reverse("supervisors-detail", kwargs={"pk": user_id}), **params)
 
 
 def firebase_tokens_list_url():

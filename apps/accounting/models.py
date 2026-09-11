@@ -64,9 +64,7 @@ class CompanyKhaznaTransaction(KhaznaTransaction):
 
     company = models.ForeignKey("companies.Company", on_delete=models.PROTECT)
     company_branch = models.ForeignKey(
-        "companies.CompanyBranch",
-        on_delete=models.PROTECT,
-        null=True
+        "companies.CompanyBranch", on_delete=models.PROTECT, null=True
     )
     for_what = models.CharField(
         max_length=20,

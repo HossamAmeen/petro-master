@@ -34,7 +34,9 @@ class TestStationKhaznaTransactionUpdate:
 
     def test_update_not_found_fail(self, auth_client, admin_user):
         response = auth_client(admin_user).patch(
-            station_transaction_detail_url(999999), {"status": "approved"}, format="json"
+            station_transaction_detail_url(999999),
+            {"status": "approved"},
+            format="json",
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND

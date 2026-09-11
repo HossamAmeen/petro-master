@@ -4,7 +4,6 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -13,7 +12,6 @@ def company_detail_url(company_id):
 
 
 class TestCompanyUpdate:
-
 
     def test_partial_update_without_authentication_fail(self, api_client, company):
         response = api_client.patch(
@@ -24,8 +22,8 @@ class TestCompanyUpdate:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_partial_update_company_success(self,
+    def test_partial_update_company_success(
+        self,
         auth_client,
         admin_user,
         company,
@@ -41,7 +39,6 @@ class TestCompanyUpdate:
         assert company.name == "Updated Company"
         assert company.updated_by_id == admin_user.id
 
-
     def test_partial_update_deactivate_success(self, auth_client, admin_user, company):
         response = auth_client(admin_user).patch(
             company_detail_url(company.id),
@@ -53,8 +50,8 @@ class TestCompanyUpdate:
         company.refresh_from_db()
         assert company.is_active is False
 
-
-    def test_partial_update_other_company_as_company_owner_success(self,
+    def test_partial_update_other_company_as_company_owner_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -71,7 +68,6 @@ class TestCompanyUpdate:
         assert other_company.name == "Renamed Other Company"
         assert other_company.updated_by_id == company_owner.id
 
-
     @pytest.mark.parametrize(
         ("restricted_field", "new_value"),
         [
@@ -79,7 +75,8 @@ class TestCompanyUpdate:
             ("created_by", 999_999),
         ],
     )
-    def test_partial_update_restricted_field_ignored_success(self,
+    def test_partial_update_restricted_field_ignored_success(
+        self,
         restricted_field,
         new_value,
         auth_client,
@@ -102,7 +99,6 @@ class TestCompanyUpdate:
             assert company.balance == Decimal("0.00")
             assert getattr(company, restricted_field) == original_value
 
-
     @pytest.mark.parametrize(
         ("field", "invalid_value"),
         [
@@ -112,7 +108,8 @@ class TestCompanyUpdate:
             ("name", "N" * 256),
         ],
     )
-    def test_partial_update_invalid_field_fail(self,
+    def test_partial_update_invalid_field_fail(
+        self,
         field,
         invalid_value,
         auth_client,
@@ -134,8 +131,8 @@ class TestCompanyUpdate:
         else:
             assert getattr(company, field) == original_value
 
-
-    def test_full_update_company_success(self,
+    def test_full_update_company_success(
+        self,
         auth_client,
         admin_user,
         company,
@@ -159,8 +156,8 @@ class TestCompanyUpdate:
         assert company.district_id == geo_data["district"].id
         assert company.updated_by_id == admin_user.id
 
-
-    def test_full_update_missing_required_field_fail(self,
+    def test_full_update_missing_required_field_fail(
+        self,
         auth_client,
         admin_user,
         company,
@@ -179,7 +176,6 @@ class TestCompanyUpdate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         company.refresh_from_db()
         assert company.name == original_name
-
 
     def test_partial_update_unknown_company_fail(self, auth_client, admin_user):
         response = auth_client(admin_user).patch(

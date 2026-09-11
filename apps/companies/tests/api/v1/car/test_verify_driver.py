@@ -12,7 +12,6 @@ from apps.companies.tests.api.v1.car.helpers import verify_url
 from apps.companies.tests.helpers import set_balance
 from apps.stations.models.service_models import Service
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 BLOCKING_STATUSES = [
@@ -37,9 +36,7 @@ def petrol_quote(car):
     liters_count = (
         car.permitted_fuel_amount if car.permitted_fuel_amount else car.tank_capacity
     )
-    available_liters = min(
-        liters_count, math.floor(car.available_balance / liter_cost)
-    )
+    available_liters = min(liters_count, math.floor(car.available_balance / liter_cost))
     return available_liters, available_liters * liter_cost
 
 
@@ -198,7 +195,9 @@ class TestCarVerifyDriver:
         assert response.data["car"]["liter_count"] == 5
         assert response.data["car"]["cost"] == Decimal("50.00")
 
-    def test_verify_driver_petrol_uses_tank_capacity_when_permitted_is_zero_success(self):
+    def test_verify_driver_petrol_uses_tank_capacity_when_permitted_is_zero_success(
+        self,
+    ):
         car = self.verifiable_car(
             balance=Decimal("1000.00"), permitted_fuel_amount=0, tank_capacity=8
         )
@@ -264,7 +263,9 @@ class TestCarVerifyDriver:
 
         response = self.verify(car, driver=other_driver)
 
-        assert_error(response, status.HTTP_404_NOT_FOUND, "driver_not_belongs_to_company")
+        assert_error(
+            response, status.HTTP_404_NOT_FOUND, "driver_not_belongs_to_company"
+        )
         car.refresh_from_db()
         assert CarOperation.objects.count() == 0
         assert car.is_blocked_balance_update is False
@@ -442,9 +443,7 @@ class TestCarVerifyDriver:
             balance=Decimal("0.00"), balance_source=balance_source
         )
         holder = (
-            company_branch
-            if balance_source == Car.BalanceSource.BRANCH
-            else company
+            company_branch if balance_source == Car.BalanceSource.BRANCH else company
         )
         set_balance(company_branch, "0.00")
         set_balance(company, "0.00")
@@ -455,9 +454,7 @@ class TestCarVerifyDriver:
     def test_verify_driver_petrol_quote_from_holder_balance_success(
         self, balance_source, company_branch, company
     ):
-        car, _ = self.fund_holder(
-            balance_source, company_branch, company, "1000.00"
-        )
+        car, _ = self.fund_holder(balance_source, company_branch, company, "1000.00")
         expected_liters, expected_cost = petrol_quote(car)
 
         response = self.verify(car)

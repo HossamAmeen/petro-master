@@ -4,7 +4,6 @@ from rest_framework import status
 
 from apps.users.models import CompanyBranchManager
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -22,9 +21,8 @@ def assigned_user_ids(branch):
 
 class TestCompanyBranchAssignManagers:
 
-
-    def test_assign_managers_without_authentication_fail(self,
-        api_client, company_branch, company_branch_manager
+    def test_assign_managers_without_authentication_fail(
+        self, api_client, company_branch, company_branch_manager
     ):
         response = api_client.post(
             assign_managers_url(company_branch.id),
@@ -34,12 +32,12 @@ class TestCompanyBranchAssignManagers:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["admin_user", "company_branch_manager", "station_worker"],
     )
-    def test_assign_managers_forbidden_role_fail(self,
+    def test_assign_managers_forbidden_role_fail(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -64,8 +62,8 @@ class TestCompanyBranchAssignManagers:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-    def test_assign_managers_success(self,
+    def test_assign_managers_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -86,8 +84,8 @@ class TestCompanyBranchAssignManagers:
         assert assigned_user_ids(company_branch) == {replacement.id}
         assert company_branch_manager.id not in assigned_user_ids(company_branch)
 
-
-    def test_assign_multiple_managers_success(self,
+    def test_assign_multiple_managers_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -106,9 +104,8 @@ class TestCompanyBranchAssignManagers:
         assert response.status_code == status.HTTP_200_OK, response.data
         assert assigned_user_ids(company_branch) == {first.id, second.id}
 
-
-    def test_assign_managers_empty_list_fail(self,
-        auth_client, company_owner, company, company_branch
+    def test_assign_managers_empty_list_fail(
+        self, auth_client, company_owner, company, company_branch
     ):
         response = auth_client(company_owner, company_id=company.id).post(
             assign_managers_url(company_branch.id),
@@ -119,9 +116,8 @@ class TestCompanyBranchAssignManagers:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert assigned_user_ids(company_branch) == set()
 
-
-    def test_assign_managers_missing_field_fail(self,
-        auth_client, company_owner, company, company_branch
+    def test_assign_managers_missing_field_fail(
+        self, auth_client, company_owner, company, company_branch
     ):
         response = auth_client(company_owner, company_id=company.id).post(
             assign_managers_url(company_branch.id),
@@ -131,9 +127,8 @@ class TestCompanyBranchAssignManagers:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
-    def test_assign_managers_owner_is_invalid_fail(self,
-        auth_client, company_owner, company, company_branch
+    def test_assign_managers_owner_is_invalid_fail(
+        self, auth_client, company_owner, company, company_branch
     ):
         response = auth_client(company_owner, company_id=company.id).post(
             assign_managers_url(company_branch.id),
@@ -144,8 +139,8 @@ class TestCompanyBranchAssignManagers:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert assigned_user_ids(company_branch) == set()
 
-
-    def test_assign_managers_other_company_manager_fail(self,
+    def test_assign_managers_other_company_manager_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -164,9 +159,8 @@ class TestCompanyBranchAssignManagers:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert assigned_user_ids(company_branch) == set()
 
-
-    def test_assign_managers_unknown_user_fail(self,
-        auth_client, company_owner, company, company_branch
+    def test_assign_managers_unknown_user_fail(
+        self, auth_client, company_owner, company, company_branch
     ):
         response = auth_client(company_owner, company_id=company.id).post(
             assign_managers_url(company_branch.id),
@@ -176,8 +170,8 @@ class TestCompanyBranchAssignManagers:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
-    def test_assign_managers_other_company_branch_fail(self,
+    def test_assign_managers_other_company_branch_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -194,9 +188,8 @@ class TestCompanyBranchAssignManagers:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
-    def test_assign_managers_get_not_allowed_fail(self,
-        auth_client, company_owner, company, company_branch
+    def test_assign_managers_get_not_allowed_fail(
+        self, auth_client, company_owner, company, company_branch
     ):
         response = auth_client(company_owner, company_id=company.id).get(
             assign_managers_url(company_branch.id)

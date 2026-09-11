@@ -4,7 +4,6 @@ from rest_framework import status
 from apps.companies.models.company_models import Car
 from apps.companies.tests.api.v1.car.helpers import car_detail_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -28,7 +27,9 @@ class TestCarRetrieve:
         assert response.data["code"] == self.car.code
         assert response.data["branch"]["id"] == self.car.branch_id
 
-    def test_retrieve_outside_company_scope_fail(self, car_factory, other_company_branch):
+    def test_retrieve_outside_company_scope_fail(
+        self, car_factory, other_company_branch
+    ):
         other_car = car_factory(branch=other_company_branch)
 
         response = self.client.get(car_detail_url(other_car.id))

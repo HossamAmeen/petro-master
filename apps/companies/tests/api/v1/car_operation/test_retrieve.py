@@ -7,23 +7,22 @@ from apps.companies.tests.api.v1.car_operation.helpers import (
 )
 from apps.stations.models.service_models import Service
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestCarOperationRetrieve:
 
-
-    def test_retrieve_without_authentication_fail(self, api_client, car_operation_factory):
+    def test_retrieve_without_authentication_fail(
+        self, api_client, car_operation_factory
+    ):
         operation = car_operation_factory()
 
         response = api_client.get(operation_detail_url(operation.id))
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_retrieve_as_company_owner_success(self,
-        auth_client, company_owner, company, car_operation_factory
+    def test_retrieve_as_company_owner_success(
+        self, auth_client, company_owner, company, car_operation_factory
     ):
         operation = car_operation_factory()
 
@@ -48,7 +47,10 @@ class TestCarOperationRetrieve:
         assert response.data["driver"]["code"] == operation.driver.code
         assert response.data["station_branch"]["id"] == operation.station_branch_id
         assert response.data["station_branch"]["name"] == operation.station_branch.name
-        assert response.data["station_branch"]["address"] == operation.station_branch.address
+        assert (
+            response.data["station_branch"]["address"]
+            == operation.station_branch.address
+        )
         assert response.data["station_branch"]["district"] == (
             operation.station_branch.district_id
         )
@@ -78,9 +80,8 @@ class TestCarOperationRetrieve:
         assert response.data["motor_image"] in (None, "")
         assert response.data["fuel_image"] in (None, "")
 
-
-    def test_retrieve_wash_as_company_owner_fail(self,
-        auth_client, company_owner, company, other_service, car_operation_factory
+    def test_retrieve_wash_as_company_owner_fail(
+        self, auth_client, company_owner, company, other_service, car_operation_factory
     ):
         operation = car_operation_factory(
             service=other_service, unit=Service.ServiceUnit.UNIT
@@ -92,8 +93,8 @@ class TestCarOperationRetrieve:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
-    def test_retrieve_unmanaged_branch_as_manager_fail(self,
+    def test_retrieve_unmanaged_branch_as_manager_fail(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -113,8 +114,8 @@ class TestCarOperationRetrieve:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
-    def test_retrieve_other_company_as_owner_fail(self,
+    def test_retrieve_other_company_as_owner_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -134,9 +135,8 @@ class TestCarOperationRetrieve:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
-    def test_retrieve_as_station_worker_success(self,
-        auth_client, station_worker, station, other_service, car_operation_factory
+    def test_retrieve_as_station_worker_success(
+        self, auth_client, station_worker, station, other_service, car_operation_factory
     ):
         operation = car_operation_factory(
             service=other_service, unit=Service.ServiceUnit.UNIT
@@ -150,7 +150,6 @@ class TestCarOperationRetrieve:
         assert_operation_payload(response.data, operation, include_profits=True)
         assert response.data["service_category"] == "خدمات أخرى"
         assert response.data["unit"] == "وحدة"
-
 
     def test_retrieve_unknown_operation_fail(self, auth_client, company_owner, company):
         response = auth_client(company_owner, company_id=company.id).get(

@@ -5,6 +5,7 @@ from apps.companies.models.company_models import Company
 from apps.geo.v1.serializers import ListDistrictSerializer
 from apps.users.v1.serializers.user_serializers import SingleUserSerializer
 
+
 class ListCompanySerializer(serializers.ModelSerializer):
     district = ListDistrictSerializer()
     total_branches = serializers.IntegerField()

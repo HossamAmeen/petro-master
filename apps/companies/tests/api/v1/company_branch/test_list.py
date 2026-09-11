@@ -2,7 +2,6 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -12,19 +11,17 @@ def returned_ids(response):
 
 class TestCompanyBranchList:
 
-
     def test_list_without_authentication_fail(self, api_client):
         response = api_client.get(reverse("company-branches-list"))
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["station_owner", "branch_manager", "station_worker"],
     )
-    def test_list_station_role_fail(self,
-        role_fixture, request, auth_client, station, company_branch
+    def test_list_station_role_fail(
+        self, role_fixture, request, auth_client, station, company_branch
     ):
         user = request.getfixturevalue(role_fixture)
 
@@ -34,9 +31,9 @@ class TestCompanyBranchList:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
     @pytest.mark.parametrize("role_fixture", ["admin_user", "finance_user"])
-    def test_list_dashboard_sees_all_branches_success(self,
+    def test_list_dashboard_sees_all_branches_success(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -48,10 +45,12 @@ class TestCompanyBranchList:
         response = auth_client(user).get(reverse("company-branches-list"))
 
         assert response.status_code == status.HTTP_200_OK
-        assert {company_branch.id, other_company_branch.id}.issubset(returned_ids(response))
+        assert {company_branch.id, other_company_branch.id}.issubset(
+            returned_ids(response)
+        )
 
-
-    def test_list_company_owner_scope_success(self,
+    def test_list_company_owner_scope_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -68,8 +67,8 @@ class TestCompanyBranchList:
         assert {company_branch.id, second_company_branch.id}.issubset(ids)
         assert other_company_branch.id not in ids
 
-
-    def test_list_branch_manager_scope_success(self,
+    def test_list_branch_manager_scope_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -87,17 +86,16 @@ class TestCompanyBranchList:
         assert second_company_branch.id not in ids
         assert other_company_branch.id not in ids
 
-
-    def test_list_company_owner_without_company_claim_is_empty_success(self,
-        auth_client, company_owner, company_branch
+    def test_list_company_owner_without_company_claim_is_empty_success(
+        self, auth_client, company_owner, company_branch
     ):
         response = auth_client(company_owner).get(reverse("company-branches-list"))
 
         assert response.status_code == status.HTTP_200_OK
         assert company_branch.id not in returned_ids(response)
 
-
-    def test_list_includes_annotated_counts_success(self,
+    def test_list_includes_annotated_counts_success(
+        self,
         auth_client,
         admin_user,
         company_branch,
@@ -117,9 +115,8 @@ class TestCompanyBranchList:
         assert listed[second_company_branch.id]["drivers_count"] == 0
         assert listed[second_company_branch.id]["managers_count"] == 0
 
-
-    def test_list_ordered_by_newest_first_success(self,
-        auth_client, admin_user, company_branch_factory
+    def test_list_ordered_by_newest_first_success(
+        self, auth_client, admin_user, company_branch_factory
     ):
         older = company_branch_factory()
         newer = company_branch_factory()
@@ -130,8 +127,8 @@ class TestCompanyBranchList:
         ids = [item["id"] for item in response.data["results"]]
         assert ids.index(newer.id) < ids.index(older.id)
 
-
-    def test_list_filter_company_success(self,
+    def test_list_filter_company_success(
+        self,
         auth_client,
         admin_user,
         company,
@@ -147,8 +144,8 @@ class TestCompanyBranchList:
         assert company_branch.id in returned_ids(response)
         assert other_company_branch.id not in returned_ids(response)
 
-
-    def test_list_filter_city_success(self,
+    def test_list_filter_city_success(
+        self,
         auth_client,
         admin_user,
         geo_data,
@@ -164,7 +161,6 @@ class TestCompanyBranchList:
         assert company_branch.id in returned_ids(response)
         assert other_city_company_branch.id not in returned_ids(response)
 
-
     def test_list_filter_unknown_city_fail(self, auth_client, admin_user):
         response = auth_client(admin_user).get(
             reverse("company-branches-list"),
@@ -173,8 +169,8 @@ class TestCompanyBranchList:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
-    def test_list_owner_filter_cannot_see_other_company_success(self,
+    def test_list_owner_filter_cannot_see_other_company_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -190,10 +186,9 @@ class TestCompanyBranchList:
         assert response.status_code == status.HTTP_200_OK
         assert returned_ids(response) == set()
 
-
     @pytest.mark.parametrize("no_paginate", ["true", "TRUE", "True"])
-    def test_list_without_pagination_success(self,
-        no_paginate, auth_client, admin_user, company_branch
+    def test_list_without_pagination_success(
+        self, no_paginate, auth_client, admin_user, company_branch
     ):
         response = auth_client(admin_user).get(
             reverse("company-branches-list"),

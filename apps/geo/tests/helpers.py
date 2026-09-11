@@ -23,9 +23,7 @@ def districts_list_url(**params):
 
 
 def districts_detail_url(district_id, **params):
-    return with_query(
-        reverse("districts-detail", kwargs={"pk": district_id}), **params
-    )
+    return with_query(reverse("districts-detail", kwargs={"pk": district_id}), **params)
 
 
 def returned_ids(response):

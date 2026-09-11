@@ -4,14 +4,14 @@ from rest_framework import status
 from apps.companies.models.operation_model import CarOperation
 from apps.companies.tests.api.v1.car_operation.helpers import operation_detail_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestCarOperationDelete:
 
-
-    def test_delete_without_authentication_fail(self, api_client, car_operation_factory):
+    def test_delete_without_authentication_fail(
+        self, api_client, car_operation_factory
+    ):
         operation = car_operation_factory()
 
         response = api_client.delete(operation_detail_url(operation.id))
@@ -19,9 +19,8 @@ class TestCarOperationDelete:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert CarOperation.objects.filter(pk=operation.id).exists()
 
-
-    def test_delete_disallowed_for_authenticated_user_fail(self,
-        auth_client, company_owner, company, car_operation_factory
+    def test_delete_disallowed_for_authenticated_user_fail(
+        self, auth_client, company_owner, company, car_operation_factory
     ):
         operation = car_operation_factory()
 
@@ -33,9 +32,9 @@ class TestCarOperationDelete:
         assert response.data["message"] == "disallowed delete method"
         assert CarOperation.objects.filter(pk=operation.id).exists()
 
-
     @pytest.mark.parametrize("role_fixture", ["admin_user", "station_worker"])
-    def test_delete_disallowed_for_other_roles_fail(self,
+    def test_delete_disallowed_for_other_roles_fail(
+        self,
         role_fixture,
         request,
         auth_client,

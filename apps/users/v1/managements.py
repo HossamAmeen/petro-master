@@ -7,9 +7,13 @@ class CustomUserManager(UserManager):
     ):
         extra_fields["is_staff"] = True
         extra_fields["is_superuser"] = True
-        return self._create_user(phone_number, name, password, email=email, **extra_fields)
+        return self._create_user(
+            phone_number, name, password, email=email, **extra_fields
+        )
 
-    def _create_user(self, phone_number, name="Admin", password=None, email=None, **extra_fields):
+    def _create_user(
+        self, phone_number, name="Admin", password=None, email=None, **extra_fields
+    ):
         if not phone_number:
             raise ValueError("The given phone number must be set")
         name = name or "Admin"

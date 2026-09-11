@@ -46,13 +46,20 @@ class TestCompanyKhaznaTransactionUpdate:
 
     def test_update_not_found_fail(self, auth_client, admin_user):
         response = auth_client(admin_user).patch(
-            company_transaction_detail_url(999999), {"status": "approved"}, format="json"
+            company_transaction_detail_url(999999),
+            {"status": "approved"},
+            format="json",
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_omitting_company_branch_raises_keyerror_fail(
-        self, auth_client, admin_user, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         """Documents actual (buggy) behavior: `UpdateCompanyKhaznaTransactionSerializer.validate`
         indexes `attrs["company_branch"]` unconditionally. On a partial update
@@ -108,7 +115,12 @@ class TestCompanyKhaznaTransactionUpdate:
         assert notification.type == Notification.NotificationType.MONEY
 
     def test_update_already_approved_fail(
-        self, auth_client, admin_user, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         tx = company_transaction_factory(
             company=company, company_branch=company_branch, status="approved"
@@ -116,7 +128,11 @@ class TestCompanyKhaznaTransactionUpdate:
 
         response = auth_client(admin_user).patch(
             company_transaction_detail_url(tx.id),
-            {"company": company.id, "company_branch": company_branch.id, "status": "declined"},
+            {
+                "company": company.id,
+                "company_branch": company_branch.id,
+                "status": "declined",
+            },
             format="json",
         )
 
@@ -124,7 +140,12 @@ class TestCompanyKhaznaTransactionUpdate:
         assert response.data["message"] == "لا يمكن اتمام عملية هيا منهيه بالفعل"
 
     def test_update_already_declined_fail(
-        self, auth_client, admin_user, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         tx = company_transaction_factory(
             company=company, company_branch=company_branch, status="declined"
@@ -132,7 +153,11 @@ class TestCompanyKhaznaTransactionUpdate:
 
         response = auth_client(admin_user).patch(
             company_transaction_detail_url(tx.id),
-            {"company": company.id, "company_branch": company_branch.id, "status": "approved"},
+            {
+                "company": company.id,
+                "company_branch": company_branch.id,
+                "status": "approved",
+            },
             format="json",
         )
 

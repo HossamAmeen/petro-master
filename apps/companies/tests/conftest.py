@@ -6,6 +6,7 @@ from uuid import uuid4
 import pytest
 from django.utils import timezone
 
+from apps.accounting.models import CompanyKhaznaTransaction
 from apps.companies.factories import (
     CarCodeFactory,
     CarFactory,
@@ -19,7 +20,6 @@ from apps.companies.factories import (
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.company_models import Car, Company, CompanyBranch
 from apps.companies.models.operation_model import CarOperation
-from apps.accounting.models import CompanyKhaznaTransaction
 from apps.geo.models import City, District
 from apps.stations.models.service_models import Service
 from apps.users.models import CompanyBranchManager, CompanyUser, User

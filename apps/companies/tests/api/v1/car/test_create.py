@@ -4,7 +4,6 @@ from rest_framework import status
 
 from apps.companies.models.company_models import Car
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
