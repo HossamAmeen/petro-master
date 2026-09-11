@@ -1,4 +1,4 @@
-.PHONY: run migrate makemigrations shell format lint check process_ai restart stop
+.PHONY: run migrate makemigrations shell format lint check test test-features process_ai restart stop
 
 -include .env
 
@@ -28,6 +28,13 @@ check:
 	python3 -m isort --check-only --diff .
 	python3 -m black --check --diff .
 	python3 -m flake8
+
+test:
+	python3 -m pytest
+
+# End-to-end business scenarios only (tests/features, `feature` marker).
+test-features:
+	python3 -m pytest -m feature
 
 limit ?= 1
 
