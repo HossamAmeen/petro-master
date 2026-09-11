@@ -1,0 +1,22 @@
+# black and isort config. flake8 can't read this file, so its config lives in
+# .flake8 — keep the line length and the excludes (venv, migrations,
+# settings.py) the same in both.
+
+[tool.black]
+line-length = 88
+# force-exclude also applies to files passed by name, which is how pre-commit
+# calls black.
+force-exclude = '''
+/(
+    venv
+  | migrations
+)/
+| /settings\.py$
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+extend_skip = ["venv", "migrations", "settings.py"]
+# Apply the skips to files passed by name too (pre-commit).
+filter_files = true

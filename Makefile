@@ -1,4 +1,4 @@
-.PHONY: run migrate makemigrations shell process_ai restart stop
+.PHONY: run migrate makemigrations shell format lint check process_ai restart stop
 
 -include .env
 
@@ -15,6 +15,19 @@ makemigrations:
 
 shell:
 	python3 manage.py shell
+
+format:
+	python3 -m isort .
+	python3 -m black .
+
+lint:
+	python3 -m flake8
+
+# Same tools without writing anything; fails if a file needs formatting (CI).
+check:
+	python3 -m isort --check-only --diff .
+	python3 -m black --check --diff .
+	python3 -m flake8
 
 limit ?= 1
 

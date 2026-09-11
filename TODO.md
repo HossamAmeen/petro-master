@@ -16,7 +16,7 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
   - Add retries for the network-bound ones, and a worker to the deploy setup.
   - Tests mock FCM/SMS already — keep that working (`CELERY_TASK_ALWAYS_EAGER` in test settings).
 
-- [ ] **Add format/lint commands to the Makefile and align the tool configs**
+- [x] **Add format/lint commands to the Makefile and align the tool configs**
   - Add targets to [Makefile](Makefile): `format` (black + isort), `lint` (flake8), and a `check` that runs all three in `--check`/`--diff` mode for CI. Remember to add them to `.PHONY`.
   - Tools are already installed in [requirements/dev.txt](requirements/dev.txt): `black==24.1.1`, `isort==6.0.0`, `flake8==7.1.2`, `pre-commit==4.2.0`.
   - Make the configs agree — they currently drift:
