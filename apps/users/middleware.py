@@ -1,4 +1,3 @@
-from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework_simplejwt.tokens import AccessToken
 

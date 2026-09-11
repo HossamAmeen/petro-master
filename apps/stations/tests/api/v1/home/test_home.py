@@ -3,7 +3,6 @@ from decimal import Decimal
 import pytest
 from rest_framework import status
 
-from apps.companies.models.operation_model import CarOperation
 from apps.stations.tests.helpers import home_url, set_balance
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]

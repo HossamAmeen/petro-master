@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 import pytest
 from django.utils import timezone
 from rest_framework import status

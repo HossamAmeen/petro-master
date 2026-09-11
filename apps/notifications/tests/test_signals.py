@@ -1,6 +1,5 @@
 import pytest
 
-from apps.notifications.models import Notification
 from apps.users.models import FirebaseToken
 
 pytestmark = [pytest.mark.django_db]
