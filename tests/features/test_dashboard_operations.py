@@ -1,5 +1,9 @@
 """Operations entered from the dashboard or cloned in the Django admin must move
-money exactly like an operation made at the station."""
+money exactly like an operation made at the station.
+
+Each test follows the Given-When-Then template; the funded car, the driver, the
+station branch and the signed-in dashboard admin live in ``setup``.
+"""
 
 from datetime import timedelta
 from decimal import Decimal
@@ -80,6 +84,7 @@ class TestDashboardOperations:
     def test_dashboard_operation_charges_like_a_station_fueling_success(
         self, car_factory
     ):
+        # Given a station-made fueling on one car and a second identical car
         other_car = car_factory(fuel_allowed_days=ALL_DAYS, last_meter=10000)
         set_balance(other_car, "1000.00")
         station_id, _ = fuel(
@@ -90,10 +95,12 @@ class TestDashboardOperations:
             meter="10100",
         )
 
+        # When the dashboard enters the same operation on the second car
         response = self.admin.post(
             operation_list_url(), self.operation_payload(other_car), format="json"
         )
 
+        # Then the money fields and balances match the station-made one
         assert response.status_code == status.HTTP_201_CREATED, response.data
         station_made = CarOperation.objects.get(id=station_id)
         dashboard_made = CarOperation.objects.exclude(id=station_id).get()
@@ -105,6 +112,7 @@ class TestDashboardOperations:
         assert StationKhaznaTransaction.objects.count() == 2
 
     def test_pending_operation_is_charged_once_when_completed_success(self):
+        # Given a pending dashboard operation (car charged, station not yet)
         created = self.admin.post(
             operation_list_url(),
             self.operation_payload(
@@ -117,12 +125,14 @@ class TestDashboardOperations:
         car_after_create = fresh_balance(self.car)
         station_after_create = fresh_balance(self.station_branch)
 
+        # When the dashboard completes it
         completed = self.admin.patch(
             operation_detail_url(operation.id),
             self.complete_payload(operation),
             format="json",
         )
 
+        # Then the station is charged exactly once and the car is not double-charged
         assert created.status_code == status.HTTP_201_CREATED, created.data
         assert car_after_create == Decimal("780.00")
         assert station_after_create == Decimal("500.00")
@@ -133,6 +143,7 @@ class TestDashboardOperations:
         assert StationKhaznaTransaction.objects.count() == 1
 
     def test_admin_clones_an_operation_success(self, local_cache, admin_client):
+        # Given a completed station fueling
         source_id, _ = fuel(
             sign_in("station", self.worker_user),
             self.driver,
@@ -141,11 +152,13 @@ class TestDashboardOperations:
             meter="10100",
         )
 
+        # When an admin clones it with a smaller amount
         response = admin_client.post(
             reverse("admin:companies_caroperation_clone", args=[source_id]),
             {"amount": "10.00"},
         )
 
+        # Then a second operation is created and charged for the new amount
         assert response.status_code == 302
         clone = CarOperation.objects.exclude(id=source_id).get()
         assert clone.amount == Decimal("10.00")
@@ -161,6 +174,7 @@ class TestDashboardOperations:
         assert StationKhaznaTransaction.objects.count() == 2
 
     def test_clone_more_than_the_car_can_take_fail(self, local_cache, admin_client):
+        # Given a completed station fueling
         source_id, _ = fuel(
             sign_in("station", self.worker_user),
             self.driver,
@@ -169,43 +183,53 @@ class TestDashboardOperations:
             meter="10100",
         )
 
+        # When an admin clones it for more than the car can take
         response = admin_client.post(
             reverse("admin:companies_caroperation_clone", args=[source_id]),
             {"amount": "500.00"},
         )
 
+        # Then the form re-displays with an error and no clone is made
         assert response.status_code == 200
         assert response.context["form"].errors["amount"]
         assert CarOperation.objects.count() == 1
         assert fresh_balance(self.car) == Decimal("780.00")
 
     def test_company_owner_cannot_enter_operations_fail(self, company, company_owner):
+        # Given a signed-in company owner
         owner = sign_in("company", company_owner)
 
+        # When they try to enter an operation
         response = owner.post(
             operation_list_url(), self.operation_payload(self.car), format="json"
         )
 
+        # Then it is forbidden (dashboard-only) and nothing is created
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert not CarOperation.objects.exists()
 
     def test_dashboard_operation_over_available_liters_fail(self):
+        # Given a car funded for fewer liters than requested (from setup)
+        # When the dashboard enters an operation over the available liters
         response = self.admin.post(
             operation_list_url(),
             self.operation_payload(self.car, amount="41.00"),
             format="json",
         )
 
+        # Then it is rejected and nothing is created or charged
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert not CarOperation.objects.exists()
         assert fresh_balance(self.car) == Decimal("1000.00")
 
     def test_completed_operation_cannot_change_or_be_deleted_fail(self):
+        # Given a completed dashboard operation
         self.admin.post(
             operation_list_url(), self.operation_payload(self.car), format="json"
         )
         operation = CarOperation.objects.get()
 
+        # When the dashboard tries to change and then delete it
         changed = self.admin.patch(
             operation_detail_url(operation.id),
             self.complete_payload(operation),
@@ -213,6 +237,7 @@ class TestDashboardOperations:
         )
         deleted = self.admin.delete(operation_detail_url(operation.id))
 
+        # Then both are rejected and the operation and its charge stand
         assert changed.status_code == status.HTTP_400_BAD_REQUEST
         assert deleted.status_code == status.HTTP_400_BAD_REQUEST
         assert CarOperation.objects.filter(id=operation.id).exists()

@@ -1,4 +1,8 @@
-"""A money action notifies users in-app and pushes to their registered devices."""
+"""A money action notifies users in-app and pushes to their registered devices.
+
+Each test follows the Given-When-Then template; the funded company, the two
+signed-in clients and their registered FCM devices live in ``setup``.
+"""
 
 import pytest
 from rest_framework import status
@@ -53,11 +57,14 @@ class TestNotifications:
         )
 
     def test_top_up_notifies_and_pushes_to_devices_success(self):
+        # Given both users have a registered device (from setup)
         self.fcm.reset_mock()
 
+        # When the owner tops up the car (a MONEY action)
         topped_up = self.top_up_car()
         listed = self.owner.get(notifications_list_url())
 
+        # Then FCM is pushed to both devices and the in-app row is unread
         assert topped_up.status_code == status.HTTP_200_OK, topped_up.data
         assert pushed_tokens(self.fcm) == [("manager-device",), ("owner-device",)]
         (notification,) = listed.data["results"]
@@ -67,18 +74,22 @@ class TestNotifications:
         assert listed.data["unread_count"] == 0
 
     def test_user_marks_a_notification_read_success(self):
+        # Given an unread notification from a top-up
         self.top_up_car()
         notification = Notification.objects.get(user=self.owner_user)
 
+        # When the owner marks it read
         marked = self.owner.patch(
             notifications_detail_url(notification.id), {"is_read": True}, format="json"
         )
         unread = self.owner.get(notifications_list_url(is_read="false"))
 
+        # Then it no longer appears in the unread list
         assert marked.status_code == status.HTTP_200_OK, marked.data
         assert unread.data["results"] == []
 
     def test_removed_device_gets_no_push_success(self):
+        # Given the owner has removed their device
         removed = self.owner.delete(
             firebase_tokens_delete_by_token_url(),
             {"token": "owner-device"},
@@ -86,12 +97,15 @@ class TestNotifications:
         )
         self.fcm.reset_mock()
 
+        # When a MONEY action fires
         self.top_up_car()
 
+        # Then only the manager's device is pushed to
         assert removed.status_code == status.HTTP_204_NO_CONTENT
         assert pushed_tokens(self.fcm) == [(), ("manager-device",)]
 
     def test_cannot_read_or_mark_someone_elses_notification_fail(self):
+        # Given a notification that belongs to the owner
         self.top_up_car()
         notification = Notification.objects.get(user=self.owner_user)
         manager_ids = {
@@ -99,10 +113,12 @@ class TestNotifications:
             for item in self.manager.get(notifications_list_url()).data["results"]
         }
 
+        # When the manager tries to mark it read
         response = self.manager.patch(
             notifications_detail_url(notification.id), {"is_read": True}, format="json"
         )
 
+        # Then it is not visible to them and the PATCH 404s
         assert notification.id not in manager_ids
         assert response.status_code == status.HTTP_404_NOT_FOUND
         notification.refresh_from_db()

@@ -1,4 +1,9 @@
-"""Operations over two days and two branches add up in every report."""
+"""Operations over two days and two branches add up in every report.
+
+Each test follows the Given-When-Then template; the shared arrangement (three
+completed operations across two days and two branches, plus signed-in clients
+for every role) lives in the ``setup`` fixture.
+"""
 
 from datetime import timedelta
 from decimal import Decimal
@@ -115,6 +120,8 @@ class TestReports:
         self.second_worker = sign_in("station", second_station_worker)
 
     def test_station_reports_add_up_per_day_success(self):
+        # Given operations spread over yesterday and today (from setup)
+        # When the station owner reads the report over several date ranges
         today = self.station_owner.get(
             reports_url(date_from=self.today, date_to=self.today)
         )
@@ -126,6 +133,7 @@ class TestReports:
         )
         listed = self.station_owner.get(operations_url())
 
+        # Then each range totals only the operations inside it
         # 20 L and 10 L at 10.50/L for the station
         assert petrol_row(today) == {
             "total_balance": "315.00",
@@ -142,18 +150,24 @@ class TestReports:
         assert listed.data["count"] == 3
 
     def test_station_reports_are_scoped_to_the_viewer_success(self):
+        # Given the two branches' operations (from setup)
         params = {"date_from": self.today, "date_to": self.today}
 
+        # When a branch manager and the other branch's worker read the report
         manager = self.station_manager.get(reports_url(**params))
         worker = self.second_worker.get(reports_url(**params))
 
+        # Then each sees only their own branch's total
         # the manager runs branch 1 (car A), the second worker branch 2 (car B)
         assert petrol_row(manager)["total_balance"] == "210.00"
         assert petrol_row(worker)["total_balance"] == "105.00"
 
     def test_company_home_lists_the_latest_operations_success(self):
+        # Given three completed operations (from setup)
+        # When the company owner opens the home dashboard
         home = self.company_owner.get(company_home_url())
 
+        # Then it lists them newest first
         assert [item["id"] for item in home.data["car_operations"]] == [
             self.op_b,
             self.op_a,
@@ -161,6 +175,8 @@ class TestReports:
         ]
 
     def test_export_matches_what_the_operations_charged_success(self):
+        # Given the completed operations (from setup)
+        # When the owner and manager export different ranges and one car
         owner_today = export_totals(
             self.company_owner, date_from=self.today, date_to=self.today
         )
@@ -174,6 +190,7 @@ class TestReports:
             self.company_manager, date_from=self.today, date_to=self.today
         )
 
+        # Then each spreadsheet's totals match what those operations charged
         assert owner_today == ["110.00 جنيه", "220.00 جنيه"]
         # 220 today + 55 yesterday
         assert owner_car_a == ["275.00 جنيه"]
@@ -183,8 +200,11 @@ class TestReports:
     def test_home_counts_cars_with_equal_balances_once_fail(self):
         """Open issue: `cars_balance` is `Sum(..., distinct=True)`, which sums
         distinct values, so two cars holding 780 each report 780, not 1560."""
+        # Given two cars holding the same balance
         set_balance(self.car_b, "780.00")
 
+        # When the owner opens the home dashboard
         home = self.company_owner.get(company_home_url())
 
+        # Then the equal balances are wrongly collapsed into one
         assert home.data["cars_balance"] == Decimal("780.00")

@@ -1,4 +1,8 @@
-"""The dashboard onboards a company; its owner and branch managers log in."""
+"""The dashboard onboards a company; its owner and branch managers log in.
+
+Each test follows the Given-When-Then template; the signed-in dashboard admin
+and the shared district live in the ``setup`` fixture.
+"""
 
 from decimal import Decimal
 
@@ -55,6 +59,7 @@ class TestCompanyOnboarding:
         )
 
     def test_dashboard_onboards_company_and_owner_logs_in_success(self, api_client):
+        # Given the dashboard creates a company, its owner and two branches
         created, company = self.create_company()
         owner_created = self.admin.post(
             reverse("company-owners-list"),
@@ -69,12 +74,14 @@ class TestCompanyOnboarding:
         first = self.create_branch(self.admin, company, "Cairo")
         second = self.create_branch(self.admin, company, "Giza")
 
+        # When the new owner logs in through the real endpoint
         login = api_client.post(
             company_login_url(),
             {"identifier": "01522222222", "password": PASSWORD},
             format="json",
         )
 
+        # Then everything was created and the token carries the company claims
         assert created.status_code == status.HTTP_201_CREATED, created.data
         assert owner_created.status_code == status.HTTP_201_CREATED, owner_created.data
         assert first.status_code == status.HTTP_201_CREATED, first.data
@@ -88,16 +95,20 @@ class TestCompanyOnboarding:
         assert set(login.json()["branches"]) == branches
         assert decode_access(login.data["access"])["company_id"] == company.id
 
+        # When the owner uses that session
         owner_client = login_client("company", owner)
         listed = owner_client.get(reverse("company-branches-list"))
         profile = owner_client.get(profile_url())
 
+        # Then they see their branches and a zero starting balance
         assert branch_ids(listed) == branches
         assert profile.data["balance"] == Decimal("0.00")
 
     def test_owner_cannot_create_branches_or_owners_fail(self, company, company_owner):
+        # Given a signed-in company owner
         owner = sign_in("company", company_owner)
 
+        # When they try to create a branch and another owner
         branch = self.create_branch(owner, company, "Owner Branch")
         another_owner = owner.post(
             reverse("company-owners-list"),
@@ -110,6 +121,7 @@ class TestCompanyOnboarding:
             format="json",
         )
 
+        # Then both are forbidden (dashboard-only) and nothing is created
         assert branch.status_code == status.HTTP_403_FORBIDDEN
         assert another_owner.status_code == status.HTTP_403_FORBIDDEN
         assert not CompanyBranch.objects.filter(name="Owner Branch").exists()
@@ -120,8 +132,10 @@ class TestCompanyOnboarding:
         """Open issue: `company-branch-managers` POST uses the owner serializer,
         so the new user is a company owner. `assign-managers` then rejects them,
         and no endpoint can create a real branch manager."""
+        # Given a signed-in company owner
         owner = sign_in("company", company_owner)
 
+        # When they create a "branch manager" and try to assign them
         created = owner.post(
             reverse("company-branch-managers-list"),
             {
@@ -140,6 +154,7 @@ class TestCompanyOnboarding:
         )
         as_manager = login_client("company", manager)
 
+        # Then the new user is really an owner and assignment is rejected
         assert created.status_code == status.HTTP_201_CREATED, created.data
         assert manager.role == User.UserRoles.CompanyOwner
         assert assigned.status_code == status.HTTP_400_BAD_REQUEST
@@ -157,12 +172,14 @@ class TestCompanyOnboarding:
         second_company_branch,
         branch_manager_user_factory,
     ):
-        # no endpoint creates a real branch manager (see the test above)
+        # Given a real branch manager and a funded branch
+        # (no endpoint creates a real branch manager, see the test above)
         manager = branch_manager_user_factory()
         company_branch.balance = Decimal("250.00")
         company_branch.save(update_fields=["balance"])
         owner = sign_in("company", company_owner)
 
+        # When the owner assigns them and the manager signs in
         assigned = owner.post(
             assign_company_managers_url(company_branch.id),
             {"managers": [manager.id]},
@@ -175,6 +192,7 @@ class TestCompanyOnboarding:
         )
         profile = as_manager.get(profile_url())
 
+        # Then they see only their branch and its balance
         assert assigned.status_code == status.HTTP_200_OK, assigned.data
         assert branch_ids(listed) == {company_branch.id}
         assert other_branch.status_code == status.HTTP_404_NOT_FOUND

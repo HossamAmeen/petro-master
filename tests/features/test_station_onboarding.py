@@ -1,4 +1,8 @@
-"""The dashboard onboards a station; its owner staffs it and the staff log in."""
+"""The dashboard onboards a station; its owner staffs it and the staff log in.
+
+Each test follows the Given-When-Then template; the signed-in dashboard admin,
+the district and the two shared services live in the ``setup`` fixture.
+"""
 
 import pytest
 from django.urls import reverse
@@ -67,6 +71,7 @@ class TestStationOnboarding:
         return response, StationBranch.objects.filter(name=name).first()
 
     def test_dashboard_onboards_station_and_staff_log_in_success(self):
+        # Given the dashboard builds a station, a branch, its services and staff
         station_created, station = self.create_station(self.admin)
         branch_created, branch = self.create_branch(self.admin, station)
         assigned = self.admin.post(
@@ -89,9 +94,11 @@ class TestStationOnboarding:
         manager = StationOwner.objects.get(phone_number="01711111111")
         worker = Worker.objects.get(phone_number="01722222222")
 
+        # When the worker and manager log in through the real endpoint
         worker_login = login("station", worker)
         manager_login = login("station", manager)
 
+        # Then everything was created and the tokens carry the station claim
         assert station_created.status_code == status.HTTP_201_CREATED
         assert branch_created.status_code == status.HTTP_201_CREATED
         assert assigned.status_code == status.HTTP_200_OK, assigned.data
@@ -103,6 +110,7 @@ class TestStationOnboarding:
         assert manager_login.status_code == status.HTTP_200_OK, manager_login.data
         assert manager_login.data["station_id"] == station.id
 
+        # When the staff open their dashboards
         worker_home = login_client("station", worker).get(home_url())
         manager_client = login_client("station", manager)
         manager_home = manager_client.get(home_url())
@@ -110,6 +118,7 @@ class TestStationOnboarding:
             station_branch_action_url("services", branch.id)
         )
 
+        # Then the branch, counts and services are wired up
         assert worker_home.data["station_branch_id"] == branch.id
         assert manager_home.data["branches_count"] == 1
         assert manager_home.data["workers_count"] == 1
@@ -118,8 +127,8 @@ class TestStationOnboarding:
     def test_api_created_station_owner_cannot_log_in_fail(self):
         """Open issue: `StationOwnerSerializer` is a plain `fields="__all__"`
         ModelSerializer and never hashes, so the password is stored as typed."""
+        # Given an owner created through the API
         _, station = self.create_station(self.admin)
-
         created = self.admin.post(
             reverse("station-owners-list"),
             {
@@ -134,8 +143,10 @@ class TestStationOnboarding:
         )
         owner = StationOwner.objects.get(phone_number="01733333333")
 
+        # When that owner tries to log in
         response = login("station", owner)
 
+        # Then login fails because the password was stored unhashed
         assert created.status_code == status.HTTP_201_CREATED, created.data
         assert owner.password == PASSWORD
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -143,8 +154,10 @@ class TestStationOnboarding:
     def test_owner_staffs_their_own_station_success(
         self, station, branch, station_owner
     ):
+        # Given a signed-in station owner
         owner = sign_in("station", station_owner)
 
+        # When they add a worker, a manager and a service
         worker_created = owner.post(
             reverse("workers-list"),
             staff_payload("01744444444", station_branch=branch.id),
@@ -168,6 +181,7 @@ class TestStationOnboarding:
         )
         home = owner.get(home_url())
 
+        # Then the staff are attached to the owner's station and can log in
         assert (
             worker_created.status_code == status.HTTP_201_CREATED
         ), worker_created.data
@@ -183,25 +197,31 @@ class TestStationOnboarding:
     def test_owner_cannot_staff_another_station_fail(
         self, station_owner, other_station_branch
     ):
+        # Given a signed-in owner and a branch of another station
         owner = sign_in("station", station_owner)
 
+        # When they try to add a worker to that other branch
         response = owner.post(
             reverse("workers-list"),
             staff_payload("01766666666", station_branch=other_station_branch.id),
             format="json",
         )
 
+        # Then it is rejected and no worker is created
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert not Worker.objects.filter(phone_number="01766666666").exists()
 
     def test_station_roles_cannot_create_stations_or_branches_fail(
         self, station, station_owner
     ):
+        # Given a signed-in station owner
         owner = sign_in("station", station_owner)
 
+        # When they try to create a station and a branch
         station_response, _ = self.create_station(owner, "Owner Station")
         branch_response, _ = self.create_branch(owner, station, "Owner Branch")
 
+        # Then both are forbidden (dashboard-only) and nothing is created
         assert station_response.status_code == status.HTTP_403_FORBIDDEN
         assert branch_response.status_code == status.HTTP_403_FORBIDDEN
         assert not StationBranch.objects.filter(name="Owner Branch").exists()

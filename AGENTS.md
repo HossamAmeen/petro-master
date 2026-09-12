@@ -6,7 +6,8 @@
 
 ## Testing
 
-- Use `pytest` with `pytest-django`; run the suite with `venv/bin/python -m pytest`.
+- Use `pytest` with `pytest-django`; run the suite with `venv/bin/python -m pytest` (or `make test`).
+- Coverage: `make coverage` runs the whole suite with `pytest-cov`, prints a term-missing summary, writes `htmlcov/`, and fails under 80% (currently ~83%). Config (measured packages, omits, exclude lines) is in `pyproject.toml` under `[tool.coverage.*]`; `pytest-cov` is pinned in `requirements/dev.txt`.
 - Keep shared API clients, JWT-claim helpers, and cross-domain fixtures in the root `conftest.py`.
 - Keep domain-specific fixtures in that app's test `conftest.py`.
 - Reuse factories from `apps/companies/factories.py`; add a factory before repeating model setup in tests.
@@ -60,6 +61,7 @@
 - Create through the API whatever the scenario itself creates; use factories only for the starting point (geo data, services, the users/companies the scenario doesn't create). Shared multi-request steps (`fuel`, `start_fueling`, `complete_other_service`, balance/branch URL builders, `fresh_balance`) live in `tests/features/helpers.py`.
 - `tests/features/conftest.py` mocks SMS, points `MEDIA_ROOT` at a temp dir, and adds `fees` (standard company/station fee percentages), `fuelable_car` (petrol car allowed every day), and `local_cache` (locmem cache + DB sessions, for admin-client and throttle tests). Add a new scenario as a new `test_*.py` module there.
 - When a flow hits a known bug, assert the current behaviour with a short "Open issue"/"Known bug" note and `pytest.raises` where it 500s (e.g. the approve-PATCH `KeyError` on khazna transactions); do not route around it. `_success`/`_fail` name the happy vs failure branches as elsewhere.
+- Each feature test body follows the **Given-When-Then** template with `# Given` / `# When` / `# Then` comment markers (a step with several requests may repeat When/Then). The shared Given usually lives in the class's `setup` fixture, so a test's `# Given` marks only its extra arrangement and may be omitted when there is none.
 # AGENTS.md
 
 Living guide for coding agents working on Petro Master backend.

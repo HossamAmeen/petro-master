@@ -1,4 +1,8 @@
-"""A station worker fuels a company car, from verify-driver to the reports."""
+"""A station worker fuels a company car, from verify-driver to the reports.
+
+Each test follows the Given-When-Then template; the shared arrangement (a
+funded car, a signed-in worker, fee percentages) lives in the ``setup`` fixture.
+"""
 
 from datetime import timedelta
 from decimal import Decimal
@@ -82,10 +86,13 @@ class TestFueling:
 
     @pytest.mark.parametrize("balance_source", Car.BalanceSource.values)
     def test_worker_fuels_a_car_end_to_end_success(self, balance_source):
+        # Given a car funded from one balance holder
         holder = self.fund(balance_source)
 
+        # When the worker verifies the driver
         verified = verify(self.worker, self.driver, self.car)
 
+        # Then a pending operation opens and the car is locked
         assert verified.status_code == status.HTTP_200_OK, verified.data
         # 1000 buys 90 L at 11/L (10 + 10% company fee); the car may take 40
         assert verified.data["car"]["liter_count"] == 40
@@ -97,14 +104,20 @@ class TestFueling:
         self.car.refresh_from_db()
         assert self.car.is_blocked_balance_update is True
 
+        # When the worker starts the pump and reads the meter
         assert start_pump(self.worker, operation.id).status_code == status.HTTP_200_OK
         metered = read_meter(self.worker, operation.id, "10100")
+
+        # Then the operation moves to in-progress
         assert metered.status_code == status.HTTP_200_OK, metered.data
         operation.refresh_from_db()
         assert operation.status == CarOperation.OperationStatus.IN_PROGRESS
 
+        # When the worker pumps the fuel
         pumped = pump(self.worker, operation.id, "20")
 
+        # Then the operation completes and every balance, khazna row and
+        # notification reflects the fueling
         assert pumped.status_code == status.HTTP_200_OK, pumped.data
         operation.refresh_from_db()
         assert operation.status == CarOperation.OperationStatus.COMPLETED
@@ -134,6 +147,7 @@ class TestFueling:
         }
 
     def test_completed_fueling_shows_up_for_company_and_station_success(self):
+        # Given a completed fueling
         self.fund(Car.BalanceSource.CAR)
         operation_id, _ = fuel(
             self.worker, self.driver, self.car, amount="20", meter="10100"
@@ -142,11 +156,13 @@ class TestFueling:
         station_owner = sign_in("station", self.station_owner)
         today = timezone.localdate().isoformat()
 
+        # When the company and the station read their listings
         company_list = owner.get(operation_list_url())
         company_home = owner.get(company_home_url())
         station_list = station_owner.get(operations_url())
         report = station_owner.get(reports_url(date_from=today, date_to=today))
 
+        # Then the operation and its totals appear on both sides
         assert ids(company_list.data["results"]) == [operation_id]
         assert ids(company_home.data["car_operations"]) == [operation_id]
         assert company_home.data["cars_balance"] == Decimal("780.00")
@@ -164,14 +180,17 @@ class TestFueling:
         ]
 
     def test_meter_past_oil_change_notifies_company_success(self):
+        # Given a car whose next oil change is due within this fill
         self.fund(Car.BalanceSource.CAR)
         self.car.next_oil_change_km = 10050
         self.car.save(update_fields=["next_oil_change_km"])
 
+        # When the worker fuels it past that reading
         _, response = fuel(
             self.worker, self.driver, self.car, amount="20", meter="10100"
         )
 
+        # Then the company gets the oil-change reminder
         assert response.status_code == status.HTTP_200_OK, response.data
         assert notification_user_ids(Notification.NotificationType.GENERAL) == {
             self.company_owner.id,
@@ -179,39 +198,49 @@ class TestFueling:
         }
 
     def test_cancel_unlocks_car_for_a_new_visit_success(self):
+        # Given a verified, still-open operation
         self.fund(Car.BalanceSource.CAR)
         operation_id = verify(self.worker, self.driver, self.car).data["operation_id"]
 
+        # When the worker cancels it and verifies again
         cancelled = self.worker.delete(gas_url(operation_id))
         again = verify(self.worker, self.driver, self.car)
 
+        # Then the car is unlocked and a fresh verify succeeds
         assert cancelled.status_code == status.HTTP_204_NO_CONTENT
         assert not CarOperation.objects.filter(id=operation_id).exists()
         assert again.status_code == status.HTTP_200_OK, again.data
 
     def test_verify_while_another_operation_is_open_fail(self):
+        # Given a car already in an open operation
         self.fund(Car.BalanceSource.CAR)
         verify(self.worker, self.driver, self.car)
 
+        # When the worker verifies it a second time
         response = verify(self.worker, self.driver, self.car)
 
+        # Then the second verify is rejected
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "car_in_progress"
         assert CarOperation.objects.count() == 1
 
     def test_verify_on_a_day_the_car_may_not_fuel_fail(self):
+        # Given a car only allowed to fuel tomorrow
         self.fund(Car.BalanceSource.CAR)
         tomorrow = (timezone.localtime() + timedelta(days=1)).strftime("%A")
         self.car.fuel_allowed_days = [tomorrow]
         self.car.save(update_fields=["fuel_allowed_days"])
 
+        # When the worker verifies it today
         response = verify(self.worker, self.driver, self.car)
 
+        # Then it is rejected and no operation opens
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["code"] == "car_not_active"
         assert not CarOperation.objects.exists()
 
     def test_verify_after_dashboard_suspends_company_fail(self, admin_user):
+        # Given the dashboard has suspended the car's company
         self.fund(Car.BalanceSource.CAR)
         admin = sign_in("dashboard", admin_user)
         suspended = admin.patch(
@@ -220,8 +249,10 @@ class TestFueling:
             format="json",
         )
 
+        # When the worker verifies the car
         response = verify(self.worker, self.driver, self.car)
 
+        # Then verification is refused for the inactive company
         assert suspended.status_code == status.HTTP_200_OK, suspended.data
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["code"] == "company_not_active"
@@ -229,32 +260,41 @@ class TestFueling:
     def test_verify_driver_from_another_company_fail(
         self, driver_factory, other_company_branch
     ):
+        # Given a driver belonging to a different company
         self.fund(Car.BalanceSource.CAR)
         stranger = driver_factory(branch=other_company_branch)
 
+        # When the worker verifies that driver against this car
         response = verify(self.worker, stranger, self.car)
 
+        # Then the mismatch is rejected
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["code"] == "driver_not_belongs_to_company"
 
     @pytest.mark.parametrize("balance_source", Car.BalanceSource.values)
     def test_verify_without_enough_balance_fail(self, balance_source):
+        # Given a barely funded balance holder
         self.fund(balance_source, "5.00")
 
+        # When the worker verifies the car
         response = verify(self.worker, self.driver, self.car)
 
+        # Then it is rejected for insufficient balance
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["code"] == "not_enough_balance"
         assert not CarOperation.objects.exists()
 
     def test_verify_past_the_daily_fueling_limit_fail(self):
+        # Given a car that has used its single daily fueling
         self.fund(Car.BalanceSource.CAR)
         self.car.number_of_fuelings_per_day = 1
         self.car.save(update_fields=["number_of_fuelings_per_day"])
         fuel(self.worker, self.driver, self.car, amount="20", meter="10100")
 
+        # When the worker verifies it again the same day
         response = verify(self.worker, self.driver, self.car)
 
+        # Then the daily limit blocks a new operation
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "car_in_progress"
         assert CarOperation.objects.count() == 1
@@ -267,11 +307,14 @@ class TestFueling:
         ],
     )
     def test_pump_more_than_available_liters_fail(self, holder_balance, amount):
+        # Given a started operation on a car with limited liters
         self.fund(Car.BalanceSource.CAR, holder_balance)
         operation_id = start_fueling(self.worker, self.driver, self.car, meter="10100")
 
+        # When the worker pumps more than the car may take
         response = pump(self.worker, operation_id, amount)
 
+        # Then it is rejected and nothing is charged
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         operation = CarOperation.objects.get(id=operation_id)
         assert operation.status == CarOperation.OperationStatus.IN_PROGRESS
@@ -279,6 +322,7 @@ class TestFueling:
         assert fresh_balance(self.station_branch) == Decimal("500.00")
 
     def test_pump_after_the_60_second_window_fail(self):
+        # Given a started operation whose start time is over a minute ago
         self.fund(Car.BalanceSource.CAR)
         operation_id = start_fueling(self.worker, self.driver, self.car, meter="10100")
         # the worker took more than a minute between starting and finishing
@@ -286,31 +330,39 @@ class TestFueling:
             start_time=F("start_time") - timedelta(seconds=61)
         )
 
+        # When the worker pumps after the 60-second window
         response = pump(self.worker, operation_id, "20")
 
+        # Then it is rejected and nothing is charged
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert fresh_balance(self.car) == Decimal("1000.00")
         assert not CompanyKhaznaTransaction.objects.exists()
 
     def test_meter_below_the_last_reading_fail(self):
+        # Given a started operation on a car with a higher last meter
         self.fund(Car.BalanceSource.CAR)
         operation_id = verify(self.worker, self.driver, self.car).data["operation_id"]
         start_pump(self.worker, operation_id)
 
+        # When the worker enters a meter below the last reading
         response = read_meter(self.worker, operation_id, "9999")
 
+        # Then it is rejected and the operation stays pending
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         operation = CarOperation.objects.get(id=operation_id)
         assert operation.status == CarOperation.OperationStatus.PENDING
 
     def test_pump_again_after_completion_fail(self):
+        # Given a completed fueling
         self.fund(Car.BalanceSource.CAR)
         operation_id, _ = fuel(
             self.worker, self.driver, self.car, amount="20", meter="10100"
         )
 
+        # When the worker tries to pump the finished operation again
         response = pump(self.worker, operation_id, "20")
 
+        # Then it is rejected and the balance is unchanged
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "not_found"
         assert fresh_balance(self.car) == Decimal("780.00")

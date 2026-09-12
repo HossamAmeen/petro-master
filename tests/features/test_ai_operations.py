@@ -1,4 +1,9 @@
-"""`process_ai_operations` reads fuel-gauge photos into `AIApiResponse` rows."""
+"""`process_ai_operations` reads fuel-gauge photos into `AIApiResponse` rows.
+
+Each test follows the Given-When-Then template; the API key, the operator
+account and the operation factory live in ``setup``. The When step is the
+``run`` helper, which invokes the command with OpenAI and ``requests`` mocked.
+"""
 
 import json
 from decimal import Decimal
@@ -60,10 +65,13 @@ class TestProcessAiOperations:
         return client, openai, get
 
     def test_one_response_per_operation_success(self):
+        # Given three completed operations with fuel photos
         operations = [self.completed_op() for _ in range(3)]
 
+        # When the command runs
         client, _, get = self.run(5)
 
+        # Then each gets one AIApiResponse stamped by the operator account
         assert AIApiResponse.objects.count() == 3
         assert client.chat.completions.create.call_count == 3
         assert get.call_count == 3
@@ -75,47 +83,61 @@ class TestProcessAiOperations:
             assert response.created_by.phone_number == "01010079798"
 
     def test_match_score_reflects_the_gap_success(self):
+        # Given an operation whose amount differs from what the model reads
         operation = self.completed_op(amount=Decimal("30.00"))
 
+        # When the command runs and the model returns 20
         self.run(1, completion=fake_completion("20"))
 
+        # Then the stored match score reflects the gap
         response = AIApiResponse.objects.get(car_operation=operation)
         assert response.extracted_number == "20"
         assert response.match_score == 0  # |20 - 30| = 10
 
     def test_branch_cap_stops_at_the_limit_success(self):
+        # Given three operations in one branch and a cap of two
         for _ in range(3):
             self.completed_op()
 
+        # When the command runs under that cap
         with patch(f"{COMMAND}.Command.MAX_RESPONSES_PER_BRANCH", 2):
             self.run(5)
 
-        # only two rows fit under the per-branch cap
+        # Then only two rows fit under the per-branch cap
         assert AIApiResponse.objects.count() == 2
 
     def test_operations_without_a_photo_are_skipped_success(self):
+        # Given one operation with a photo and one without
         with_photo = self.completed_op()
         self.completed_op(fuel_image="")
 
+        # When the command runs
         client, _, _ = self.run(5)
 
+        # Then only the one with a photo is processed
         assert AIApiResponse.objects.count() == 1
         assert AIApiResponse.objects.get().car_operation_id == with_photo.id
 
     def test_already_processed_operations_are_not_redone_success(self):
+        # Given an operation already processed once
         operation = self.completed_op()
         self.run(5)
 
+        # When the command runs again
         self.run(5)
 
+        # Then it is not processed a second time
         assert AIApiResponse.objects.filter(car_operation=operation).count() == 1
 
     def test_missing_api_key_stops_the_command_fail(self, settings):
         from django.core.management.base import CommandError
 
+        # Given no OpenAI API key configured
         settings.OPENAI_API_KEY = ""
         self.completed_op()
 
+        # When the command runs
+        # Then it raises a CommandError and writes no rows
         with patch(f"{COMMAND}.os.getenv", return_value=None), pytest.raises(
             CommandError
         ):

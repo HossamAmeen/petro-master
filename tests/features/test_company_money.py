@@ -1,4 +1,8 @@
-"""Money loaded by the dashboard moves company ↔ branch ↔ car and back."""
+"""Money loaded by the dashboard moves company ↔ branch ↔ car and back.
+
+Each test follows the Given-When-Then template; the signed-in dashboard, owner
+and branch-manager clients and the entities they act on live in ``setup``.
+"""
 
 from decimal import Decimal
 
@@ -73,6 +77,8 @@ class TestCompanyMoney:
         ]
 
     def test_dashboard_topup_moves_down_to_a_car_and_back_success(self):
+        # Given the dashboard tops up the branch by 1000
+        # When the money is moved down to the car and partly back
         topped_up = self.top_up(self.admin, "1000.00")
         to_company = self.owner.post(
             company_branch_balance_url(self.branch.id),
@@ -95,6 +101,8 @@ class TestCompanyMoney:
         )
         home = self.owner.get(company_home_url())
 
+        # Then every hop succeeds and the balances net out, with five internal
+        # khazna rows and a MONEY notification for the branch manager
         assert topped_up.status_code == status.HTTP_201_CREATED, topped_up.data
         for response in (
             to_company,
@@ -129,6 +137,8 @@ class TestCompanyMoney:
         ],
     )
     def test_moves_without_enough_balance_fail(self, step):
+        # Given every balance is zero
+        # When a transfer is attempted at some level of the hierarchy
         client, url, payload = {
             "branch_to_company": (
                 self.owner,
@@ -159,6 +169,7 @@ class TestCompanyMoney:
 
         response = client.post(url, payload, format="json")
 
+        # Then it is rejected and nothing moves
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "not_enough_balance"
         assert self.balances() == [ZERO] * 4
@@ -168,14 +179,17 @@ class TestCompanyMoney:
         "balance_source", [Car.BalanceSource.BRANCH, Car.BalanceSource.COMPANY]
     )
     def test_top_up_a_car_paid_by_its_branch_or_company_fail(self, balance_source):
+        # Given a car funded from its branch or company, not itself
         set_balance(self.company, "100.00")
         self.car.balance_source = balance_source
         self.car.save(update_fields=["balance_source"])
 
+        # When the owner tries to top up the car directly
         response = self.owner.post(
             update_balance_url(self.car.id), move("10.00", "add"), format="json"
         )
 
+        # Then it is rejected because the car is not self-funded
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "balance_source_not_car"
         assert fresh_balance(self.company) == Decimal("100.00")
@@ -183,35 +197,43 @@ class TestCompanyMoney:
     def test_top_up_a_car_in_the_middle_of_a_fueling_fail(
         self, station_worker, company_driver
     ):
+        # Given a car locked mid-operation by a verify
         set_balance(self.company, "100.00")
         set_balance(self.car, "50.00")
         verified = verify(sign_in("station", station_worker), company_driver, self.car)
 
+        # When the owner tries to top up the car
         response = self.owner.post(
             update_balance_url(self.car.id), move("10.00", "add"), format="json"
         )
 
+        # Then it is rejected while the operation is open
         assert verified.status_code == status.HTTP_200_OK, verified.data
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert fresh_balance(self.car) == Decimal("50.00")
         assert fresh_balance(self.company) == Decimal("100.00")
 
     def test_branch_manager_cannot_move_company_money_fail(self):
+        # Given a funded company
         set_balance(self.company, "100.00")
 
+        # When a branch manager tries to move company→branch money
         response = self.manager.post(
             company_branch_balance_url(self.branch.id),
             move("10.00", "add"),
             format="json",
         )
 
+        # Then it is forbidden (owner-only) and nothing moves
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert fresh_balance(self.branch) == ZERO
 
     def test_dashboard_approves_a_pending_topup_success(self):
+        # Given a pending top-up that has not moved money yet
         created = self.top_up(self.admin, "300.00", status="pending")
         pending_balance = fresh_balance(self.branch)
 
+        # When the dashboard approves it (and tries to approve twice)
         approved = self.admin.patch(
             company_transaction_detail_url(created.data["id"]),
             {
@@ -231,6 +253,7 @@ class TestCompanyMoney:
             format="json",
         )
 
+        # Then the branch is credited once and re-approval is rejected
         assert created.status_code == status.HTTP_201_CREATED, created.data
         assert pending_balance == ZERO
         assert approved.status_code == status.HTTP_200_OK, approved.data
@@ -240,8 +263,11 @@ class TestCompanyMoney:
     def test_approve_without_sending_the_branch_crashes_fail(self):
         """Known bug: the update serializer indexes `attrs["company_branch"]`,
         so the usual `{"status": "approved"}` PATCH raises a KeyError (500)."""
+        # Given a pending top-up
         created = self.top_up(self.admin, "300.00", status="pending")
 
+        # When it is approved without repeating the branch
+        # Then the serializer raises a KeyError and nothing is credited
         with pytest.raises(KeyError):
             self.admin.patch(
                 company_transaction_detail_url(created.data["id"]),
@@ -254,7 +280,10 @@ class TestCompanyMoney:
     def test_company_owner_can_approve_their_own_topup_success(self):
         """Open issue: company roles may create khazna transactions, including
         already-approved ones, so an owner can credit their own branch."""
+        # Given a signed-in company owner (from setup)
+        # When they post an already-approved top-up
         response = self.top_up(self.owner, "5000.00")
 
+        # Then the branch is credited without any dashboard review
         assert response.status_code == status.HTTP_201_CREATED, response.data
         assert fresh_balance(self.branch) == Decimal("5000.00")

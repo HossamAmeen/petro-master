@@ -1,4 +1,4 @@
-.PHONY: run migrate makemigrations shell format lint check test test-features process_ai restart stop
+.PHONY: run migrate makemigrations shell format lint check test test-features coverage process_ai restart stop
 
 -include .env
 
@@ -35,6 +35,11 @@ test:
 # End-to-end business scenarios only (tests/features, `feature` marker).
 test-features:
 	python3 -m pytest -m feature
+
+# Run the whole suite and report code coverage (config in pyproject.toml).
+# Writes a term summary plus an htmlcov/ report; fails under 80%.
+coverage:
+	python3 -m pytest --cov --cov-report=term-missing --cov-report=html --cov-fail-under=80
 
 limit ?= 1
 

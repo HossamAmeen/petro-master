@@ -1,4 +1,8 @@
-"""Two companies and two stations, fully set up: neither can see the other's data."""
+"""Two companies and two stations, fully set up: neither can see the other's data.
+
+Each test follows the Given-When-Then template; the two tenants (each with a car,
+driver, operation and transactions) and their signed-in owners live in ``setup``.
+"""
 
 from decimal import Decimal
 
@@ -96,6 +100,8 @@ class TestTenantIsolation:
         self.station_owner_b = sign_in("station", other_station_owner)
 
     def test_company_owner_lists_only_their_own_records_success(self):
+        # Given tenant A's owner (from setup)
+        # When they list cars, drivers, operations and transactions
         cars = ids(self.company_owner_a.get(reverse("cars-list")))
         drivers = ids(self.company_owner_a.get(reverse("drivers-list")))
         operations = ids(self.company_owner_a.get(reverse("car-operations-list")))
@@ -103,6 +109,7 @@ class TestTenantIsolation:
             self.company_owner_a.get(reverse("company-khazna-transactions-list"))
         )
 
+        # Then tenant B's records are absent and tenant A's are present
         # the fixtures seed extra tenant-A helper records, so assert the
         # tenant-B records are excluded and the tenant-A ones are present
         assert self.car_a.id in cars and self.car_b.id not in cars
@@ -121,26 +128,35 @@ class TestTenantIsolation:
     def test_company_owner_cannot_reach_the_other_tenant_fail(
         self, url_builder, target
     ):
+        # Given a tenant-B record
         obj = getattr(self, target)
 
+        # When tenant A's owner requests it directly
         response = self.company_owner_a.get(url_builder(obj.id))
 
+        # Then it is not found
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_station_owner_lists_only_their_own_records_success(self):
+        # Given tenant A's station owner (from setup)
+        # When they list operations and transactions
         operations = self.station_owner_a.get(operations_url())
         transactions = self.station_owner_a.get(
             reverse("station-khazna-transactions-list")
         )
 
+        # Then they see only their own station's records
         assert ids(operations) == {self.operation_a.id}
         assert ids(transactions) == {self.station_txn_a.id}
 
     def test_station_owner_cannot_reach_the_other_tenant_fail(self):
+        # Given tenant B's station transaction
+        # When tenant A's station owner requests it directly
         transaction = self.station_owner_a.get(
             station_transaction_detail_url(self.station_txn_b.id)
         )
 
+        # Then it is not found
         assert transaction.status_code == status.HTTP_404_NOT_FOUND
 
     def test_worker_can_fuel_across_tenants_fail(
@@ -148,13 +164,16 @@ class TestTenantIsolation:
     ):
         """Open boundary: gas PATCH and verify-driver only check authentication,
         so tenant A's worker can start an operation on tenant B's car."""
+        # Given a funded tenant-B car and tenant A's worker
         set_balance(self.car_b, "1000.00")
         worker = sign_in("station", station_worker)
 
+        # When tenant A's worker verifies tenant B's driver and car
         response = worker.post(
             verify_url(self.driver_b.code, self.car_b.code, "petrol")
         )
 
+        # Then it is (wrongly) allowed and booked against tenant A's branch
         assert response.status_code == status.HTTP_200_OK, response.data
         operation = CarOperation.objects.get(id=response.data["operation_id"])
         assert operation.car_id == self.car_b.id
