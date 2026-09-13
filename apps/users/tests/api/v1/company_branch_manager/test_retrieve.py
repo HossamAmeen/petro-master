@@ -39,6 +39,7 @@ class TestCompanyBranchManagerRetrieve:
         assert response.data["name"] == company_branch_manager.name
         assert response.data["role"] == User.UserRoles.CompanyBranchManager
         assert response.data["company_id"] == company.id
+        assert response.data["company"] == {"id": company.id, "name": company.name}
         assert response.data["created_by"] == user_ref(admin_user)
         assert response.data["company_branches"] == [
             {"id": company_branch.id, "name": company_branch.name}

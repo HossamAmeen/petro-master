@@ -10,6 +10,7 @@ from apps.accounting.helpers import (
 )
 from apps.accounting.models import KhaznaTransaction
 from apps.companies.api.v1.serializers.car_serializer import CarWithPlateInfoSerializer
+from apps.companies.api.v1.serializers.company_serializer import CompanyNameSerializer
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
@@ -27,6 +28,7 @@ from apps.users.v1.serializers.user_serializers import SingleUserSerializer
 
 class ListCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
+    company = CompanyNameSerializer(source="car.branch.company")
     driver = SingleDriverSerializer()
     station_branch = SingleStationBranchSerializer()
     worker = WorkerWithBranchSerializer()
@@ -53,6 +55,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             "unit",
             "fuel_type",
             "car",
+            "company",
             "driver",
             "station_branch",
             "worker",
@@ -99,6 +102,7 @@ class ListCompanyCarOperationSerializer(ListCarOperationSerializer):
             "unit",
             "fuel_type",
             "car",
+            "company",
             "driver",
             "station_branch",
             "worker",

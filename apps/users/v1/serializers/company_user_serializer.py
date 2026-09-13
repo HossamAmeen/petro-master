@@ -1,6 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
+from apps.companies.api.v1.serializers.company_serializer import CompanyNameSerializer
 from apps.companies.models.company_models import CompanyBranch
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import DASHBOARD_ROLES
@@ -58,6 +59,7 @@ class CreateCompanyOwnerSerializer(serializers.ModelSerializer):
 
 
 class ListCompanyOwnerSerializer(serializers.ModelSerializer):
+    company = CompanyNameSerializer()
     created_by = SingleUserSerializer()
     updated_by = SingleUserSerializer()
 
@@ -75,10 +77,12 @@ class ListCompanyOwnerSerializer(serializers.ModelSerializer):
             "created_by",
             "updated_by",
             "company_id",
+            "company",
         ]
 
 
 class ListCompanyBranchManagerSerializer(serializers.ModelSerializer):
+    company = CompanyNameSerializer()
     created_by = SingleUserSerializer()
     updated_by = SingleUserSerializer()
 
@@ -95,10 +99,12 @@ class ListCompanyBranchManagerSerializer(serializers.ModelSerializer):
             "created_by",
             "updated_by",
             "company_id",
+            "company",
         ]
 
 
 class RetrieveCompanyBranchManagerSerializer(serializers.ModelSerializer):
+    company = CompanyNameSerializer()
     created_by = SingleUserSerializer()
     updated_by = SingleUserSerializer()
     company_branches = serializers.SerializerMethodField()
@@ -117,6 +123,7 @@ class RetrieveCompanyBranchManagerSerializer(serializers.ModelSerializer):
             "created_by",
             "updated_by",
             "company_id",
+            "company",
         ]
 
     def get_company_branches(self, obj):
