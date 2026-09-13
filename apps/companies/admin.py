@@ -1041,19 +1041,21 @@ class CarOperationAdmin(admin.ModelAdmin):
             form = CloneCarOperationForm(request.POST)
             if form.is_valid():
                 try:
-                    clone = clone_car_operation(
-                        source=obj,
-                        amount=form.cleaned_data["amount"],
-                        user=request.user,
-                    )
+                    # the history entry commits with the clone or not at all
+                    with transaction.atomic():
+                        clone = clone_car_operation(
+                            source=obj,
+                            amount=form.cleaned_data["amount"],
+                            user=request.user,
+                        )
+                        self.log_addition(
+                            request,
+                            clone,
+                            [{"added": {"name": str(clone._meta.verbose_name)}}],
+                        )
                 except CloneError as error:
                     form.add_error("amount", str(error))
                 else:
-                    self.log_addition(
-                        request,
-                        clone,
-                        [{"added": {"name": str(clone._meta.verbose_name)}}],
-                    )
                     messages.success(
                         request,
                         f"تم إنشاء العملية {clone.code} كنسخة من العملية {obj.code}.",

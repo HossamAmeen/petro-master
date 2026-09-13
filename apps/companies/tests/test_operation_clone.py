@@ -1,4 +1,5 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 from django.contrib import admin
@@ -9,6 +10,7 @@ from apps.accounting.models import (
     KhaznaTransaction,
     StationKhaznaTransaction,
 )
+from apps.companies.admin import CarOperationAdmin
 from apps.companies.models.company_models import Car
 from apps.companies.models.operation_model import CarOperation
 from apps.companies.operation_clone import CloneError, clone_car_operation
@@ -188,15 +190,61 @@ class TestCloneCarOperation(CloneTestCase):
         assert expected in StationKhaznaTransaction.objects.get().description
 
     def test_completed_clone_notifies_the_worker(
-        self, station_worker, mock_firebase_notifications
+        self,
+        station_worker,
+        mock_firebase_notifications,
+        django_capture_on_commit_callbacks,
     ):
         self.complete_source()
 
-        self.clone()
+        with django_capture_on_commit_callbacks(execute=True):
+            self.clone()
 
         assert Notification.objects.filter(user=station_worker).exists()
         # bulk_create would skip the post_save hook that pushes FCM
         assert mock_firebase_notifications.called
+
+    def test_notifications_wait_for_the_commit(
+        self, mock_firebase_notifications, django_capture_on_commit_callbacks
+    ):
+        self.complete_source()
+
+        with django_capture_on_commit_callbacks() as callbacks:
+            self.clone()
+
+        assert not Notification.objects.exists()
+        assert not mock_firebase_notifications.called
+        assert len(callbacks) == 2  # station fan-out, company fan-out
+
+    def test_failure_midway_rolls_back_the_whole_clone(
+        self,
+        company_car,
+        branch,
+        mock_firebase_notifications,
+        django_capture_on_commit_callbacks,
+    ):
+        """The company transaction is the last write, after every other one."""
+        self.complete_source()
+
+        with (
+            django_capture_on_commit_callbacks(execute=True) as callbacks,
+            patch(
+                "apps.companies.operation_clone.generate_company_transaction",
+                side_effect=RuntimeError("db down"),
+            ),
+            pytest.raises(RuntimeError),
+        ):
+            self.clone()
+
+        company_car.refresh_from_db()
+        branch.refresh_from_db()
+        assert CarOperation.objects.count() == 1
+        assert company_car.balance == Decimal("5000.00")
+        assert branch.balance == Decimal("10000.00")
+        assert not KhaznaTransaction.objects.exists()
+        assert not Notification.objects.exists()
+        assert callbacks == []
+        assert not mock_firebase_notifications.called
 
 
 def test_changelist_exposes_a_clone_button(source_operation):
@@ -228,6 +276,21 @@ class TestCloneAdminView:
 
         assert response.status_code == 200
         assert response.context["form"].initial["amount"] == self.source.amount
+
+    def test_post_rolls_back_the_clone_when_the_history_entry_fails(self):
+        self.source.status = CarOperation.OperationStatus.COMPLETED
+        self.source.save(update_fields=["status"])
+
+        with (
+            patch.object(
+                CarOperationAdmin, "log_addition", side_effect=RuntimeError("boom")
+            ),
+            pytest.raises(RuntimeError),
+        ):
+            self.client.post(self.url, {"amount": "20.00"})
+
+        assert CarOperation.objects.count() == 1
+        assert not KhaznaTransaction.objects.exists()
 
     def test_post_creates_the_clone_and_redirects_to_it(self):
         response = self.client.post(self.url, {"amount": "20.00"})

@@ -1,5 +1,6 @@
 import math
 from decimal import Decimal
+from functools import partial
 
 from django.db import models, transaction
 
@@ -98,6 +99,15 @@ def notify(user_ids, message):
         )
 
 
+def notify_on_commit(user_ids, message):
+    """
+    Recipients are resolved inside the transaction, but the notifications (and
+    the FCM push their post_save sends) wait for the commit, so a clone that
+    rolls back never tells anyone about money that did not move.
+    """
+    transaction.on_commit(partial(notify, user_ids, message))
+
+
 def station_notification_users(station_id, station_branch_id, worker_id):
     user_ids = list(
         StationOwner.objects.filter(
@@ -153,7 +163,7 @@ def apply_financial_effects(*, clone, car, station_branch, note, user):
     station_branch.balance = as_decimal(station_branch.balance) - clone.station_cost
     station_branch.save(update_fields=["balance"])
 
-    notify(
+    notify_on_commit(
         station_notification_users(
             station_branch.station_id, station_branch.id, clone.worker_id
         ),
@@ -171,7 +181,7 @@ def apply_financial_effects(*, clone, car, station_branch, note, user):
         is_internal=False,
     )
 
-    notify(
+    notify_on_commit(
         company_notification_users(company_branch.company_id, company_branch.id),
         (f"{fueling_message} " f"وخصم مبلغ بمقدار {clone.company_cost:.2f} جنية"),
     )
@@ -196,8 +206,14 @@ def clone_car_operation(*, source, amount, user):
         raise CloneError("الكمية يجب أن تكون أكبر من صفر.")
 
     # locked for the whole transaction so concurrent operations cannot both
-    # read the same balance and overwrite each other's deduction
-    car = Car.objects.select_for_update().select_related("branch").get(pk=source.car_id)
+    # read the same balance and overwrite each other's deduction. FOR UPDATE
+    # covers every joined row, so the branch and company are locked with the
+    # car whichever of them `balance_source` makes pay.
+    car = (
+        Car.objects.select_for_update()
+        .select_related("branch__company")
+        .get(pk=source.car_id)
+    )
     station_branch = StationBranch.objects.select_for_update().get(
         pk=source.worker.station_branch_id
     )
