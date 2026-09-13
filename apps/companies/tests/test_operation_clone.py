@@ -14,6 +14,12 @@ from apps.companies.models.operation_model import CarOperation
 from apps.companies.operation_clone import CloneError, clone_car_operation
 from apps.companies.tests.helpers import set_balance
 from apps.notifications.models import Notification
+from apps.stations.tests.helpers import (
+    gas_url,
+    image_file,
+    prepare_gas_for_amount,
+    worker_client,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -340,3 +346,137 @@ class TestCloneCarOperationBalanceSource(CloneTestCase):
         assert company_car.balance == Decimal("5000.00") - clone.company_cost
         assert company_branch.balance == Decimal("1000.00")
         assert company.balance == Decimal("1000.00")
+
+
+MONEY_FIELDS = ("cost", "company_cost", "station_cost", "profits")
+ALL_SOURCES = [Car.BalanceSource.CAR, *NON_CAR_SOURCES]
+
+
+def current_balance(instance):
+    return type(instance).objects.values_list("balance", flat=True).get(pk=instance.pk)
+
+
+class TestCloneMatchesTheCompleteGasApi:
+    """
+    Completes an operation through StationGasOperationAPIView, then clones it
+    with the same amount: the clone must charge exactly what the API charged.
+    """
+
+    AMOUNT = "17.33"
+
+    @pytest.fixture(autouse=True)
+    def setup(
+        self,
+        auth_client,
+        admin_user,
+        station_worker,
+        station,
+        branch,
+        company_branch,
+        car,
+        service,
+        gas_operation,
+    ):
+        # uneven prices and a fractional amount so every formula has to round
+        service.cost = Decimal("13.75")
+        service.save(update_fields=["cost"])
+        company_branch.fees = Decimal("7.50")  # percent of the litre price
+        company_branch.save(update_fields=["fees"])
+        branch.fees = Decimal("0.35")  # EGP added per litre
+        branch.save(update_fields=["fees"])
+        set_balance(branch, "5000.00")
+
+        self.client = worker_client(auth_client, station_worker, station)
+        self.user = admin_user
+        self.branch = branch
+        self.car = car
+        self.operation = gas_operation
+
+    def fund(self, balance_source):
+        self.car.balance_source = balance_source
+        self.car.save(update_fields=["balance_source"])
+        holder = self.car.balance_holder
+        set_balance(holder, "1000.00")
+        return holder
+
+    def charge(self, action, holder):
+        """Run `action` and report the money it moved."""
+        holder_before = current_balance(holder)
+        branch_before = current_balance(self.branch)
+        company_ids = set(CompanyKhaznaTransaction.objects.values_list("pk", flat=True))
+        station_ids = set(StationKhaznaTransaction.objects.values_list("pk", flat=True))
+
+        operation = action()
+
+        operation.refresh_from_db()
+        return {
+            "costs": {field: getattr(operation, field) for field in MONEY_FIELDS},
+            "holder_deducted": holder_before - current_balance(holder),
+            "station_branch_deducted": branch_before - current_balance(self.branch),
+            "company_transactions": list(
+                CompanyKhaznaTransaction.objects.exclude(
+                    pk__in=company_ids
+                ).values_list("amount", flat=True)
+            ),
+            "station_transactions": list(
+                StationKhaznaTransaction.objects.exclude(
+                    pk__in=station_ids
+                ).values_list("amount", flat=True)
+            ),
+        }
+
+    def complete_through_api(self):
+        prepare_gas_for_amount(self.operation)
+        response = self.client.patch(
+            gas_url(self.operation.id),
+            {"amount": self.AMOUNT, "fuel_image": image_file("fuel.png")},
+            format="multipart",
+        )
+        assert response.status_code == 200, response.data
+        return self.operation
+
+    def mark_source_completed(self):
+        self.operation.status = CarOperation.OperationStatus.COMPLETED
+        self.operation.save(update_fields=["status"])
+
+    def clone_completed_operation(self):
+        return clone_car_operation(
+            source=self.operation, amount=Decimal(self.AMOUNT), user=self.user
+        )
+
+    @pytest.mark.parametrize("balance_source", ALL_SOURCES)
+    def test_clone_charges_what_the_api_charged_success(self, balance_source):
+        holder = self.fund(balance_source)
+        api = self.charge(self.complete_through_api, holder)
+
+        clone = self.charge(self.clone_completed_operation, holder)
+
+        assert clone == api
+
+    def test_money_follows_the_complete_api_formulas_success(self):
+        holder = self.fund(Car.BalanceSource.CAR)
+        self.mark_source_completed()
+
+        clone = self.charge(self.clone_completed_operation, holder)
+
+        # company litre = 13.75 + 7.5% = 14.78125 ; station litre = 13.75 + 0.35
+        assert clone["costs"] == {
+            "cost": Decimal("238.29"),
+            "company_cost": Decimal("256.16"),
+            "station_cost": Decimal("244.35"),
+            "profits": Decimal("11.81"),
+        }
+        assert clone["holder_deducted"] == Decimal("256.16")
+        assert clone["station_branch_deducted"] == Decimal("244.35")
+
+    def test_station_is_charged_station_cost_not_company_cost_success(self):
+        holder = self.fund(Car.BalanceSource.CAR)
+        self.mark_source_completed()
+
+        clone = self.charge(self.clone_completed_operation, holder)
+
+        station_cost = clone["costs"]["station_cost"]
+        company_cost = clone["costs"]["company_cost"]
+        assert station_cost != company_cost
+        assert clone["station_transactions"] == [station_cost]
+        assert clone["company_transactions"] == [company_cost]
