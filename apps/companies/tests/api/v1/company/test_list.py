@@ -4,7 +4,6 @@ from rest_framework import status
 
 from apps.geo.models import City, District
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -14,12 +13,10 @@ def returned_ids(response):
 
 class TestCompanyList:
 
-
     def test_list_without_authentication_fail(self, api_client):
         response = api_client.get(reverse("companies-list"))
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
 
     @pytest.mark.parametrize(
         "role_fixture",
@@ -32,7 +29,8 @@ class TestCompanyList:
             "station_worker",
         ],
     )
-    def test_list_authenticated_role_success(self,
+    def test_list_authenticated_role_success(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -52,8 +50,8 @@ class TestCompanyList:
         assert response.status_code == status.HTTP_200_OK
         assert {company.id, other_company.id}.issubset(returned_ids(response))
 
-
-    def test_list_includes_annotated_counts_success(self,
+    def test_list_includes_annotated_counts_success(
+        self,
         auth_client,
         admin_user,
         company,
@@ -83,9 +81,8 @@ class TestCompanyList:
         assert listed[other_company.id]["total_drivers"] == 1
         assert listed[other_company.id]["total_managers"] == 0
 
-
-    def test_list_ordered_by_newest_first_success(self,
-        auth_client, admin_user, company_factory
+    def test_list_ordered_by_newest_first_success(
+        self, auth_client, admin_user, company_factory
     ):
         older = company_factory()
         newer = company_factory()
@@ -96,17 +93,15 @@ class TestCompanyList:
         ids = [item["id"] for item in response.data["results"]]
         assert ids.index(newer.id) < ids.index(older.id)
 
-
-    def test_list_filter_district_success(self,
+    def test_list_filter_district_success(
+        self,
         auth_client,
         admin_user,
         geo_data,
         company_factory,
     ):
         matching = company_factory()
-        other_district = District.objects.create(
-            name="Zamalek", city=geo_data["city"]
-        )
+        other_district = District.objects.create(name="Zamalek", city=geo_data["city"])
         non_matching = company_factory(district=other_district)
 
         response = auth_client(admin_user).get(
@@ -118,8 +113,8 @@ class TestCompanyList:
         assert matching.id in returned_ids(response)
         assert non_matching.id not in returned_ids(response)
 
-
-    def test_list_filter_city_success(self,
+    def test_list_filter_city_success(
+        self,
         auth_client,
         admin_user,
         geo_data,
@@ -139,7 +134,6 @@ class TestCompanyList:
         assert matching.id in returned_ids(response)
         assert non_matching.id not in returned_ids(response)
 
-
     def test_list_filter_unknown_district_fail(self, auth_client, admin_user):
         response = auth_client(admin_user).get(
             reverse("companies-list"),
@@ -148,9 +142,8 @@ class TestCompanyList:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
-    def test_list_search_by_name_success(self,
-        auth_client, admin_user, company_factory
+    def test_list_search_by_name_success(
+        self, auth_client, admin_user, company_factory
     ):
         matching = company_factory(name="Searchable Company")
         non_matching = company_factory(name="Other Company")
@@ -164,9 +157,8 @@ class TestCompanyList:
         assert returned_ids(response) == {matching.id}
         assert non_matching.id not in returned_ids(response)
 
-
-    def test_list_search_by_phone_number_success(self,
-        auth_client, admin_user, company_factory
+    def test_list_search_by_phone_number_success(
+        self, auth_client, admin_user, company_factory
     ):
         matching = company_factory(phone_number="01011111111")
         non_matching = company_factory(phone_number="01022222222")
@@ -180,10 +172,9 @@ class TestCompanyList:
         assert returned_ids(response) == {matching.id}
         assert non_matching.id not in returned_ids(response)
 
-
     @pytest.mark.parametrize("no_paginate", ["true", "TRUE", "True"])
-    def test_list_without_pagination_success(self,
-        no_paginate, auth_client, admin_user, company
+    def test_list_without_pagination_success(
+        self, no_paginate, auth_client, admin_user, company
     ):
         response = auth_client(admin_user).get(
             reverse("companies-list"),
@@ -194,9 +185,8 @@ class TestCompanyList:
         assert "count" not in response.data
         assert response.data["results"] == [{"id": company.id, "name": company.name}]
 
-
-    def test_list_with_pagination_includes_counts_success(self,
-        auth_client, admin_user, company
+    def test_list_with_pagination_includes_counts_success(
+        self, auth_client, admin_user, company
     ):
         response = auth_client(admin_user).get(reverse("companies-list"))
 

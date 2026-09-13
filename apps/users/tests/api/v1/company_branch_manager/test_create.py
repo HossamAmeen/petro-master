@@ -4,15 +4,13 @@ from rest_framework import status
 from apps.users.models import CompanyUser, User
 from apps.users.tests.helpers import company_branch_managers_list_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestCompanyBranchManagerCreate:
 
-
-    def test_create_without_authentication_fail(self,
-        api_client, company_branch_manager_payload_factory
+    def test_create_without_authentication_fail(
+        self, api_client, company_branch_manager_payload_factory
     ):
         response = api_client.post(
             company_branch_managers_list_url(),
@@ -22,9 +20,12 @@ class TestCompanyBranchManagerCreate:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_create_as_station_owner_fail(self,
-        auth_client, station_owner, station, company_branch_manager_payload_factory
+    def test_create_as_station_owner_fail(
+        self,
+        auth_client,
+        station_owner,
+        station,
+        company_branch_manager_payload_factory,
     ):
         before = CompanyUser.objects.count()
 
@@ -37,9 +38,8 @@ class TestCompanyBranchManagerCreate:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert CompanyUser.objects.count() == before
 
-
-    def test_create_as_dashboard_success(self,
-        auth_client, admin_user, company, company_branch_manager_payload_factory
+    def test_create_as_dashboard_success(
+        self, auth_client, admin_user, company, company_branch_manager_payload_factory
     ):
         payload = company_branch_manager_payload_factory()
         payload.pop("company_branches")
@@ -57,9 +57,12 @@ class TestCompanyBranchManagerCreate:
         # create action uses CreateCompanyOwnerSerializer
         assert created.role == User.UserRoles.CompanyOwner
 
-
-    def test_create_as_company_owner_success(self,
-        auth_client, company_owner, company, company_branch_manager_payload_factory
+    def test_create_as_company_owner_success(
+        self,
+        auth_client,
+        company_owner,
+        company,
+        company_branch_manager_payload_factory,
     ):
         payload = company_branch_manager_payload_factory()
         payload.pop("company_branches")
@@ -75,9 +78,8 @@ class TestCompanyBranchManagerCreate:
         assert created.company_id == company.id
         assert created.role == User.UserRoles.CompanyOwner
 
-
-    def test_create_dashboard_without_company_id_fail(self,
-        auth_client, admin_user, company_branch_manager_payload_factory
+    def test_create_dashboard_without_company_id_fail(
+        self, auth_client, admin_user, company_branch_manager_payload_factory
     ):
         payload = company_branch_manager_payload_factory()
         payload.pop("company_id")

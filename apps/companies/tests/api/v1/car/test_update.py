@@ -7,7 +7,6 @@ from apps.companies.models.company_models import Car
 from apps.companies.tests.api.v1.car.helpers import car_detail_url
 from apps.companies.tests.helpers import set_balance
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 

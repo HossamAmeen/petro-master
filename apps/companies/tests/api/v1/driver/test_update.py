@@ -5,7 +5,6 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -15,8 +14,9 @@ def driver_detail_url(driver_id):
 
 class TestDriverUpdate:
 
-
-    def test_partial_update_without_authentication_fail(self, api_client, company_driver):
+    def test_partial_update_without_authentication_fail(
+        self, api_client, company_driver
+    ):
         response = api_client.patch(
             driver_detail_url(company_driver.id),
             {"name": "Updated Driver"},
@@ -25,8 +25,8 @@ class TestDriverUpdate:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_partial_update_company_driver_success(self,
+    def test_partial_update_company_driver_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -43,8 +43,8 @@ class TestDriverUpdate:
         assert company_driver.name == "Updated Driver"
         assert company_driver.updated_by_id == company_owner.id
 
-
-    def test_partial_update_code_ignored_success(self,
+    def test_partial_update_code_ignored_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -62,8 +62,8 @@ class TestDriverUpdate:
         company_driver.refresh_from_db()
         assert company_driver.code == original_code
 
-
-    def test_partial_update_outside_company_scope_fail(self,
+    def test_partial_update_outside_company_scope_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -82,8 +82,8 @@ class TestDriverUpdate:
         other_driver.refresh_from_db()
         assert other_driver.name != "Forbidden"
 
-
-    def test_partial_update_duplicate_license_number_fail(self,
+    def test_partial_update_duplicate_license_number_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -102,8 +102,8 @@ class TestDriverUpdate:
         company_driver.refresh_from_db()
         assert company_driver.lincense_number != other_driver.lincense_number
 
-
-    def test_full_update_driver_success(self,
+    def test_full_update_driver_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -131,8 +131,8 @@ class TestDriverUpdate:
         assert company_driver.phone_number == payload["phone_number"]
         assert company_driver.updated_by_id == company_owner.id
 
-
-    def test_full_update_missing_required_field_fail(self,
+    def test_full_update_missing_required_field_fail(
+        self,
         auth_client,
         company_owner,
         company,

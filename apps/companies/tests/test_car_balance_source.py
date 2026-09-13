@@ -6,7 +6,6 @@ from django.contrib import admin
 from apps.companies.models.company_models import Car
 from apps.companies.tests.helpers import set_balance
 
-
 pytestmark = pytest.mark.django_db
 
 

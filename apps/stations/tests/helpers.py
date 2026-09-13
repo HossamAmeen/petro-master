@@ -1,5 +1,5 @@
-from io import BytesIO
 from decimal import Decimal
+from io import BytesIO
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse

@@ -16,7 +16,9 @@ class TestStationKhaznaTransactionList:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_list_company_role_forbidden_fail(self, auth_client, company_owner, company):
+    def test_list_company_role_forbidden_fail(
+        self, auth_client, company_owner, company
+    ):
         response = auth_client(company_owner, company_id=company.id).get(
             station_transaction_list_url()
         )
@@ -83,7 +85,9 @@ class TestStationKhaznaTransactionList:
         So a branch manager sees every transaction for the whole station,
         including branches they do not manage (unlike
         `CompanyBranchManager`, which is scoped per-branch)."""
-        managed_branch_tx = station_transaction_factory(station=station, station_branch=branch)
+        managed_branch_tx = station_transaction_factory(
+            station=station, station_branch=branch
+        )
         other_branch_tx = station_transaction_factory(
             station=station, station_branch=second_station_branch
         )
@@ -106,7 +110,9 @@ class TestStationKhaznaTransactionList:
         other_station_branch,
         station_transaction_factory,
     ):
-        own_station_tx = station_transaction_factory(station=station, station_branch=branch)
+        own_station_tx = station_transaction_factory(
+            station=station, station_branch=branch
+        )
         other_station_tx = station_transaction_factory(
             station=other_station, station_branch=other_station_branch
         )

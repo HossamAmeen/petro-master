@@ -9,9 +9,7 @@ from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.operation_model import CarOperation
 from apps.stations.tests.helpers import reports_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
-
 
 
 class TestStationReports:
@@ -20,13 +18,12 @@ class TestStationReports:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["admin_user", "company_owner"],
     )
-    def test_reports_forbidden_role_fail(self,
-        role_fixture, request, auth_client, company, station
+    def test_reports_forbidden_role_fail(
+        self, role_fixture, request, auth_client, company, station
     ):
         user = request.getfixturevalue(role_fixture)
         client_kwargs = {}
@@ -37,8 +34,8 @@ class TestStationReports:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-    def test_reports_owner_aggregates_operations_and_cash_success(self,
+    def test_reports_owner_aggregates_operations_and_cash_success(
+        self,
         auth_client,
         station_owner,
         station,
@@ -87,19 +84,24 @@ class TestStationReports:
         assert Decimal(str(response.data["cash_request_balance"])) == Decimal("75.00")
         by_service = {row["service"]: row for row in response.data["operations"]}
         assert by_service[gas_operation.service_id]["count"] == 1
-        assert Decimal(str(by_service[gas_operation.service_id]["total_balance"])) == Decimal(
-            "100.00"
-        )
+        assert Decimal(
+            str(by_service[gas_operation.service_id]["total_balance"])
+        ) == Decimal("100.00")
         assert Decimal(str(by_service[gas_operation.service_id]["amount"])) == Decimal(
             "10.00"
         )
-        assert by_service[gas_operation.service_id]["service_name"] == gas_operation.service.name
+        assert (
+            by_service[gas_operation.service_id]["service_name"]
+            == gas_operation.service.name
+        )
         assert by_service[other_service.id]["count"] == 1
-        assert Decimal(str(by_service[other_service.id]["total_balance"])) == Decimal("40.00")
+        assert Decimal(str(by_service[other_service.id]["total_balance"])) == Decimal(
+            "40.00"
+        )
         assert wash.id  # created for aggregation
 
-
-    def test_reports_worker_sees_own_ops_and_approved_cash_success(self,
+    def test_reports_worker_sees_own_ops_and_approved_cash_success(
+        self,
         auth_client,
         station_worker,
         second_station_worker,
@@ -146,8 +148,8 @@ class TestStationReports:
         }
         assert totals[gas_operation.service_id] == Decimal("80.00")
 
-
-    def test_reports_branch_manager_excludes_other_branch_success(self,
+    def test_reports_branch_manager_excludes_other_branch_success(
+        self,
         auth_client,
         branch_manager,
         station,
@@ -171,9 +173,8 @@ class TestStationReports:
         }
         assert totals[gas_operation.service_id] == Decimal("25.00")
 
-
-    def test_reports_date_from_excludes_older_ops_success(self,
-        auth_client, station_owner, station, gas_operation, car_operation_factory
+    def test_reports_date_from_excludes_older_ops_success(
+        self, auth_client, station_owner, station, gas_operation, car_operation_factory
     ):
         old = car_operation_factory(station_cost=Decimal("15.00"))
         CarOperation.objects.filter(id=old.id).update(
@@ -194,9 +195,8 @@ class TestStationReports:
         }
         assert totals.get(gas_operation.service_id) == Decimal("10.00")
 
-
-    def test_reports_date_to_excludes_newer_ops_success(self,
-        auth_client, station_owner, station, gas_operation, car_operation_factory
+    def test_reports_date_to_excludes_newer_ops_success(
+        self, auth_client, station_owner, station, gas_operation, car_operation_factory
     ):
         older = car_operation_factory(station_cost=Decimal("40.00"))
         CarOperation.objects.filter(id=older.id).update(
@@ -207,7 +207,10 @@ class TestStationReports:
         cutoff = (timezone.localdate() - timedelta(days=1)).isoformat()
 
         response = auth_client(station_owner, station_id=station.id).get(
-            reports_url(date_from=(timezone.localdate() - timedelta(days=10)).isoformat(), date_to=cutoff)
+            reports_url(
+                date_from=(timezone.localdate() - timedelta(days=10)).isoformat(),
+                date_to=cutoff,
+            )
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -217,8 +220,9 @@ class TestStationReports:
         assert Decimal("40.00") in balances
         assert Decimal("10.00") not in balances
 
-
-    def test_reports_empty_when_no_ops_success(self, auth_client, station_owner, station):
+    def test_reports_empty_when_no_ops_success(
+        self, auth_client, station_owner, station
+    ):
         response = auth_client(station_owner, station_id=station.id).get(reports_url())
 
         assert response.status_code == status.HTTP_200_OK
@@ -226,9 +230,8 @@ class TestStationReports:
         assert Decimal(str(response.data["cash_request_balance"])) == Decimal("0")
         assert response.data["operations"] == []
 
-
-    def test_reports_time_window_success(self,
-        auth_client, station_owner, station, gas_operation
+    def test_reports_time_window_success(
+        self, auth_client, station_owner, station, gas_operation
     ):
         gas_operation.station_cost = Decimal("12.00")
         gas_operation.save(update_fields=["station_cost"])
@@ -247,7 +250,6 @@ class TestStationReports:
             for row in inside.data["operations"]
         }
         assert inside_totals.get(gas_operation.service_id) == Decimal("12.00")
-
 
     def test_reports_forbidden_finance_fail(self, auth_client, finance_user, station):
         response = auth_client(finance_user, station_id=station.id).get(reports_url())

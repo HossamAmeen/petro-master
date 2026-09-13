@@ -1,5 +1,9 @@
 # Petro Master Backend Guide
 
+## Formatting
+
+- Run `make format` on your changes and make sure `make check` passes (activate the venv first: `source venv/bin/activate && make check`). black and isort are configured in `pyproject.toml`, flake8 in `.flake8`.
+
 ## Testing
 
 - Use `pytest` with `pytest-django`; run the suite with `venv/bin/python -m pytest`.

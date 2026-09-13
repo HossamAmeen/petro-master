@@ -4,7 +4,6 @@ from rest_framework import status
 
 from apps.companies.models.company_models import Driver
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -19,8 +18,9 @@ REQUIRED_FIELDS = [
 
 class TestDriverCreate:
 
-
-    def test_create_without_authentication_fail(self, api_client, driver_payload_factory):
+    def test_create_without_authentication_fail(
+        self, api_client, driver_payload_factory
+    ):
         response = api_client.post(
             reverse("drivers-list"),
             driver_payload_factory(),
@@ -30,8 +30,8 @@ class TestDriverCreate:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert Driver.objects.count() == 0
 
-
-    def test_create_driver_success(self,
+    def test_create_driver_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -55,8 +55,8 @@ class TestDriverCreate:
         assert created_driver.created_by_id == company_owner.id
         assert created_driver.code
 
-
-    def test_create_as_branch_manager_success(self,
+    def test_create_as_branch_manager_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -76,9 +76,9 @@ class TestDriverCreate:
         assert created_driver.branch == company_branch
         assert created_driver.created_by_id == company_branch_manager.id
 
-
     @pytest.mark.parametrize("missing_field", REQUIRED_FIELDS)
-    def test_create_missing_required_field_fail(self,
+    def test_create_missing_required_field_fail(
+        self,
         missing_field,
         auth_client,
         company_owner,
@@ -97,8 +97,8 @@ class TestDriverCreate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert Driver.objects.count() == 0
 
-
-    def test_create_submitted_code_ignored_success(self,
+    def test_create_submitted_code_ignored_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -116,8 +116,8 @@ class TestDriverCreate:
         created_driver = Driver.objects.get(pk=response.data["id"])
         assert created_driver.code != "CLIENTCODE"
 
-
-    def test_create_duplicate_license_number_fail(self,
+    def test_create_duplicate_license_number_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -125,7 +125,9 @@ class TestDriverCreate:
         driver_payload_factory,
     ):
         existing_driver = driver_factory()
-        payload = driver_payload_factory(lincense_number=existing_driver.lincense_number)
+        payload = driver_payload_factory(
+            lincense_number=existing_driver.lincense_number
+        )
 
         response = auth_client(company_owner, company_id=company.id).post(
             reverse("drivers-list"),
@@ -134,10 +136,12 @@ class TestDriverCreate:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert Driver.objects.filter(
-            lincense_number=existing_driver.lincense_number
-        ).count() == 1
-
+        assert (
+            Driver.objects.filter(
+                lincense_number=existing_driver.lincense_number
+            ).count()
+            == 1
+        )
 
     @pytest.mark.parametrize(
         ("field", "invalid_value"),
@@ -148,7 +152,8 @@ class TestDriverCreate:
             ("branch", 999_999),
         ],
     )
-    def test_create_invalid_field_fail(self,
+    def test_create_invalid_field_fail(
+        self,
         field,
         invalid_value,
         auth_client,

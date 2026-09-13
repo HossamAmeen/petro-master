@@ -7,7 +7,9 @@ pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestStationKhaznaTransactionRetrieve:
-    def test_retrieve_unauthenticated_fail(self, api_client, station_transaction_factory):
+    def test_retrieve_unauthenticated_fail(
+        self, api_client, station_transaction_factory
+    ):
         tx = station_transaction_factory()
 
         response = api_client.get(station_transaction_detail_url(tx.id))

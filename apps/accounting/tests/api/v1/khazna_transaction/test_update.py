@@ -32,7 +32,9 @@ class TestKhaznaTransactionUpdate:
     def test_update_status_success(
         self, auth_client, admin_user, khazna_transaction_factory
     ):
-        tx = khazna_transaction_factory(status=KhaznaTransaction.TransactionStatus.PENDING)
+        tx = khazna_transaction_factory(
+            status=KhaznaTransaction.TransactionStatus.PENDING
+        )
 
         response = auth_client(admin_user).patch(
             transaction_detail_url(tx.id), {"status": "approved"}, format="json"

@@ -11,14 +11,14 @@ from apps.auth.tests.helpers import (
 from apps.companies.factories import UserFactory
 from apps.users.models import User
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestPasswordResetRequest:
 
-
-    def test_password_reset_request_sends_email_for_active_user_success(self, api_client):
+    def test_password_reset_request_sends_email_for_active_user_success(
+        self, api_client
+    ):
         user = UserFactory()
 
         response = api_client.post(
@@ -40,7 +40,6 @@ class TestPasswordResetRequest:
         assert user.reset_password_token in html_body
         assert "password-reset-confirm" in html_body
 
-
     def test_password_reset_request_unknown_email_fail(self, api_client):
         response = api_client.post(
             password_reset_request_url(),
@@ -52,7 +51,6 @@ class TestPasswordResetRequest:
         assert response.data["code"] == "user_not_found"
         assert response.data["message"] == "لاي يوجد مستخدم, الرجاء التواصل مع المسؤول."
         assert mail.outbox == []
-
 
     def test_password_reset_request_inactive_user_fail(self, api_client):
         user = UserFactory(is_active=False)
@@ -69,7 +67,6 @@ class TestPasswordResetRequest:
         assert user.reset_password_token is None
         assert mail.outbox == []
 
-
     def test_password_reset_request_invalid_email_fail(self, api_client):
         response = api_client.post(
             password_reset_request_url(),
@@ -81,13 +78,11 @@ class TestPasswordResetRequest:
         assert response.data["code"] == "validation_error"
         assert mail.outbox == []
 
-
     def test_password_reset_request_missing_email_fail(self, api_client):
         response = api_client.post(password_reset_request_url(), {}, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "validation_error"
-
 
     def test_password_reset_request_send_mail_failure_fail(self, api_client):
         user = UserFactory()
@@ -110,7 +105,6 @@ class TestPasswordResetRequest:
         assert user.reset_password_token
         assert mail.outbox == []
 
-
     def test_password_reset_request_replaces_existing_token_success(self, api_client):
         user = UserFactory()
         first_token = user.create_password_reset_token()
@@ -126,14 +120,14 @@ class TestPasswordResetRequest:
         assert user.reset_password_token
         assert user.reset_password_token != first_token
 
-
     def test_password_reset_request_get_method_fail(self, api_client):
         response = api_client.get(password_reset_request_url())
 
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
-
-    def test_password_reset_request_company_owner_success(self, api_client, company_owner):
+    def test_password_reset_request_company_owner_success(
+        self, api_client, company_owner
+    ):
         set_login_password(company_owner)
 
         response = api_client.post(

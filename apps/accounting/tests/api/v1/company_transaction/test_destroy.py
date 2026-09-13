@@ -41,7 +41,12 @@ class TestCompanyKhaznaTransactionDestroy:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_destroy_dashboard_user_success(
-        self, auth_client, admin_user, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         tx = company_transaction_factory(company=company, company_branch=company_branch)
 
@@ -51,7 +56,12 @@ class TestCompanyKhaznaTransactionDestroy:
         assert not CompanyKhaznaTransaction.objects.filter(id=tx.id).exists()
 
     def test_destroy_company_owner_can_delete_own_company_transaction_success(
-        self, auth_client, company_owner, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        company_owner,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         tx = company_transaction_factory(company=company, company_branch=company_branch)
 
@@ -82,7 +92,12 @@ class TestCompanyKhaznaTransactionDestroy:
         assert CompanyKhaznaTransaction.objects.filter(id=tx.id).exists()
 
     def test_destroy_does_not_reverse_balance_success(
-        self, auth_client, admin_user, company, company_branch, company_transaction_factory
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
     ):
         """Deleting an approved transaction does not refund the balance
         change it caused; balance mutation only happens on create/update."""
