@@ -7,16 +7,18 @@ from apps.companies.api.v1.serializers.branch_serializers import (
     SingleBranchWithDistrictSerializer,
 )
 from apps.companies.models.company_models import Driver
+from apps.users.v1.serializers.user_serializers import SingleUserSerializer
 
 
 class ListDriverSerializer(serializers.ModelSerializer):
     branch = SingleBranchWithDistrictSerializer()
     is_license_expiring_soon = serializers.SerializerMethodField()
     company_name = serializers.CharField(source="branch.company.name")
+    created_by = SingleUserSerializer(read_only=True)
 
     class Meta:
         model = Driver
-        exclude = ("created_by", "updated_by")
+        exclude = ("updated_by",)
 
     def get_is_license_expiring_soon(self, obj):
         if obj.lincense_expiration_date:

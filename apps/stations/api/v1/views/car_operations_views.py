@@ -82,7 +82,7 @@ class StationGasOperationAPIView(APIView):
                     car_opertion.service.cost * (car.branch.fees / 100)
                     + car_opertion.service.cost
                 )
-                available_liters = math.floor(car.balance / company_liter_cost)
+                available_liters = math.floor(car.available_balance / company_liter_cost)
                 available_liters = min(car_tank_capacity, available_liters)
                 if serializer.validated_data["amount"] > available_liters:
                     raise CustomValidationError(
@@ -129,8 +129,8 @@ class StationGasOperationAPIView(APIView):
 
                 car.is_blocked_balance_update = False
                 car.last_meter = car_opertion.car_meter
-                car.balance = car.balance - company_cost
                 car.save()
+                car.deduct_balance(company_cost)
 
                 company_id = car.branch.company_id
                 notification_users = list(
@@ -303,7 +303,7 @@ class StationOtherOperationAPIView(APIView):
                 * company_branch.other_service_fees
                 / 100
             ) + serializer.validated_data["cost"]
-            if car.balance < company_cost:
+            if car.available_balance < company_cost:
                 raise CustomValidationError(
                     {"error": "السيارة لا تمتلك كافٍ من المال"},
                     code="not_enough_balance",
@@ -311,8 +311,8 @@ class StationOtherOperationAPIView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
             car.is_blocked_balance_update = False
-            car.balance = car.balance - company_cost
             car.save()
+            car.deduct_balance(company_cost)
 
             station_cost = serializer.validated_data["cost"] - (
                 serializer.validated_data["cost"]

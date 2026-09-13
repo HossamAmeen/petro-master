@@ -1,0 +1,57 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; <a href="{% url opts|admin_urlname:'change' original.pk|admin_urlquote %}">{{ original.code }}</a>
+    &rsaquo; {% trans 'Clone' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <form method="post">{% csrf_token %}
+        <div>
+            <fieldset class="module aligned">
+                <h2>{% blocktrans with code=original.code %}Source operation {{ code }}{% endblocktrans %}</h2>
+                <div class="form-row"><label>{% trans 'Car' %}:</label> <div class="readonly">{{ original.car }}</div></div>
+                <div class="form-row"><label>{% trans 'Driver' %}:</label> <div class="readonly">{{ original.driver }}</div></div>
+                <div class="form-row"><label>{% trans 'Station branch' %}:</label> <div class="readonly">{{ original.station_branch }}</div></div>
+                <div class="form-row"><label>{% trans 'Service' %}:</label> <div class="readonly">{{ original.service|default:'-' }}</div></div>
+                <div class="form-row"><label>{% trans 'Status' %}:</label> <div class="readonly">{{ original.get_status_display }}</div></div>
+                <div class="form-row"><label>{% trans 'Amount' %}:</label> <div class="readonly">{{ original.amount }} {{ original.unit }}</div></div>
+                <div class="form-row"><label>{% trans 'Cost' %}:</label> <div class="readonly">{{ original.cost }}</div></div>
+                <div class="form-row"><label>{% trans 'Company cost' %}:</label> <div class="readonly">{{ original.company_cost }}</div></div>
+                <div class="form-row"><label>{% trans 'Station cost' %}:</label> <div class="readonly">{{ original.station_cost }}</div></div>
+                <div class="form-row"><label>{% trans 'Profits' %}:</label> <div class="readonly">{{ original.profits }}</div></div>
+            </fieldset>
+
+            <fieldset class="module aligned">
+                <h2>{% trans 'New operation' %}</h2>
+                <p class="help">
+                    {% blocktrans with code=original.code %}
+                    All data is copied from operation {{ code }}. Enter the new amount and
+                    the cost, company cost, station cost and profits are recalculated.
+                    {% endblocktrans %}
+                </p>
+                {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+                <div class="form-row{% if form.amount.errors %} errors{% endif %}">
+                    {{ form.amount.errors }}
+                    <div>
+                        <label class="required" for="{{ form.amount.id_for_label }}">{{ form.amount.label }}:</label>
+                        {{ form.amount }}
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="submit-row">
+                <input type="submit" value="{% trans 'Clone' %}" class="default">
+                <a href="{% url opts|admin_urlname:'changelist' %}" class="closelink">{% trans 'Cancel' %}</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

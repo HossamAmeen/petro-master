@@ -8,6 +8,7 @@
 - Reuse factories from `apps/companies/factories.py`; add a factory before repeating model setup in tests.
 - API tests must cover successful requests and relevant authentication, authorization, validation, and ownership boundaries.
 - Wrap tests in a `Test*` class per module. Keep `pytestmark`, URL helpers, and non-test helpers at module level. Method names end in `_success` or `_fail`.
+- Keep code shared by the tests in a class in a setup method on that class, not repeated in every test. Use an autouse fixture named `setup` when it needs fixtures or the database (`setup_method` cannot request fixtures); use plain `setup_method` only for fixture-free setup. Put only what most tests in the class need in it, never assert in it, and leave anything one or two tests need in those tests.
 - Exercise application code against the test database. Mock only network-bound third-party adapters, such as Firebase Cloud Messaging and email/SMS providers.
 - Car API tests live in `apps/companies/tests/api/v1/car/`, with one module per CRUD action plus custom-action modules (`test_update_balance.py`, `test_verify_driver.py`). Wrap tests in a `Test*` class; method names end in `_success` or `_fail`.
 - Reuse `car_factory`, `car_code_factory`, `car_payload_factory`, `company_car`, and `car_operation_factory` from `apps/companies/tests/conftest.py` instead of creating car graphs inside tests.
@@ -35,7 +36,8 @@
 ## API conventions
 
 - Tests target the versioned `/api/v1/` endpoints and use DRF's `APIClient`.
-- Set `company_id` or `station_id` JWT claims through the shared `auth_client` fixture for scoped endpoints.
+- Set `company_id` or `station_id` JWT claims through the shared `auth_client` fixture for scoped endpoints. `auth_client(user, ...)` returns a fresh authenticated client per call; `api_client` is always the unauthenticated one, so a class can build `self.client` in `setup` and still assert 401s with `api_client`.
+- Shared test helpers: `set_balance` in `apps/companies/tests/helpers.py`, car URL builders in `apps/companies/tests/api/v1/car/helpers.py`, and station helpers (`worker_client`, `gas_url`, `other_url`, `fund_balance_source`, cost helpers) in `apps/stations/tests/helpers.py`. Import them instead of redefining them per module.
 - Auth API tests live in `apps/auth/tests/`, with one module per endpoint (`test_company_login.py`, `test_station_login.py`, `test_dashboard_login.py`, `test_profile.py`, `test_password_reset_request.py`, `test_password_reset_confirm.py`, `test_token_refresh.py`) plus `test_utils.py` for SendGrid. Wrap tests in a `Test*` class; method names end in `_success` or `_fail`.
 - Reuse `company_owner`, `company_branch_manager`, `station_owner`, `branch_manager`, `station_worker`, and dashboard user fixtures. Hash passwords with `set_login_password` before login assertions — most user fixtures store a raw password string.
 - Company login is owner/branch-manager only and embeds `company_id` plus all company branch IDs. Station login is owner/manager/worker and embeds `station_id` (workers via `worker.station_branch.station_id`). Dashboard login is admin/finance/customer_support only. Wrong-role, inactive, and unknown-identifier attempts return 401 `invalid_credentials`.
@@ -76,6 +78,28 @@ Do not populate a branch dropdown with every branch in the system. Always scope 
 When writing tests (especially using Pytest) for this project, you **must** adhere to the following senior backend standards:
 - **URL Resolution**: Always use `django.urls.reverse` (e.g. `reverse("station-home")`) for endpoints. Never hardcode API URL strings.
 - **Test classes**: Put tests in a `Test*` class per module. Keep `pytestmark` and helpers at module level. Method names end in `_success` or `_fail`.
+- **Setup method**: Hold the code a class's tests share in a setup method on the class rather than repeating it per test. Use an autouse fixture named `setup` when it needs fixtures or the database — `setup_method` cannot request fixtures — and reserve plain `setup_method` for fixture-free setup (constants, payload templates). pytest builds a fresh instance per test, so `self` attributes never leak between tests.
+
+```python
+class TestCarUpdateBalance:
+    @pytest.fixture(autouse=True)
+    def setup(self, auth_client, company_owner, company, company_car):
+        self.company = company
+        self.car = company_car
+        self.client = auth_client(company_owner, company_id=company.id)
+        self.url = update_balance_url(company_car.id)
+
+    def test_add_balance_success(self):
+        set_balance(self.company, "100.00")
+
+        response = self.client.post(
+            self.url, {"amount": "40.00", "type": "add"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+```
+
+  Keep in setup only what most tests in the class need, never assert in it, and let each test still read as Arrange–Act–Assert.
 - **Comprehensive Coverage**: Tests must cover all logical edge cases. Do not just test validation errors; ensure you test the full "happy path" (successful creation, balance deductions, profits). Test different permission layers for user roles (Owner vs Manager vs Worker).
 - **Avoid Repetition**: Utilize `@pytest.mark.parametrize` where applicable to test multiple roles or conditions within the same test method.
 - **Fixture Reusability**: Do not duplicate data creation in test methods. Create and utilize standard fixtures in `conftest.py` that fully model business requirements (e.g. `company`, `car`, `car_operation`).
@@ -112,6 +136,27 @@ The `companies` app (`apps/companies`) manages company accounts, branches, cars,
   - **`create`**: Initiates a request, proactively deducting the total cost (amount + company fees) from the company/branch balance and notifying owners.
   - **`partial_update`**: Used by Station Workers to approve an in-progress request (validating via OTP). Finalizes the workflow, deducts station costs (amount + station fees) from the station branch balance, logs transactions for both the company and the station, and sends out notifications.
   - **`destroy`**: Cancels a pending request, changes its status to `REJECTED`, and refunds the deducted balance back to the company or branch.
+
+## Accounting App Overview
+
+The `accounting` app (`apps/accounting`) tracks khazna (cash-box) transactions for companies and stations.
+
+### Models (`apps/accounting/models.py`)
+- **`KhaznaTransaction`**: Concrete base model (multi-table inheritance). `is_incoming=True` **decreases** the linked balance; `False` increases it (`update_company_balance`/`update_station_balance`).
+- **`CompanyKhaznaTransaction`**: Adds `company` (required FK) and `company_branch` (nullable FK) plus `for_what`.
+- **`StationKhaznaTransaction`**: Adds `station` (required FK) and `station_branch` (nullable FK).
+
+### Views (`apps/accounting/api/v1/views.py`)
+- **`KhaznaTransactionViewSet`**: `IsAuthenticated` only, full CRUD, no `InjectUserMixin` — clients must supply `created_by` themselves. `get_queryset` only special-cases `CompanyOwner`/`CompanyBranchManager` by filtering `.filter(company=...)`, but the base model has no `company` field, so those two roles get an unhandled `FieldError` (500), not a scoped list. Every other authenticated role (dashboard, station roles) gets the fully unscoped queryset.
+- **`CompanyKhaznaTransactionViewSet`**: `EitherPermission([CompanyPermission, DashboardPermission])` for every action (create/update/destroy included — no per-action override). Owners are scoped to their company; branch managers to `company_branch__managers__user_id` (their specific branch only). `CreateCompanyKhaznaTransactionSerializer` redeclares `company_branch` as `required=True`, so branch-less company-level charges cannot be created through the API. On `status=APPROVED`, it deducts/credits the branch (or company, if no branch) balance and notifies branch managers (or company owners).
+- **`StationKhaznaTransactionViewSet`**: `EitherPermission([StationPermission, DashboardPermission])`. Station owners scoped to their station; **station branch managers are scoped to the whole station** (`station__branches__managers__user`), not just their managed branch — unlike the company side; workers are scoped to `created_by=self.request.user`.
+- **Known bug (both `Update*Serializer`s)**: `validate()` does `attrs["company_branch"]` / `attrs["station_branch"]` with direct indexing, not `.get()`. Since that field is not required on partial update, a typical approve/decline PATCH like `{"status": "approved"}` that omits the branch raises an unhandled `KeyError` (500) instead of a clean validation error.
+- Deleting a transaction never reverses the balance change it caused — mutation only happens in `create`/`partial_update`.
+
+### Testing (`apps/accounting/tests/`)
+- Tests live in `apps/accounting/tests/api/v1/`, one package per viewset (`khazna_transaction`, `company_transaction`, `station_transaction`), each with `helpers.py` plus `test_list.py` / `test_retrieve.py` / `test_create.py` / `test_update.py` / `test_destroy.py`. Wrap tests in a `Test*` class; method names end in `_success` or `_fail`.
+- `apps/accounting/tests/conftest.py` adds `khazna_transaction_factory` and `station_transaction_factory` (no model factory existed for the station side); reuse `company_transaction_factory` from `apps/companies/tests/conftest.py`.
+- The known `KeyError`/`FieldError` bugs above are asserted with `pytest.raises`, per the "assert actual behavior" standard — do not silently "fix" the test by avoiding the buggy payload shape.
 
 ## Auth App Overview
 

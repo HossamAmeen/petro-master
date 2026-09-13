@@ -1,21 +1,28 @@
 from datetime import datetime, time, timedelta
+from decimal import Decimal
 
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.options import IncorrectLookupParameters
+from django.contrib.admin.utils import unquote
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Count, DecimalField, F, OuterRef, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
+from django.http import Http404, JsonResponse
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from apps.companies.models.operation_model import CarOperation, MonthlyInventory
+from apps.companies.operation_clone import CloneError, clone_car_operation
 from apps.companies.models.ai_api_response_model import AIApiResponse
 from apps.geo.models import District
 from apps.shared.generate_code import generate_unique_code
 from apps.stations.models.service_models import Service
+from apps.stations.models.stations_models import StationBranch
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, CarCode, Company, CompanyBranch, Driver
@@ -311,6 +318,7 @@ class CarAdmin(admin.ModelAdmin):
         "permitted_fuel_amount",
         "fuel_type",
         "balance",
+        "balance_source",
         "branch",
         "company_name",
         "operations_link",
@@ -330,6 +338,7 @@ class CarAdmin(admin.ModelAdmin):
         "is_with_odometer",
         "tank_capacity",
         "fuel_type",
+        "balance_source",
         "city",
         "branch",
         "branch__company",
@@ -696,19 +705,47 @@ class CreatedDateRangeFilter(admin.SimpleListFilter):
         return queryset
 
 
-class StationBranchListFilter(admin.RelatedFieldListFilter):
+STATION_PARENT_FILTER = "station_branch__station"
+
+
+def station_branch_options(station_id):
     """
-    `StationBranch.__str__` reads `station.name`, so the stock filter runs one
-    query per option while building the dropdown. Build the choices from a
-    single joined query instead.
+    (pk, label) pairs for one station. `select_related` keeps
+    `StationBranch.__str__`, which reads `station.name`, from querying per row.
+    """
+    branches = (
+        StationBranch.objects.filter(station_id=station_id)
+        .select_related("station")
+        .order_by("name")
+    )
+    return [(branch.pk, str(branch)) for branch in branches]
+
+
+class StationBranchByStationListFilter(admin.RelatedFieldListFilter):
+    """
+    Branch dropdown scoped to the station chosen in the `STATION_PARENT_FILTER`
+    filter, loaded over AJAX. Never lists every branch in the system.
     """
 
+    template = "admin/accounting/dependent_branch_filter.html"
+
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+        self.parent_filter = STATION_PARENT_FILTER
+        self.branches_url = reverse(
+            "admin:companies_monthlyinventory_branches_by_station"
+        )
+
+    def has_output(self):
+        # render the empty select anyway, so picking a station fills it over
+        # AJAX instead of requiring a Search round trip
+        return True
+
     def field_choices(self, field, request, model_admin):
-        ordering = self.field_admin_ordering(field, request, model_admin)
-        queryset = field.remote_field.model._default_manager.select_related("station")
-        if ordering:
-            queryset = queryset.order_by(*ordering)
-        return [(branch.pk, str(branch)) for branch in queryset]
+        station_id = request.GET.get(f"{STATION_PARENT_FILTER}__id__exact")
+        if not station_id:
+            return []
+        return station_branch_options(station_id)
 
 
 @admin.register(AIApiResponse)
@@ -821,6 +858,18 @@ class AIApiResponseAdmin(admin.ModelAdmin):
         obj.updated_by = request.user
         obj.save()
 
+
+class CloneCarOperationForm(forms.Form):
+    """Only the amount is editable; every other field is copied as-is."""
+
+    amount = forms.DecimalField(
+        label=_("Amount"),
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+    )
+
+
 @admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
@@ -877,6 +926,7 @@ class CarOperationAdmin(admin.ModelAdmin):
         "worker",
         "service",
         "branch_company",
+        "clone_button",
     )
     search_fields = ("code", "car__code", "car__plate_number")
     list_filter = (
@@ -900,6 +950,85 @@ class CarOperationAdmin(admin.ModelAdmin):
 
     branch_company.short_description = "Company"
 
+    def clone_url_name(self):
+        # named per concrete admin so the MonthlyInventory proxy does not
+        # register a second url under the CarOperation name
+        return f"{self.opts.app_label}_{self.opts.model_name}_clone"
+
+    def clone_button(self, obj):
+        url = reverse(f"admin:{self.clone_url_name()}", args=[obj.pk])
+        return format_html('<a class="button" href="{}">{}</a>', url, _("Clone"))
+
+    clone_button.short_description = _("Clone")
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "<path:object_id>/clone/",
+                self.admin_site.admin_view(self.clone_view),
+                name=self.clone_url_name(),
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def clone_view(self, request, object_id):
+        """
+        Duplicate one operation: every field is carried over untouched except
+        the amount, which is re-entered here and drives a fresh cost calculation.
+        """
+        obj = self.get_object(request, unquote(object_id))
+        if obj is None:
+            raise Http404(
+                _("Car operation with ID %(key)r does not exist.")
+                % {"key": object_id}
+            )
+        if not self.has_add_permission(request) or not self.has_view_permission(
+            request, obj
+        ):
+            raise PermissionDenied
+
+        if request.method == "POST":
+            form = CloneCarOperationForm(request.POST)
+            if form.is_valid():
+                try:
+                    clone = clone_car_operation(
+                        source=obj,
+                        amount=form.cleaned_data["amount"],
+                        user=request.user,
+                    )
+                except CloneError as error:
+                    form.add_error("amount", str(error))
+                else:
+                    self.log_addition(
+                        request,
+                        clone,
+                        [{"added": {"name": str(clone._meta.verbose_name)}}],
+                    )
+                    messages.success(
+                        request,
+                        f"تم إنشاء العملية {clone.code} كنسخة من العملية {obj.code}.",
+                    )
+                    return redirect(
+                        reverse(
+                            f"admin:{self.opts.app_label}_{self.opts.model_name}_change",
+                            args=[clone.pk],
+                        )
+                    )
+        else:
+            form = CloneCarOperationForm(initial={"amount": obj.amount})
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": _("Clone operation %(code)s") % {"code": obj.code},
+            "opts": self.opts,
+            "original": obj,
+            "form": form,
+            "media": self.media + form.media,
+        }
+        return TemplateResponse(
+            request, "admin/companies/caroperation/clone_form.html", context
+        )
+
     def get_queryset(self, request):
         return (
             super()
@@ -913,6 +1042,7 @@ class CarOperationAdmin(admin.ModelAdmin):
                 "created_by",
             )
         )
+
 
 @admin.register(MonthlyInventory)
 class MonthlyInventoryAdmin(CarOperationAdmin):
@@ -930,7 +1060,8 @@ class MonthlyInventoryAdmin(CarOperationAdmin):
         CreatedDateRangeFilter,
         "status",
         "car__branch__company",
-        ("station_branch", StationBranchListFilter),
+        STATION_PARENT_FILTER,
+        ("station_branch", StationBranchByStationListFilter),
         "service",
     )
     # skips the extra unfiltered COUNT(*) over the whole operations table
@@ -938,6 +1069,32 @@ class MonthlyInventoryAdmin(CarOperationAdmin):
 
     def has_add_permission(self, request):
         return False
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "branches-by-station/",
+                self.admin_site.admin_view(self.branches_by_station),
+                name="companies_monthlyinventory_branches_by_station",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def branches_by_station(self, request):
+        """Options for the dependent station-branch filter."""
+        try:
+            station_id = int(request.GET.get(STATION_PARENT_FILTER, ""))
+        except (TypeError, ValueError):
+            return JsonResponse({"results": []})
+
+        return JsonResponse(
+            {
+                "results": [
+                    {"id": pk, "name": label}
+                    for pk, label in station_branch_options(station_id)
+                ]
+            }
+        )
 
     def get_queryset(self, request):
         # every relation touched by list_display, including the `station` that

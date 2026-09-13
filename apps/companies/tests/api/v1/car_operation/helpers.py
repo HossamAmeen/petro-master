@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.urls import reverse
 from rest_framework.fields import DateTimeField
 
+from apps.companies.tests.helpers import set_balance  # noqa: F401  (re-exported)
 from apps.shared.constants import COMPANY_ROLES, SERVICE_UNIT_CHOICES
 from apps.stations.models.service_models import Service
 
@@ -22,11 +23,6 @@ def operation_export_url():
 
 def operation_download_url():
     return reverse("car-operations-download-excel")
-
-
-def set_balance(instance, amount):
-    instance.balance = Decimal(amount)
-    instance.save(update_fields=["balance"])
 
 
 def returned_ids(response):

@@ -6,18 +6,27 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
+from apps.companies.models.company_models import Car
+from apps.companies.tests.helpers import set_balance  # noqa: F401  (re-exported)
 from apps.notifications.models import Notification
+
+
+def fund_balance_source(car, company_branch, company, balance_source, **overrides):
+    """Point the car at a holder and leave only that holder funded."""
+    car.balance_source = balance_source
+    car.balance = Decimal(overrides.get("car_balance", "0.00"))
+    car.save(update_fields=["balance_source", "balance"])
+    set_balance(company_branch, "0.00")
+    set_balance(company, "0.00")
+    holder = company_branch if balance_source == Car.BalanceSource.BRANCH else company
+    set_balance(holder, overrides.get("holder_balance", "1000.00"))
+    return holder
 
 
 def image_file(name="photo.png"):
     buffer = BytesIO()
     Image.new("RGB", (8, 8), color=(255, 0, 0)).save(buffer, format="PNG")
     return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
-
-
-def set_balance(instance, amount):
-    instance.balance = Decimal(amount)
-    instance.save(update_fields=["balance"])
 
 
 def worker_client(auth_client, station_worker, station):

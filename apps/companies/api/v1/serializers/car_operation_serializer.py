@@ -202,7 +202,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
                 if car.permitted_fuel_amount
                 else car.tank_capacity
             )
-            available_liters = math.floor(car.balance / liter_cost)
+            available_liters = math.floor(car.available_balance / liter_cost)
             available_liters = min(liters_count, available_liters)
         else:
             available_liters = 0
@@ -266,7 +266,7 @@ class CreateCarOperationSerializer(CarOperationSerializer):
         )
         service = validated_data["service"]
         company_liter_cost = service.cost * (car.branch.fees / 100) + service.cost
-        available_liters = math.floor(car.balance / company_liter_cost)
+        available_liters = math.floor(car.available_balance / company_liter_cost)
         available_liters = min(car_tank_capacity, available_liters)
         if validated_data["amount"] > available_liters:
             raise CustomValidationError(
@@ -302,8 +302,8 @@ class CreateCarOperationSerializer(CarOperationSerializer):
         )
 
         car.last_meter = validated_data["car_meter"]
-        car.balance = car.balance - validated_data["company_cost"]
         car.save()
+        car.deduct_balance(validated_data["company_cost"])
         request = self.context["request"]
         station_id = worker.station_branch.station_id
         if (

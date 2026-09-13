@@ -39,6 +39,7 @@ class TestDriverRetrieve:
         assert response.data["branch"]["id"] == company_driver.branch_id
         assert response.data["company_name"] == company.name
         assert response.data["is_license_expiring_soon"] is False
+        assert response.data["created_by"]["id"] == company_driver.created_by_id
 
 
     def test_retrieve_outside_company_scope_fail(self,

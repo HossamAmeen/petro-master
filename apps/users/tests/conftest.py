@@ -4,7 +4,15 @@ from uuid import uuid4
 import pytest
 
 from apps.stations.models.stations_models import Station, StationBranch
-from apps.users.models import CompanyUser, FirebaseToken, StationOwner, User, Worker
+from apps.users.models import (
+    Agent,
+    CompanyUser,
+    FirebaseToken,
+    StationOwner,
+    Supervisor,
+    User,
+    Worker,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -12,6 +20,82 @@ def disable_django_template_context_copy():
     """Django's test client copies template context; that copy fails on Python 3.14."""
     with patch("django.test.client.copy", side_effect=lambda value: value):
         yield
+
+
+@pytest.fixture
+def admin_user(db):
+    return User.objects.create(
+        name="Admin User",
+        phone_number="01000000000",
+        email="admin@example.com",
+        password="password123",
+        role=User.UserRoles.Admin,
+        is_staff=True,
+        is_superuser=True,
+    )
+
+
+@pytest.fixture
+def finance_user(db, admin_user):
+    return User.objects.create(
+        name="Finance User",
+        phone_number="01000000001",
+        email="finance@example.com",
+        password="password123",
+        role=User.UserRoles.Finance,
+        created_by=admin_user,
+    )
+
+
+@pytest.fixture
+def customer_support_user(db, admin_user):
+    return User.objects.create(
+        name="Customer Support User",
+        phone_number="01000000002",
+        email="support@example.com",
+        password="password123",
+        role=User.UserRoles.CustomerSupport,
+        created_by=admin_user,
+    )
+
+
+@pytest.fixture
+def driver_user(db, admin_user):
+    return User.objects.create(
+        name="Driver User",
+        phone_number="01000000003",
+        email="driver_user@example.com",
+        password="password123",
+        role=User.UserRoles.Driver,
+        created_by=admin_user,
+    )
+
+
+@pytest.fixture
+def supervisor(db, admin_user, geo_data):
+    sup = Supervisor.objects.create(
+        name="Supervisor User",
+        phone_number="01000000004",
+        email="supervisor@example.com",
+        password="password123",
+        created_by=admin_user,
+    )
+    sup.district.add(geo_data["district"])
+    return sup
+
+
+@pytest.fixture
+def agent(db, admin_user, supervisor, geo_data):
+    ag = Agent.objects.create(
+        name="Agent User",
+        phone_number="01000000009",
+        email="agent@example.com",
+        password="password123",
+        team_head=supervisor,
+        created_by=admin_user,
+    )
+    ag.district.add(geo_data["district"])
+    return ag
 
 
 @pytest.fixture
