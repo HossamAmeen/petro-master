@@ -9,6 +9,7 @@ from apps.companies.tests.api.v1.car_operation.helpers import (
     returned_ids,
 )
 from apps.stations.models.service_models import Service
+from apps.users.tests.helpers import user_ref
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
@@ -129,6 +130,21 @@ class TestCarOperationList:
         assert_operation_payload(wash_item, wash, station_worker, include_profits=True)
         assert wash_item["service_category"] == "خدمات أخرى"
         assert wash_item["unit"] == "وحدة"
+
+    def test_list_includes_created_by_and_updated_by_success(
+        self, auth_client, admin_user, finance_user, car_operation_factory
+    ):
+        edited = car_operation_factory(created_by=admin_user, updated_by=finance_user)
+        untouched = car_operation_factory(created_by=finance_user, updated_by=None)
+
+        response = auth_client(admin_user).get(operation_list_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        rows = {row["id"]: row for row in response.data["results"]}
+        assert rows[edited.id]["created_by"] == user_ref(admin_user)
+        assert rows[edited.id]["updated_by"] == user_ref(finance_user)
+        assert rows[untouched.id]["created_by"] == user_ref(finance_user)
+        assert rows[untouched.id]["updated_by"] is None
 
     @pytest.mark.parametrize("role_fixture", ["station_owner", "branch_manager"])
     def test_list_station_admin_roles_success(

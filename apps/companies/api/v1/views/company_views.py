@@ -102,7 +102,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.query_params.get("no_paginate", "").lower() != "true":
             self.queryset = (
-                self.queryset.select_related("district__city", "company")
+                self.queryset.select_related("district__city", "company", "created_by")
                 .prefetch_related("managers")
                 .annotate(
                     cars_count=Count("cars", distinct=True),

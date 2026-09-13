@@ -22,6 +22,7 @@ from apps.stations.api.v1.serializers import (
 from apps.stations.models.service_models import Service
 from apps.users.models import CompanyUser, StationOwner, User
 from apps.users.v1.serializers.station_serializer import WorkerWithBranchSerializer
+from apps.users.v1.serializers.user_serializers import SingleUserSerializer
 
 
 class ListCarOperationSerializer(serializers.ModelSerializer):
@@ -31,6 +32,8 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
     worker = WorkerWithBranchSerializer()
     service = ServiceNameSerializer()
     service_category = serializers.SerializerMethodField()
+    created_by = SingleUserSerializer()
+    updated_by = SingleUserSerializer()
 
     class Meta:
         model = CarOperation
@@ -59,6 +62,8 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             "fuel_image",
             "fuel_consumption_rate",
             "service_category",
+            "created_by",
+            "updated_by",
         ]
 
     def to_representation(self, instance):

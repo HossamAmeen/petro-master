@@ -265,6 +265,8 @@ class UpdateStationKhaznaTransactionSerializer(serializers.ModelSerializer):
 class ListStationKhaznaTransactionSerializer(serializers.ModelSerializer):
     station_branch = StationBranchWithDistrictSerializer(read_only=True)
     station = StationNameSerializer()
+    created_by = SingleUserSerializer(read_only=True)
+    updated_by = SingleUserSerializer(read_only=True)
 
     class Meta:
         model = StationKhaznaTransaction

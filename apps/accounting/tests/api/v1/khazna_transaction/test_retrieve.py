@@ -7,26 +7,31 @@ pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestKhaznaTransactionRetrieve:
-    def test_retrieve_unauthenticated_fail(
-        self, api_client, khazna_transaction_factory
-    ):
-        tx = khazna_transaction_factory()
+    @pytest.fixture(autouse=True)
+    def setup(self, auth_client, admin_user, khazna_transaction_factory):
+        self.auth_client = auth_client
+        self.admin_client = auth_client(admin_user)
+        self.create_transaction = khazna_transaction_factory
 
-        response = api_client.get(transaction_detail_url(tx.id))
+    def retrieve(self, pk, client=None):
+        return (client or self.admin_client).get(transaction_detail_url(pk))
+
+    def test_retrieve_unauthenticated_fail(self, api_client):
+        tx = self.create_transaction()
+
+        response = self.retrieve(tx.id, client=api_client)
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_retrieve_not_found_fail(self, auth_client, admin_user):
-        response = auth_client(admin_user).get(transaction_detail_url(999999))
+    def test_retrieve_not_found_fail(self):
+        response = self.retrieve(999999)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_retrieve_dashboard_user_success(
-        self, auth_client, admin_user, khazna_transaction_factory
-    ):
-        tx = khazna_transaction_factory(description="a note")
+    def test_retrieve_dashboard_user_success(self):
+        tx = self.create_transaction(description="a note")
 
-        response = auth_client(admin_user).get(transaction_detail_url(tx.id))
+        response = self.retrieve(tx.id)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == tx.id
@@ -35,16 +40,13 @@ class TestKhaznaTransactionRetrieve:
         assert response.data["description"] == "a note"
         assert response.data["created_by"] == tx.created_by_id
 
-    def test_retrieve_station_worker_success(
-        self, auth_client, station_worker, branch, khazna_transaction_factory
-    ):
+    def test_retrieve_station_worker_success(self, station_worker, branch):
         """Station roles are not scoped by `KhaznaTransactionViewSet`, so a
         worker can retrieve any transaction by id."""
-        tx = khazna_transaction_factory()
+        tx = self.create_transaction()
+        client = self.auth_client(station_worker, station_id=branch.station_id)
 
-        response = auth_client(station_worker, station_id=branch.station_id).get(
-            transaction_detail_url(tx.id)
-        )
+        response = self.retrieve(tx.id, client=client)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == tx.id

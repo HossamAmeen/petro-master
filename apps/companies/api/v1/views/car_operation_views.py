@@ -47,6 +47,8 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
         "station_branch",
         "worker__station_branch__district__city",
         "service",
+        "created_by",
+        "updated_by",
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CarOperationFilter

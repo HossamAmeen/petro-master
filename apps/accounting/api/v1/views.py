@@ -85,7 +85,7 @@ class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = StationKhaznaTransaction.objects.select_related(
-        "station", "station_branch"
+        "station", "station_branch", "created_by", "updated_by"
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = StationKhaznaTransactionFilter
