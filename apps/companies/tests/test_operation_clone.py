@@ -4,7 +4,11 @@ import pytest
 from django.contrib import admin
 from django.urls import reverse
 
-from apps.accounting.models import CompanyKhaznaTransaction, StationKhaznaTransaction
+from apps.accounting.models import (
+    CompanyKhaznaTransaction,
+    KhaznaTransaction,
+    StationKhaznaTransaction,
+)
 from apps.companies.models.company_models import Car
 from apps.companies.models.operation_model import CarOperation
 from apps.companies.operation_clone import CloneError, clone_car_operation
@@ -136,8 +140,35 @@ class TestCloneCarOperation(CloneTestCase):
         station_transaction = StationKhaznaTransaction.objects.get()
         assert company_transaction.amount == clone.company_cost
         assert station_transaction.amount == clone.station_cost
-        assert company_transaction.is_internal is True
+        assert company_transaction.is_internal is False
         assert station_transaction.is_internal is False
+
+    def test_completed_clone_creates_one_transaction_per_side(
+        self, company, branch, mock_firebase_notifications
+    ):
+        self.complete_source()
+
+        clone = self.clone()
+
+        # both models share the KhaznaTransaction table, so two rows in total
+        # means nothing was written twice on either side
+        assert KhaznaTransaction.objects.count() == 2
+        assert list(
+            CompanyKhaznaTransaction.objects.values_list(
+                "company_id", "amount", "is_internal"
+            )
+        ) == [(company.id, clone.company_cost, False)]
+        assert list(
+            StationKhaznaTransaction.objects.values_list(
+                "station_id", "amount", "is_internal"
+            )
+        ) == [(branch.station_id, clone.station_cost, False)]
+        assert not CompanyKhaznaTransaction.objects.filter(
+            amount=clone.station_cost
+        ).exists()
+        assert not StationKhaznaTransaction.objects.filter(
+            amount=clone.company_cost
+        ).exists()
 
     def test_transaction_description_carries_the_arabic_clone_note(
         self, mock_firebase_notifications
@@ -202,6 +233,23 @@ class TestCloneAdminView:
         )
         assert clone.amount == Decimal("20.00")
         assert clone.cost == Decimal("200.00")
+
+    def test_post_of_a_completed_operation_creates_one_transaction_per_side(
+        self, mock_firebase_notifications
+    ):
+        self.source.status = CarOperation.OperationStatus.COMPLETED
+        self.source.save(update_fields=["status"])
+
+        self.client.post(self.url, {"amount": "20.00"})
+
+        clone = CarOperation.objects.exclude(pk=self.source.pk).get()
+        assert KhaznaTransaction.objects.count() == 2
+        assert list(
+            CompanyKhaznaTransaction.objects.values_list("amount", "is_internal")
+        ) == [(clone.company_cost, False)]
+        assert list(
+            StationKhaznaTransaction.objects.values_list("amount", "is_internal")
+        ) == [(clone.station_cost, False)]
 
     def test_post_with_an_impossible_amount_redisplays_the_form(self):
         response = self.client.post(self.url, {"amount": "500.00"})

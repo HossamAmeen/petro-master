@@ -133,8 +133,10 @@ def company_notification_users(company_id, company_branch_id):
 
 def apply_financial_effects(*, clone, car, station_branch, note, user):
     """
-    Mirrors the completed-operation side effects of the create flow: both
-    khazna transactions, both balances and the two notification fan-outs.
+    Mirrors the completed-operation side effects of the create flow: exactly
+    one non-internal khazna transaction per side (station cost for the
+    station, company cost for the company), both balances and the two
+    notification fan-outs.
     """
     fueling_message = f"تم تفويل سيارة رقم {car.plate} بعدد {clone.amount} لتر"
     description = f"{fueling_message} - {note}"
@@ -166,7 +168,7 @@ def apply_financial_effects(*, clone, car, station_branch, note, user):
         status=KhaznaTransaction.TransactionStatus.APPROVED,
         description=description,
         created_by_id=user.id,
-        is_internal=True,
+        is_internal=False,
     )
 
     notify(
