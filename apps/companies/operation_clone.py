@@ -34,9 +34,17 @@ def as_decimal(value):
     return value if isinstance(value, Decimal) else Decimal(str(value))
 
 
-def clone_note(source_code):
-    """Arabic note appended to every record the clone generates."""
-    return f"نسخة من العملية رقم {source_code}"
+def clone_note(*, source_code, company_name, station_name):
+    """
+    Arabic note appended to every record the clone generates. It names the
+    car's company and the worker's station of the original operation, so a
+    transaction listed under any other company or station stands out.
+    """
+    return (
+        f"نسخة من العملية رقم {source_code}"
+        f" - الشركة: {company_name}"
+        f" - المحطة: {station_name}"
+    )
 
 
 def company_liter_cost_for(service, company_branch):
@@ -240,7 +248,11 @@ def clone_car_operation(*, source, amount, user):
             clone=clone,
             car=car,
             station_branch=station_branch,
-            note=clone_note(source.code),
+            note=clone_note(
+                source_code=source.code,
+                company_name=car.branch.company.name,
+                station_name=station_branch.station.name,
+            ),
             user=user,
         )
 

@@ -189,6 +189,36 @@ class TestCloneCarOperation(CloneTestCase):
         assert expected in CompanyKhaznaTransaction.objects.get().description
         assert expected in StationKhaznaTransaction.objects.get().description
 
+    def test_transaction_description_names_the_original_company_and_station(
+        self, company, station, mock_firebase_notifications
+    ):
+        self.complete_source()
+
+        self.clone()
+
+        owners = f"الشركة: {company.name} - المحطة: {station.name}"
+        assert owners in CompanyKhaznaTransaction.objects.get().description
+        assert owners in StationKhaznaTransaction.objects.get().description
+
+    def test_description_follows_the_worker_station_not_a_later_one(
+        self,
+        station_worker,
+        station_factory,
+        station_branch_factory,
+        mock_firebase_notifications,
+    ):
+        """The clone charges the worker's branch, so that station is named."""
+        other_station = station_factory()
+        station_worker.station_branch = station_branch_factory(station=other_station)
+        station_worker.save(update_fields=["station_branch"])
+        self.complete_source()
+
+        self.clone()
+
+        description = StationKhaznaTransaction.objects.get().description
+        assert f"المحطة: {other_station.name}" in description
+        assert StationKhaznaTransaction.objects.get().station == other_station
+
     def test_completed_clone_notifies_the_worker(
         self,
         station_worker,
