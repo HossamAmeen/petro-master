@@ -181,3 +181,18 @@ class TestStationHome:
         returned = [item["id"] for item in response.data["last_operations"]]
         assert ops[-1].id in returned
         assert ops[0].id not in returned
+
+    def test_home_last_operations_label_service_category_success(
+        self, auth_client, station_owner, station, car_operation_factory, other_service
+    ):
+        petrol = car_operation_factory()
+        wash = car_operation_factory(service=other_service)
+
+        response = auth_client(station_owner, station_id=station.id).get(home_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        categories = {
+            item["id"]: item["service_category"]
+            for item in response.data["last_operations"]
+        }
+        assert categories == {petrol.id: "خدمات بترولية", wash.id: "خدمات أخرى"}

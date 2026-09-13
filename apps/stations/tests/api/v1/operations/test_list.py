@@ -245,3 +245,18 @@ class TestStationOperations:
         assert gas_operation.id in ids
         assert done.id in ids
         assert cancelled.id not in ids
+
+    def test_operations_without_service_report_no_available_liters_success(
+        self, auth_client, station_owner, station, other_operation
+    ):
+        response = auth_client(station_owner, station_id=station.id).get(
+            operations_url()
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        (item,) = response.data["results"]
+        assert item["id"] == other_operation.id
+        assert item["service"] is None
+        assert item["service_category"] == "خدمات أخرى"
+        assert item["car"]["liter_count"] == 0
+        assert item["car"]["cost"] == 0

@@ -1,4 +1,4 @@
-.PHONY: run migrate makemigrations shell format lint check test test-features coverage process_ai restart stop
+.PHONY: run migrate makemigrations shell format lint check test test-features coverage coverage-api process_ai restart stop
 
 -include .env
 
@@ -40,6 +40,14 @@ test-features:
 # Writes a term summary plus an htmlcov/ report; fails under 80%.
 coverage:
 	python3 -m pytest --cov --cov-report=term-missing --cov-report=html --cov-fail-under=80
+
+# The API layer (views, serializers, permissions, filters and the shared
+# helpers they use) must stay fully covered, statements and branches.
+API_COVERAGE_INCLUDE = apps/*/api/*,apps/*/v1/*,apps/shared/*,apps/stations/filters.py,configrations/*
+
+coverage-api:
+	python3 -m pytest --cov --cov-report=
+	python3 -m coverage report --include="$(API_COVERAGE_INCLUDE)" --show-missing --skip-covered --fail-under=100
 
 limit ?= 1
 

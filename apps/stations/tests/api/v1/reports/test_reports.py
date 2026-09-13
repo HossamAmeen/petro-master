@@ -255,3 +255,23 @@ class TestStationReports:
         response = auth_client(finance_user, station_id=station.id).get(reports_url())
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_reports_blank_date_and_time_params_disable_filters_success(
+        self, auth_client, station_owner, station, gas_operation, car_operation_factory
+    ):
+        old = car_operation_factory(station_cost=Decimal("15.00"))
+        CarOperation.objects.filter(id=old.id).update(
+            modified=timezone.localtime() - timedelta(days=30)
+        )
+        gas_operation.station_cost = Decimal("10.00")
+        gas_operation.save(update_fields=["station_cost"])
+
+        response = auth_client(station_owner, station_id=station.id).get(
+            reports_url(date_from="", time_from="", time_to="")
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        (row,) = response.data["operations"]
+        assert row["service"] == gas_operation.service_id
+        assert Decimal(str(row["total_balance"])) == Decimal("25.00")
+        assert row["count"] == 2

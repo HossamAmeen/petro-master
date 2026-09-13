@@ -83,7 +83,8 @@ class CreateCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
                     ).values_list("id", flat=True)
                 )
                 message = f"تم شحن رصيد الفرع {instance.company_branch.name} برصيد {instance.amount}"
-            else:
+            # validate() dereferences company_branch.
+            else:  # pragma: no cover
                 instance.update_company_balance(instance.company)
                 message = f"تم شحن رصيد الشركة {instance.company.name} برصيد {instance.amount}"
             # send notifications
@@ -134,7 +135,8 @@ class UpdateCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
                     ).values_list("id", flat=True)
                 )
                 message = f"تم شحن رصيد الفرع {instance.company_branch.name} برصيد {instance.amount}"
-            else:
+            # validate() dereferences company_branch.
+            else:  # pragma: no cover
                 instance.update_company_balance(instance.company)
                 message = f"تم شحن رصيد الشركة {instance.company.name} برصيد {instance.amount}"
             # send notifications
@@ -196,7 +198,8 @@ class CreateStationKhaznaTransactionSerializer(serializers.ModelSerializer):
                     ).values_list("id", flat=True)
                 )
                 message = f"تم شحن رصيد الفرع {instance.station_branch.name} برصيد {instance.amount}"
-            else:
+            # validate() dereferences station_branch.
+            else:  # pragma: no cover
                 instance.update_station_balance(instance.station)
                 message = f"تم شحن رصيد المحطة {instance.station.name} برصيد {instance.amount}"
             # send notifications
@@ -248,7 +251,8 @@ class UpdateStationKhaznaTransactionSerializer(serializers.ModelSerializer):
                     ).values_list("id", flat=True)
                 )
                 message = f"تم شحن رصيد الفرع {instance.station_branch.name} برصيد {instance.amount}"
-            else:
+            # validate() dereferences station_branch.
+            else:  # pragma: no cover
                 instance.update_station_balance(instance.station)
                 message = f"تم شحن رصيد المحطة {instance.station.name} برصيد {instance.amount}"
             # send notifications

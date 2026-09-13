@@ -98,3 +98,24 @@ class TestUserUpdate:
         assert response.status_code == status.HTTP_200_OK, response.data
         finance_user.refresh_from_db()
         assert finance_user.role == User.UserRoles.CustomerSupport
+
+    def test_full_update_password_mismatch_fail(
+        self, auth_client, admin_user, finance_user
+    ):
+        response = auth_client(admin_user).put(
+            users_detail_url(finance_user.id),
+            {
+                "name": "Finance User",
+                "email": finance_user.email,
+                "phone_number": finance_user.phone_number,
+                "role": User.UserRoles.Finance,
+                "password": "new-pass-123",
+                "confirm_password": "other-pass",
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["message"] == "Passwords do not match"
+        finance_user.refresh_from_db()
+        assert not finance_user.check_password("new-pass-123")

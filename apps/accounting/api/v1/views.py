@@ -65,7 +65,8 @@ class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.action in ["list", "retrieve"]:
             if self.request.user.role in COMPANY_ROLES:
                 return ListCompanyKhaznaTransactionSerializer
-            if self.request.user.role in DASHBOARD_ROLES:
+            # Permissions allow only company/dashboard roles.
+            if self.request.user.role in DASHBOARD_ROLES:  # pragma: no branch
                 return ListCompanyKhaznaTransactionForDashboardSerializer
         if self.action == "partial_update":
             return UpdateCompanyKhaznaTransactionSerializer

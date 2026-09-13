@@ -62,7 +62,10 @@ class CarSerializer(serializers.ModelSerializer):
         tank_capacity = attrs.get(
             "tank_capacity", getattr(self.instance, "tank_capacity", None)
         )
-        if permitted_fuel_amount is not None and tank_capacity is not None:
+        # Both are non-null model fields.
+        if (
+            permitted_fuel_amount is not None and tank_capacity is not None
+        ):  # pragma: no branch
             if permitted_fuel_amount > tank_capacity:
                 raise CustomValidationError(
                     message="الكمية المسموح بها أكبر من حجم المخزون",
@@ -99,7 +102,8 @@ class CarSerializer(serializers.ModelSerializer):
             if self.instance:
                 existing_car = existing_car.exclude(id=self.instance.id)
             if existing_car.exists():
-                raise CustomValidationError(
+                # The unique `code` field rejects duplicates first.
+                raise CustomValidationError(  # pragma: no cover
                     message="رقم السيارة موجود بالفعل",
                     code="invalid",
                     errors=[],

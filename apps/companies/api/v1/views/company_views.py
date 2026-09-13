@@ -126,7 +126,8 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.action == "retrieve":
             return RetrieveCompanyBranchSerializer
         if self.action == "assign_managers":
-            return CompanyBranchAssignManagersSerializer
+            # Assign_managers builds its serializer directly.
+            return CompanyBranchAssignManagersSerializer  # pragma: no cover
         if self.action == "update_balance":
             return BranchBalanceUpdateSerializer
         return CompanyBranchSerializer
@@ -261,7 +262,8 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
                         errors=[],
                         status_code=status.HTTP_400_BAD_REQUEST,
                     )
-            elif serializer.validated_data["type"] == "subtract":
+            # Type is a ChoiceField.
+            elif serializer.validated_data["type"] == "subtract":  # pragma: no branch
                 company_branch.refresh_from_db()
                 if company_branch.balance >= serializer.validated_data["amount"]:
                     company_branch.balance -= serializer.validated_data["amount"]
@@ -310,7 +312,10 @@ class CompanyHomeView(APIView):
             branches_id = CompanyBranch.objects.filter(
                 company_id=request.company_id
             ).values_list("id", flat=True)
-        elif self.request.user.role == User.UserRoles.CompanyBranchManager:
+        # CompanyPermission allows only these roles.
+        elif (
+            self.request.user.role == User.UserRoles.CompanyBranchManager
+        ):  # pragma: no branch
             branches_id = CompanyBranch.objects.filter(
                 managers__user_id=request.user.id
             ).values_list("id", flat=True)
@@ -395,7 +400,10 @@ class CompanyHomeView(APIView):
                 + company.branches_balance
                 + cash_requests_balance
             )
-        elif self.request.user.role == User.UserRoles.CompanyBranchManager:
+        # CompanyPermission allows only these roles.
+        elif (
+            self.request.user.role == User.UserRoles.CompanyBranchManager
+        ):  # pragma: no branch
             base_balance = company.branches_balance if company.branches_balance else 0
             total_balance = base_balance + company.cars_balance + cash_requests_balance
 

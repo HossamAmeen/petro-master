@@ -40,7 +40,8 @@ class FirebaseTokenViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == "delete_by_token":
-            return FirebaseTokenDeleteSerializer
+            # delete_by_token never calls get_serializer.
+            return FirebaseTokenDeleteSerializer  # pragma: no cover
         return FirebaseTokenSerializer
 
     def perform_create(self, serializer):

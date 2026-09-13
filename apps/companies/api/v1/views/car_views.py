@@ -204,7 +204,8 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                         errors=[],
                         status_code=status.HTTP_400_BAD_REQUEST,
                     )
-            elif serializer.validated_data["type"] == "subtract":
+            # Type is a ChoiceField.
+            elif serializer.validated_data["type"] == "subtract":  # pragma: no branch
                 car.refresh_from_db()
                 if car.balance >= serializer.validated_data["amount"]:
                     car.balance = F("balance") - serializer.validated_data["amount"]

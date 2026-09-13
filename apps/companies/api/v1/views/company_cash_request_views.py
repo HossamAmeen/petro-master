@@ -61,7 +61,8 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
             return ListCompanyCashRequestSerializer
         if self.request.method == "POST":
             return CompanyCashRequestSerializer
-        if self.request.method == "PATCH":
+        # Http_method_names excludes PUT.
+        if self.request.method == "PATCH":  # pragma: no branch
             return CompanyCashRequestUpdateSerializer
 
     def get_queryset(self):

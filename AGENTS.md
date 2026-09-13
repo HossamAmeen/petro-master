@@ -7,7 +7,7 @@
 ## Testing
 
 - Use `pytest` with `pytest-django`; run the suite with `venv/bin/python -m pytest` (or `make test`).
-- Coverage: `make coverage` runs the whole suite with `pytest-cov`, prints a term-missing summary, writes `htmlcov/`, and fails under 80% (currently ~83%). Config (measured packages, omits, exclude lines) is in `pyproject.toml` under `[tool.coverage.*]`; `pytest-cov` is pinned in `requirements/dev.txt`.
+- Coverage: `make coverage` runs the whole suite with `pytest-cov`, prints a term-missing summary, writes `htmlcov/`, and fails under 80% (currently ~86%). `make coverage-api` fails unless the API layer (`apps/*/api`, `apps/*/v1`, `apps/shared`, `apps/stations/filters.py`, `configrations`) is at 100% statement and branch coverage; mark a genuinely unreachable line with `# pragma: no cover` / `# pragma: no branch` and a comment above it saying why. Config (measured packages, omits, exclude lines) is in `pyproject.toml` under `[tool.coverage.*]`; `pytest-cov` is pinned in `requirements/dev.txt`.
 - Keep shared API clients, JWT-claim helpers, and cross-domain fixtures in the root `conftest.py`.
 - Keep domain-specific fixtures in that app's test `conftest.py`.
 - Reuse factories from `apps/companies/factories.py`; add a factory before repeating model setup in tests.

@@ -79,7 +79,8 @@ class CompanyCashRequestSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
 
         queryset = Driver.objects.order_by("-id")
-        if request:
+        # Views always pass the request in context.
+        if request:  # pragma: no branch
             if request.user.role == User.UserRoles.CompanyOwner:
                 queryset = queryset.filter(branch__company_id=request.company_id)
             if request.user.role == User.UserRoles.CompanyBranchManager:

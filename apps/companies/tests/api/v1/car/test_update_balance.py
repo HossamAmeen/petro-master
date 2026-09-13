@@ -182,3 +182,18 @@ class TestCarUpdateBalance:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "not_found"
+
+    def test_update_balance_as_dashboard_user_raises_unbound_local_error_fail(
+        self, auth_client, admin_user
+    ):
+        """Documents actual (buggy) behavior: `update_balance` only assigns
+        `parent_object` for company owners and branch managers, but the viewset
+        allows any authenticated user. A dashboard user's request crashes with an
+        unhandled `UnboundLocalError` (HTTP 500) instead of a 403."""
+        set_balance(self.company, "100.00")
+
+        with pytest.raises(UnboundLocalError):
+            self.update_balance("10.00", "add", client=auth_client(admin_user))
+
+        self.car.refresh_from_db()
+        assert self.car.balance == Decimal("0.00")

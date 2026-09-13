@@ -117,7 +117,8 @@ class ListCompanyCarOperationSerializer(ListCarOperationSerializer):
             Service.ServiceType.DIESEL,
         ]:
             return "خدمات بترولية"
-        return "خدمات أخرى"
+        # Company querysets are petrol/diesel only.
+        return "خدمات أخرى"  # pragma: no cover
 
 
 class SingleCarOperationSerializer(ListCarOperationSerializer):
