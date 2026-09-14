@@ -45,9 +45,7 @@ class TestStationRetrieve:
         assert response.data["id"] == self.station.id
 
     def test_retrieve_forbidden_company_role_fail(self, company_owner, company):
-        response = self.auth_client(company_owner, company_id=company.id).get(
-            self.url
-        )
+        response = self.auth_client(company_owner, company_id=company.id).get(self.url)
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
