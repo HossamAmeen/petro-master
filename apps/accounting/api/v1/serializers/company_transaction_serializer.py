@@ -5,6 +5,12 @@ from apps.accounting.models import (
     KhaznaTransaction,
     StationKhaznaTransaction,
 )
+from apps.companies.api.v1.serializers.branch_serializers import (
+    ListCompanyBranchNameSerializer,
+)
+from apps.companies.api.v1.serializers.company_serializer import (
+    CompanyNameSerializer,
+)
 from apps.companies.models.company_models import CompanyBranch
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
@@ -14,6 +20,7 @@ from apps.stations.api.v1.serializers import (
     StationNameSerializer,
 )
 from apps.users.models import CompanyUser, StationOwner
+from apps.users.v1.serializers.user_serializers import SingleUserSerializer
 
 
 class ListCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
@@ -24,26 +31,14 @@ class ListCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
 
 
 class ListCompanyKhaznaTransactionForDashboardSerializer(serializers.ModelSerializer):
-    company = serializers.SerializerMethodField()
-    company_branch = serializers.SerializerMethodField()
+    company = CompanyNameSerializer()
+    company_branch = ListCompanyBranchNameSerializer()
+    created_by = SingleUserSerializer()
+    updated_by = SingleUserSerializer()
 
     class Meta:
         model = CompanyKhaznaTransaction
         fields = "__all__"
-
-    def get_company(self, obj):
-        from apps.companies.api.v1.serializers.company_serializer import (
-            ListCompanyNameSerializer,
-        )
-
-        return ListCompanyNameSerializer(obj.company).data
-
-    def get_company_branch(self, obj):
-        from apps.companies.api.v1.serializers.branch_serializers import (
-            ListCompanyBranchNameSerializer,
-        )
-
-        return ListCompanyBranchNameSerializer(obj.company_branch).data
 
 
 class CreateCompanyKhaznaTransactionSerializer(serializers.ModelSerializer):
@@ -270,6 +265,8 @@ class UpdateStationKhaznaTransactionSerializer(serializers.ModelSerializer):
 class ListStationKhaznaTransactionSerializer(serializers.ModelSerializer):
     station_branch = StationBranchWithDistrictSerializer(read_only=True)
     station = StationNameSerializer()
+    created_by = SingleUserSerializer(read_only=True)
+    updated_by = SingleUserSerializer(read_only=True)
 
     class Meta:
         model = StationKhaznaTransaction

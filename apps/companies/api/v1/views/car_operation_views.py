@@ -42,11 +42,13 @@ from apps.users.models import User
 
 class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CarOperation.objects.select_related(
-        "car",
+        "car__branch__company",
         "driver",
         "station_branch",
         "worker__station_branch__district__city",
         "service",
+        "created_by",
+        "updated_by",
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CarOperationFilter
@@ -61,9 +63,9 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "export":
-            return [CompanyPermission()]
+            return [IsAuthenticated(), CompanyPermission()]
         if self.action == "download_excel":
-            return [CompanyPermission()]
+            return [IsAuthenticated(), CompanyPermission()]
         if self.action == "list":
             return [
                 IsAuthenticated(),
@@ -79,12 +81,12 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 ),
             ]
         if self.action == "create":
-            return [DashboardPermission()]
+            return [IsAuthenticated(), DashboardPermission()]
         if self.action == "partial_update":
             return [
                 IsAuthenticated(),
                 EitherPermission(
-                    [CompanyPermission, DashboardPermission, StationPermission()]
+                    [CompanyPermission, DashboardPermission, StationPermission]
                 ),
             ]
         return super().get_permissions()
@@ -193,7 +195,11 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
             )
 
         filename = export_car_operations(
-            company_id=request.company_id, branches=branches
+            company_id=request.company_id,
+            branches=branches,
+            car=request.query_params.get("car"),
+            date_from=date_from,
+            date_to=date_to,
         )
 
         # Create download URL
@@ -213,6 +219,11 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
             {
                 "message": "يتم الان استخراج العمليات وسوف يتم ارسال اليك اشعار لك لتحميل الملف بعد الانتهاء",
                 "download_url": download_url,
+                "query_param": {
+                    "car": request.query_params.get("car"),
+                    "date_from": date_from,
+                    "date_to": date_to,
+                },
             }
         )
 

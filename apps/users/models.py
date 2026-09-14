@@ -39,14 +39,14 @@ class User(AbstractUser, TimeStampedModel):
     reset_password_token_created_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
         "self",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="created_%(class)ss",
         null=True,
         blank=True,
     )
     updated_by = models.ForeignKey(
         "self",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="updated_%(class)ss",
         null=True,
         blank=True,
@@ -88,7 +88,7 @@ class FirebaseToken(models.Model):
 
 class CompanyUser(User):
     company = models.ForeignKey(
-        "companies.Company", on_delete=models.CASCADE, related_name="owners"
+        "companies.Company", on_delete=models.PROTECT, related_name="owners"
     )
 
     class Meta:
@@ -98,7 +98,7 @@ class CompanyUser(User):
 
 class CompanyBranchManager(AbstractBaseModel):
     company_branch = models.ForeignKey(
-        "companies.CompanyBranch", on_delete=models.CASCADE, related_name="managers"
+        "companies.CompanyBranch", on_delete=models.PROTECT, related_name="managers"
     )
     user = models.ForeignKey(
         CompanyUser,
@@ -115,7 +115,7 @@ class CompanyBranchManager(AbstractBaseModel):
 
 class StationOwner(User):
     station = models.ForeignKey(
-        "stations.Station", on_delete=models.CASCADE, related_name="owners"
+        "stations.Station", on_delete=models.PROTECT, related_name="owners"
     )
 
     class Meta:
@@ -125,11 +125,11 @@ class StationOwner(User):
 
 class StationBranchManager(AbstractBaseModel):
     station_branch = models.ForeignKey(
-        "stations.StationBranch", on_delete=models.CASCADE, related_name="managers"
+        "stations.StationBranch", on_delete=models.PROTECT, related_name="managers"
     )
     user = models.ForeignKey(
         StationOwner,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="station_branch_managers",
     )
 
@@ -143,7 +143,7 @@ class StationBranchManager(AbstractBaseModel):
 
 class Worker(User):
     station_branch = models.ForeignKey(
-        "stations.StationBranch", on_delete=models.CASCADE, related_name="workers"
+        "stations.StationBranch", on_delete=models.PROTECT, related_name="workers"
     )
 
     def save(self, *args, **kwargs):
@@ -173,7 +173,7 @@ class Agent(User):
     credit_limit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     team_head = models.ForeignKey(
         Supervisor,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="agents",
     )
 

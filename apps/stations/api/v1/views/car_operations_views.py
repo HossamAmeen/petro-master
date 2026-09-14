@@ -1,9 +1,10 @@
+import logging
 import math
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import F
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
@@ -24,6 +25,8 @@ from apps.stations.api.station_serializers.car_operation_serializer import (
 )
 from apps.stations.models.service_models import Service
 from apps.users.models import CompanyUser, StationOwner
+
+logger = logging.getLogger(__name__)
 
 
 class StationGasOperationAPIView(APIView):
@@ -81,7 +84,9 @@ class StationGasOperationAPIView(APIView):
                     car_opertion.service.cost * (car.branch.fees / 100)
                     + car_opertion.service.cost
                 )
-                available_liters = math.floor(car.balance / company_liter_cost)
+                available_liters = math.floor(
+                    car.available_balance / company_liter_cost
+                )
                 available_liters = min(car_tank_capacity, available_liters)
                 if serializer.validated_data["amount"] > available_liters:
                     raise CustomValidationError(
@@ -130,6 +135,7 @@ class StationGasOperationAPIView(APIView):
                 car.last_meter = car_opertion.car_meter
                 car.balance = F("balance") - company_cost
                 car.save()
+                car.deduct_balance(company_cost)
 
                 company_id = car.branch.company_id
                 notification_users = list(
@@ -205,11 +211,16 @@ class StationGasOperationAPIView(APIView):
                     f"تم تفويل سيارة رقم {car_opertion.car.plate} بعدد {car_opertion.amount} لتر "
                     f"وخصم مبلغ بمقدار {car_opertion.company_cost:.2f} جنية"  # noqa
                 )
-                notification_users = list(
-                    CompanyUser.objects.filter(company_id=company_id).values_list(
-                        "id", flat=True
+                notification_users = []
+                try:
+                    notification_users = list(
+                        CompanyUser.objects.filter(
+                            company_id=company_id,
+                            company_branch_managers__company_branch=car.branch_id,
+                        ).values_list("id", flat=True)
                     )
-                )
+                except Exception as e:
+                    logger.error(e)
                 notification_users.append(request.user.id)
                 for user_id in notification_users:
                     Notification.objects.create(
@@ -295,7 +306,7 @@ class StationOtherOperationAPIView(APIView):
                 * company_branch.other_service_fees
                 / 100
             ) + serializer.validated_data["cost"]
-            if car.balance < company_cost:
+            if car.available_balance < company_cost:
                 raise CustomValidationError(
                     {"error": "السيارة لا تمتلك كافٍ من المال"},
                     code="not_enough_balance",
@@ -305,6 +316,7 @@ class StationOtherOperationAPIView(APIView):
             car.is_blocked_balance_update = False
             car.balance = F("balance") - company_cost
             car.save()
+            car.deduct_balance(company_cost)
 
             station_cost = serializer.validated_data["cost"] - (
                 serializer.validated_data["cost"]

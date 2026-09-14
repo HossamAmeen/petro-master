@@ -15,7 +15,7 @@ class Country(models.Model):
 
 class City(models.Model):
     name = models.CharField(max_length=255)
-    country = models.ForeignKey(Country, on_delete=models.CASCADE)
+    country = models.ForeignKey(Country, on_delete=models.PROTECT)
 
     def __str__(self):
         return self.name
@@ -27,7 +27,7 @@ class City(models.Model):
 
 class District(models.Model):
     name = models.CharField(max_length=255)
-    city = models.ForeignKey(City, on_delete=models.CASCADE)
+    city = models.ForeignKey(City, on_delete=models.PROTECT)
 
     def __str__(self):
         return self.name

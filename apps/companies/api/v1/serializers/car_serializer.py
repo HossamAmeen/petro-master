@@ -31,6 +31,7 @@ class ListCarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
         fields = "__all__"
+        read_only_fields = ["created_by", "updated_by"]
 
     def get_is_license_expiring_soon(self, obj):
         if obj.license_expiration_date:
@@ -50,6 +51,7 @@ class CarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
         fields = "__all__"
+        read_only_fields = ["created_by", "updated_by"]
 
     def validate(self, attrs):
         super().validate(attrs)
@@ -67,6 +69,18 @@ class CarSerializer(serializers.ModelSerializer):
                     code="invalid",
                     errors=[],
                 )
+        balance_source = attrs.get("balance_source")
+        if (
+            balance_source
+            and self.instance
+            and balance_source != Car.BalanceSource.CAR
+            and self.instance.balance > 0
+        ):
+            raise CustomValidationError(
+                message="يجب سحب رصيد السيارة أولا قبل تحويلها للخصم من رصيد الفرع أو الشركة",
+                code="invalid",
+                errors=[],
+            )
         if attrs.get("service") and attrs.get("backup_service"):
             if attrs.get("service") == attrs.get("backup_service"):
                 raise CustomValidationError(
@@ -117,10 +131,6 @@ class CarWithPlateInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
         fields = ["id", "code", "plate_number", "plate_character", "plate_color"]
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        return data
 
 
 class CarBalanceUpdateSerializer(BalanceUpdateSerializer):

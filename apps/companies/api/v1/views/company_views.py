@@ -79,6 +79,14 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
     filterset_class = CompanyFilter
     search_fields = ["name", "phone_number"]
 
+    def perform_destroy(self, instance):
+        if CarOperation.objects.filter(car__branch__company=instance).exists():
+            raise CustomValidationError(
+                message="لا يمكن حذف الشركة لوجود عمليات مرتبطة بها",
+                code="has_operations",
+            )
+        instance.delete()
+
 
 class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CompanyBranch.objects.order_by("-id")
@@ -102,7 +110,7 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.query_params.get("no_paginate", "").lower() != "true":
             self.queryset = (
-                self.queryset.select_related("district__city", "company")
+                self.queryset.select_related("district__city", "company", "created_by")
                 .prefetch_related("managers")
                 .annotate(
                     cars_count=Count("cars", distinct=True),
@@ -425,7 +433,7 @@ class CompanyHomeView(APIView):
             many=True,
         ).data
         company_transactions = (
-            CompanyKhaznaTransaction.objects.filter(company__branches__in=branches_id)
+            CompanyKhaznaTransaction.objects.filter(company_branch__in=branches_id)
             .distinct()
             .order_by("-id")[:3]
         )

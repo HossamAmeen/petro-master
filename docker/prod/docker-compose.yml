@@ -1,0 +1,150 @@
+name: petro-master-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-petro_master}
+      POSTGRES_USER: ${DB_USER:-petro}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-petro} -d ${DB_NAME:-petro_master}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: *default-logging
+
+  web:
+    build:
+      context: ../..
+      dockerfile: docker/prod/Dockerfile
+    image: petro-master-backend:prod
+    env_file:
+      - path: ../../.env
+        required: false
+    environment: &django-env
+      DEBUG: "off"
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-api.petro-master.org,petro-master.org}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      ACCESS_TOKEN_LIFETIME: ${ACCESS_TOKEN_LIFETIME:-2592000}
+      REFRESH_TOKEN_LIFETIME: ${REFRESH_TOKEN_LIFETIME:-1}
+      DB_NAME: ${DB_NAME:-petro_master}
+      DB_USER: ${DB_USER:-petro}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_SSL_MODE: ${DB_SSL_MODE:-disable}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@petro-master.org}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      FIREBASE_CREDENTIALS: ${FIREBASE_CREDENTIALS:-}
+      SENTRY_DNS: ${SENTRY_DNS:-}
+      SMS_SMART_EGYPT_SENDER_NAME: ${SMS_SMART_EGYPT_SENDER_NAME:-Petromaster}
+      SMS_SMART_EGYPT_USERNAME: ${SMS_SMART_EGYPT_USERNAME:-}
+      SMS_SMART_EGYPT_PASSWORD: ${SMS_SMART_EGYPT_PASSWORD:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
+      RUN_MIGRATIONS: "true"
+    volumes:
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+    ports:
+      - "${PORT:-8000}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/admin/login/', timeout=4)",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *default-logging
+
+  celery:
+    build:
+      context: ../..
+      dockerfile: docker/prod/Dockerfile
+    image: petro-master-backend:prod
+    env_file:
+      - path: ../../.env
+        required: false
+    environment:
+      <<: *django-env
+      RUN_MIGRATIONS: "false"
+    volumes:
+      - media:/app/media
+    command: ["celery", "-A", "config", "worker", "--loglevel=info"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *default-logging
+
+  celery-beat:
+    build:
+      context: ../..
+      dockerfile: docker/prod/Dockerfile
+    image: petro-master-backend:prod
+    env_file:
+      - path: ../../.env
+        required: false
+    environment:
+      <<: *django-env
+      RUN_MIGRATIONS: "false"
+    command: ["celery", "-A", "config", "beat", "--loglevel=info"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *default-logging
+
+volumes:
+  postgres_data:
+  redis_data:
+  staticfiles:
+  media:

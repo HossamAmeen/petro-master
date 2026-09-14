@@ -13,6 +13,7 @@ def admin_user(db):
         role=User.UserRoles.Admin,
     )
 
+
 @pytest.fixture
 def finance_user(db, admin_user):
     return User.objects.create(
@@ -23,6 +24,7 @@ def finance_user(db, admin_user):
         role=User.UserRoles.Finance,
         created_by=admin_user,
     )
+
 
 @pytest.fixture
 def customer_support_user(db, admin_user):
@@ -35,6 +37,7 @@ def customer_support_user(db, admin_user):
         created_by=admin_user,
     )
 
+
 @pytest.fixture
 def driver_user(db, admin_user):
     return User.objects.create(
@@ -45,6 +48,7 @@ def driver_user(db, admin_user):
         role=User.UserRoles.Driver,
         created_by=admin_user,
     )
+
 
 @pytest.fixture
 def supervisor(db, admin_user, geo_data):
@@ -58,6 +62,7 @@ def supervisor(db, admin_user, geo_data):
     )
     sup.district.add(geo_data["district"])
     return sup
+
 
 @pytest.fixture
 def agent(db, admin_user, geo_data, supervisor):

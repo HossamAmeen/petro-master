@@ -48,7 +48,7 @@ class KhaznaTransactionViewSet(viewsets.ModelViewSet):
 
 class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CompanyKhaznaTransaction.objects.select_related(
-        "company", "company_branch"
+        "company", "company_branch", "created_by", "updated_by"
     ).order_by("-id")
     serializer_class = ListCompanyKhaznaTransactionSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter]
@@ -62,7 +62,7 @@ class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
         ]
 
     def get_serializer_class(self):
-        if self.action == "list":
+        if self.action in ["list", "retrieve"]:
             if self.request.user.role in COMPANY_ROLES:
                 return ListCompanyKhaznaTransactionSerializer
             if self.request.user.role in DASHBOARD_ROLES:
@@ -71,19 +71,21 @@ class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
             return UpdateCompanyKhaznaTransactionSerializer
         if self.action == "create":
             return CreateCompanyKhaznaTransactionSerializer
-        return CreateCompanyKhaznaTransactionSerializer
+        return ListCompanyKhaznaTransactionSerializer
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
             return self.queryset.filter(company=self.request.company_id)
         if self.request.user.role == User.UserRoles.CompanyBranchManager:
-            return self.queryset.filter(company=self.request.company_id)
+            return self.queryset.filter(
+                company_branch__managers__user_id=self.request.user.id
+            )
         return self.queryset
 
 
 class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = StationKhaznaTransaction.objects.select_related(
-        "station", "station_branch"
+        "station", "station_branch", "created_by", "updated_by"
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = StationKhaznaTransactionFilter
@@ -98,11 +100,11 @@ class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
     serializer_class = ListStationKhaznaTransactionSerializer
 
     def get_serializer_class(self):
-        if self.action == "list":
+        if self.action in ["list", "retrieve"]:
             return ListStationKhaznaTransactionSerializer
         if self.action == "partial_update":
             return UpdateStationKhaznaTransactionSerializer
-        if self.action == "post":
+        if self.action == "create":
             return CreateStationKhaznaTransactionSerializer
         return ListStationKhaznaTransactionSerializer
 

@@ -22,7 +22,7 @@ from apps.users.v1.serializers.company_user_serializer import (
 class CompanyOwnerViewSet(viewsets.ModelViewSet):
     queryset = (
         CompanyUser.objects.filter(role=User.UserRoles.CompanyOwner)
-        .select_related("created_by", "updated_by")
+        .select_related("company", "created_by", "updated_by")
         .order_by("-id")
     )
     search_fields = ["name", "phone_number", "email"]
@@ -44,11 +44,10 @@ class CompanyBranchManagerViewSet(InjectUserMixin, viewsets.ModelViewSet):
     filterset_class = CompanyBranchManagerFilter
     queryset = (
         CompanyUser.objects.filter(role=User.UserRoles.CompanyBranchManager)
-        .select_related("created_by", "updated_by")
+        .select_related("company", "created_by", "updated_by")
         .order_by("-id")
     )
     search_fields = ["name", "phone_number", "email"]
-    
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:

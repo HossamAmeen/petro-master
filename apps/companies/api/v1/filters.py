@@ -32,6 +32,9 @@ class CarOperationFilter(django_filters.FilterSet):
         method="filter_by_status",
         help_text="Filter by status example statusing=pending,in_progress,completed,cancelled",
     )
+    station = django_filters.NumberFilter(
+        field_name="station_branch__station",
+    )
 
     def filter_by_status(self, queryset, name, value):
         status_values = value.split(",")
@@ -42,6 +45,7 @@ class CarOperationFilter(django_filters.FilterSet):
         fields = [
             "car",
             "driver",
+            "station",
             "station_branch",
             "worker",
             "service",

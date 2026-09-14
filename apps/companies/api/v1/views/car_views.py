@@ -23,6 +23,7 @@ from apps.companies.api.v1.serializers.car_serializer import (
     CarCreationSerializer,
     CarSerializer,
     CarUpdateWithCompanySerializer,
+    CarWithPlateInfoSerializer,
     ListCarSerializer,
 )
 from apps.companies.api.v1.serializers.driver_serializer import (
@@ -43,7 +44,7 @@ from apps.users.models import User
 class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
     filterset_class = DriverFilter
     queryset = Driver.objects.select_related(
-        "branch__district", "branch__company"
+        "branch__district__city", "branch__company", "created_by"
     ).order_by("-id")
     search_fields = [
         "name",
@@ -79,6 +80,8 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.request.method == "GET":
+            if self.request.query_params.get("no_paginate", "").lower() == "true":
+                return CarWithPlateInfoSerializer
             return ListCarSerializer
         if self.request.method == "POST":
             return CarCreationSerializer
@@ -136,6 +139,13 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 message="لا يمكن تحديث رصيد السيارة حاليا لانها في منتصف عملية، يرجى اتمام العملية اولا",
                 code="not_found",
             )
+        if car.balance_source != Car.BalanceSource.CAR:
+            raise CustomValidationError(
+                message="لا يمكن شحن رصيد السيارة لانها تخصم من رصيد الفرع أو الشركة",
+                code="balance_source_not_car",
+                errors=[],
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
         serializer = CarBalanceUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -164,7 +174,9 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     car.save()
 
                     parent_object.refresh_from_db()
-                    parent_object.balance = F("balance") - serializer.validated_data["amount"]
+                    parent_object.balance = (
+                        F("balance") - serializer.validated_data["amount"]
+                    )
                     parent_object.save()
                     message = f"تم شحن رصيد السيارة ({car.plate}) برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
                     generate_company_transaction(
@@ -199,7 +211,9 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                     car.save()
 
                     parent_object.refresh_from_db()
-                    parent_object.balance = F("balance") + serializer.validated_data["amount"]
+                    parent_object.balance = (
+                        F("balance") + serializer.validated_data["amount"]
+                    )
                     parent_object.save()
                     message = f"تم سحب رصيد السيارة ({car.plate}) برصيد {serializer.validated_data['amount']} التابعة لفرع {car.branch.name}"
                     generate_company_transaction(
@@ -238,6 +252,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 code="not_found",
             )
         instance.delete()
+
 
 class VerifyDriverView(APIView):
     permission_classes = [IsAuthenticated, StationWorkerPermission]
@@ -356,7 +371,7 @@ class VerifyDriverView(APIView):
             liter_cost = (
                 car_service.cost * company_branch.fees / 100
             ) + car_service.cost
-            if car.balance < liter_cost:
+            if car.available_balance < liter_cost:
                 raise CustomValidationError(
                     message="السيارة لا تمتلك كافٍ من المال",
                     code="not_enough_balance",
@@ -369,7 +384,7 @@ class VerifyDriverView(APIView):
                 if car.permitted_fuel_amount
                 else car.tank_capacity
             )
-            available_liters = math.floor(car.balance / liter_cost)
+            available_liters = math.floor(car.available_balance / liter_cost)
             available_liters = min(liters_count, available_liters)
             available_cost = available_liters * liter_cost
             if (
@@ -394,7 +409,7 @@ class VerifyDriverView(APIView):
             car_service = None
             available_liters = 0
             liter_cost = 0
-            available_cost = car.balance
+            available_cost = car.available_balance
 
         station_branch = request.user.worker.station_branch
         car_operation = CarOperation.objects.create(

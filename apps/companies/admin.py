@@ -1,17 +1,29 @@
-from datetime import datetime
+from datetime import datetime, time, timedelta
+from decimal import Decimal, InvalidOperation
 
 from django import forms
 from django.contrib import admin, messages
+from django.contrib.admin.options import IncorrectLookupParameters
+from django.contrib.admin.utils import unquote
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Count, Sum
+from django.db.models import Count, DecimalField, F, OuterRef, Subquery, Sum, Value
+from django.db.models.functions import Coalesce
+from django.http import Http404, JsonResponse
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
 from django.urls import path, reverse
+from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from apps.companies.models.operation_model import CarOperation
+from apps.companies.models.ai_api_response_model import AIApiResponse
+from apps.companies.models.operation_model import CarOperation, MonthlyInventory
+from apps.companies.operation_clone import CloneError, clone_car_operation
 from apps.geo.models import District
 from apps.shared.generate_code import generate_unique_code
 from apps.stations.models.service_models import Service
+from apps.stations.models.stations_models import StationBranch
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, CarCode, Company, CompanyBranch, Driver
@@ -19,9 +31,7 @@ from .models.company_models import Car, CarCode, Company, CompanyBranch, Driver
 
 class CompanyBranchForm(forms.ModelForm):
     district = forms.ModelChoiceField(
-        queryset=District.objects.all(),
-        required=True,
-        empty_label=None
+        queryset=District.objects.all(), required=True, empty_label=None
     )
 
     class Meta:
@@ -36,6 +46,7 @@ class BranchInline(admin.TabularInline):
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
+    change_list_template = "admin/companies/company/change_list.html"
     list_display = (
         "name",
         "address",
@@ -44,32 +55,107 @@ class CompanyAdmin(admin.ModelAdmin):
         "branches_link",
         "cars_link",
         "drivers_link",
+        "operations_link",
         "district",
         "created_by",
         "updated_by",
     )
     search_fields = ("name", "address", "phone_number")
     list_filter = ("district", "is_active")
-    readonly_fields = ["created_by", "updated_by"]
+    readonly_fields = ["balance", "created_by", "updated_by"]
     list_per_page = 10
 
-    def total_balance(self, obj):
-        total_balance = (
-            obj.balance
-            + (
-                obj.branches.aggregate(total_balance=Sum("balance"))["total_balance"]
-                or 0
-            )
-            + (
-                obj.branches.aggregate(total_balance=Sum("cars__balance"))[
-                    "total_balance"
-                ]
-                or 0
+    def get_queryset(self, request):
+        """Annotate the company balance parts and its operation count."""
+        zero = Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
+        branches_balance = Subquery(
+            CompanyBranch.objects.filter(company_id=OuterRef("pk"))
+            .values("company_id")
+            .annotate(total=Sum("balance"))
+            .values("total")[:1]
+        )
+        cars_balance = Subquery(
+            Car.objects.filter(branch__company_id=OuterRef("pk"))
+            .values("branch__company_id")
+            .annotate(total=Sum("balance"))
+            .values("total")[:1]
+        )
+        operations_count = Subquery(
+            CarOperation.objects.filter(car__branch__company_id=OuterRef("pk"))
+            .values("car__branch__company_id")
+            .annotate(total=Count("id"))
+            .values("total")[:1]
+        )
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                total_balance_sum=(
+                    F("balance")
+                    + Coalesce(branches_balance, zero)
+                    + Coalesce(cars_balance, zero)
+                ),
+                operations_count=Coalesce(operations_count, Value(0)),
             )
         )
-        return total_balance
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+
+        try:
+            # totals must reflect the active search/list_filter selection
+            queryset = self.get_changelist_instance(request).get_queryset(request)
+        except IncorrectLookupParameters:
+            # let ModelAdmin.changelist_view handle it (redirects to ?e=1)
+            queryset = self.model._default_manager.none()
+
+        company_ids = queryset.values("pk")
+        companies_balance = (
+            Company.objects.filter(pk__in=company_ids).aggregate(total=Sum("balance"))[
+                "total"
+            ]
+            or 0
+        )
+        branches_balance = (
+            CompanyBranch.objects.filter(company__in=company_ids).aggregate(
+                total=Sum("balance")
+            )["total"]
+            or 0
+        )
+        cars_balance = (
+            Car.objects.filter(branch__company__in=company_ids).aggregate(
+                total=Sum("balance")
+            )["total"]
+            or 0
+        )
+
+        extra_context["sum_total_balance"] = (
+            companies_balance + branches_balance + cars_balance
+        )
+        extra_context["sum_operations_count"] = CarOperation.objects.filter(
+            car__branch__company__in=company_ids
+        ).count()
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def total_balance(self, obj):
+        return obj.total_balance_sum
 
     total_balance.short_description = "Total Balance"
+    total_balance.admin_order_field = "total_balance_sum"
+
+    def operations_link(self, obj):
+        url = (
+            reverse("admin:companies_caroperation_changelist")
+            + f"?car__branch__company__id__exact={obj.id}"
+        )
+        return format_html(
+            '<a class="button" href="{}">Operations ({})</a>',
+            url,
+            obj.operations_count,
+        )
+
+    operations_link.short_description = "Operations"
+    operations_link.admin_order_field = "operations_count"
 
     def cars_link(self, obj):
         count = obj.branches.aggregate(total_cars=Count("cars"))["total_cars"] or 0
@@ -105,8 +191,6 @@ class CompanyAdmin(admin.ModelAdmin):
         if not obj.pk:  # Only set created_by on creation, not updates
             obj.created_by = request.user
             obj.balance = 0
-        else:
-            obj.balance = form.cleaned_data.get("balance", obj.balance)
         obj.updated_by = request.user
         obj.save()
 
@@ -132,7 +216,7 @@ class CompanyBranchAdmin(admin.ModelAdmin):
     )
     search_fields = ("name", "email", "phone_number")
     list_filter = ("company",)
-    readonly_fields = ["created_by", "updated_by"]
+    readonly_fields = ["balance", "created_by", "updated_by"]
     list_per_page = 20
 
     def car_link(self, obj):
@@ -202,7 +286,9 @@ class CarForm(forms.ModelForm):
             raise forms.ValidationError(_("كود العربيه لا يوجد في النظام"))
 
         if car_code.car and car_code.car != self.instance:
-            raise forms.ValidationError(_("Car code is already assigned to another car."))
+            raise forms.ValidationError(
+                _("Car code is already assigned to another car.")
+            )
 
         return code
 
@@ -216,6 +302,63 @@ class CarForm(forms.ModelForm):
             if day not in valid_choices:
                 raise forms.ValidationError(f"{day} is not a valid choice.")
         return fuel_allowed_days
+
+
+class RangeListFilter(admin.SimpleListFilter):
+    """A filter driven by free-form bound inputs instead of fixed lookups."""
+
+    range_parameters = ()
+
+    def __init__(self, request, params, model, model_admin):
+        super().__init__(request, params, model, model_admin)
+        # SimpleListFilter only consumes `parameter_name`; the extra range
+        # params must be removed here or the changelist passes them to the ORM.
+        for param in self.range_parameters:
+            if param in params:
+                value = params.pop(param)
+                if isinstance(value, list):
+                    value = value[-1] if value else ""
+                self.used_parameters[param] = value
+
+    def expected_parameters(self):
+        return [self.parameter_name, *self.range_parameters]
+
+    def lookups(self, request, model_admin):
+        # required by Django admin, but not really used
+        return (("custom", _("Custom range")),)
+
+
+class BalanceRangeFilter(RangeListFilter):
+    """Inclusive min/max bounds on the car's own `balance` column."""
+
+    title = _("Balance")
+    parameter_name = "balance_range"
+    template = "admin/car_balance_filter.html"
+
+    range_parameters = ("balance_min", "balance_max")
+
+    def parsed_amount(self, param):
+        value = self.used_parameters.get(param)
+        if not value:
+            return None
+        try:
+            amount = Decimal(value)
+        except InvalidOperation:
+            return None
+        # "nan" and "inf" parse fine but are not usable bounds
+        return amount if amount.is_finite() else None
+
+    def queryset(self, request, queryset):
+        minimum = self.parsed_amount("balance_min")
+        maximum = self.parsed_amount("balance_max")
+
+        if minimum is not None:
+            queryset = queryset.filter(balance__gte=minimum)
+
+        if maximum is not None:
+            queryset = queryset.filter(balance__lte=maximum)
+
+        return queryset
 
 
 @admin.register(Car)
@@ -232,8 +375,10 @@ class CarAdmin(admin.ModelAdmin):
         "permitted_fuel_amount",
         "fuel_type",
         "balance",
+        "balance_source",
         "branch",
         "company_name",
+        "operations_link",
     )
     search_fields = (
         "code",
@@ -250,11 +395,14 @@ class CarAdmin(admin.ModelAdmin):
         "is_with_odometer",
         "tank_capacity",
         "fuel_type",
+        BalanceRangeFilter,
+        "balance_source",
         "city",
         "branch",
         "branch__company",
     )
     readonly_fields = (
+        "balance",
         "created_by",
         "updated_by",
         "created",
@@ -266,6 +414,15 @@ class CarAdmin(admin.ModelAdmin):
         return obj.branch.company.name
 
     company_name.short_description = "Company"
+
+    def operations_link(self, obj):
+        url = (
+            reverse("admin:companies_caroperation_changelist")
+            + f"?car__id__exact={obj.id}"
+        )
+        return format_html('<a class="button" href="{}">Operations</a>', url)
+
+    operations_link.short_description = "Operations"
 
     def save_model(self, request, obj, form, change):
         """
@@ -554,38 +711,232 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
         obj.save()
 
 
-class CreatedDateRangeFilter(admin.SimpleListFilter):
+class CreatedDateRangeFilter(RangeListFilter):
     title = _("Created Date Range")
     parameter_name = "created_range"
     template = "admin/caroperation_date_filter.html"
 
-    def lookups(self, request, model_admin):
-        # required by Django admin, but not really used
-        return (("custom", _("Custom range")),)
+    range_parameters = ("created_from", "created_to")
+
+    def parsed_date(self, param):
+        value = self.used_parameters.get(param)
+        if not value:
+            return None
+        try:
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+
+    @staticmethod
+    def start_of_day(value):
+        return timezone.make_aware(datetime.combine(value, time.min))
 
     def queryset(self, request, queryset):
-        start_date = request.GET.get("created_from")
-        end_date = request.GET.get("created_to")
+        start_date = self.parsed_date("created_from")
+        end_date = self.parsed_date("created_to")
 
+        # a half-open datetime range stays sargable; `created__date__gte` wraps
+        # the column in a timezone conversion, which no index can serve
         if start_date:
-            try:
-                start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-                queryset = queryset.filter(created__date__gte=start_date)
-            except ValueError:
-                pass
+            queryset = queryset.filter(created__gte=self.start_of_day(start_date))
 
         if end_date:
-            try:
-                end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
-                queryset = queryset.filter(created__date__lte=end_date)
-            except ValueError:
-                pass
+            queryset = queryset.filter(
+                created__lt=self.start_of_day(end_date + timedelta(days=1))
+            )
 
         return queryset
 
 
+STATION_PARENT_FILTER = "station_branch__station"
+
+
+def station_branch_options(station_id):
+    """
+    (pk, label) pairs for one station. `select_related` keeps
+    `StationBranch.__str__`, which reads `station.name`, from querying per row.
+    """
+    branches = (
+        StationBranch.objects.filter(station_id=station_id)
+        .select_related("station")
+        .order_by("name")
+    )
+    return [(branch.pk, str(branch)) for branch in branches]
+
+
+class StationBranchByStationListFilter(admin.RelatedFieldListFilter):
+    """
+    Branch dropdown scoped to the station chosen in the `STATION_PARENT_FILTER`
+    filter, loaded over AJAX. Never lists every branch in the system.
+    """
+
+    template = "admin/accounting/dependent_branch_filter.html"
+
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+        self.parent_filter = STATION_PARENT_FILTER
+        self.branches_url = reverse(
+            "admin:companies_monthlyinventory_branches_by_station"
+        )
+
+    def has_output(self):
+        # render the empty select anyway, so picking a station fills it over
+        # AJAX instead of requiring a Search round trip
+        return True
+
+    def field_choices(self, field, request, model_admin):
+        station_id = request.GET.get(f"{STATION_PARENT_FILTER}__id__exact")
+        if not station_id:
+            return []
+        return station_branch_options(station_id)
+
+
+@admin.register(AIApiResponse)
+class AIApiResponseAdmin(admin.ModelAdmin):
+    list_display = (
+        "get_station_branch",
+        "image_preview",
+        "car_operation_amount",
+        "extracted_number",
+        "match_score",
+        "model_name",
+        "request_time_display",
+        "token_taken",
+        "estimated_money_egp",
+        "image_size_mb",
+        "created",
+    )
+    search_fields = ("car_operation__code", "extracted_number", "model_name")
+    list_filter = ("match_score", "model_name", "car_operation__station_branch")
+    readonly_fields = (
+        "created_by",
+        "updated_by",
+        "created",
+        "modified",
+        "match_score",
+        "estimated_money_egp",
+        "request_time_display",
+    )
+    list_per_page = 20
+    autocomplete_fields = ("car_operation",)
+
+    def get_changelist(self, request, **kwargs):
+        from django.contrib.admin.views.main import ChangeList
+
+        class PageSizeChangeList(ChangeList):
+            def get_filters_params(self, params=None):
+                lookup_params = super().get_filters_params(params)
+                lookup_params.pop("page_size", None)
+                return lookup_params
+
+        return PageSizeChangeList
+
+    def get_changelist_instance(self, request):
+        original_list_per_page = self.list_per_page
+        page_size = request.GET.get("page_size")
+        if page_size and str(page_size).isdigit():
+            self.list_per_page = min(int(page_size), 1000)
+        try:
+            return super().get_changelist_instance(request)
+        finally:
+            self.list_per_page = original_list_per_page
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("car_operation", "car_operation__station_branch")
+        )
+
+    def get_station_branch(self, obj):
+        if obj.car_operation and obj.car_operation.station_branch:
+            return obj.car_operation.station_branch
+        return "-"
+
+    get_station_branch.short_description = "Station Branch"
+
+    def car_operation_amount(self, obj):
+        if obj.car_operation:
+            return obj.car_operation.amount
+        return "-"
+
+    car_operation_amount.short_description = "Amount"
+
+    def image_preview(self, obj):
+        if obj.car_operation and obj.car_operation.fuel_image:
+            url = obj.car_operation.fuel_image.url
+            return format_html(
+                '<a href="{}" target="_blank" rel="noopener noreferrer">'
+                '<img src="{}" style="max-height: 50px; max-width: 50px;" />'
+                "</a>",
+                url,
+                url,
+            )
+        return "-"
+
+    image_preview.short_description = "Image"
+
+    def image_size_mb(self, obj):
+        if obj.image_size:
+            try:
+                size_mb = int(obj.image_size) / (1024 * 1024)
+                return f"{size_mb:.2f} MB"
+            except (ValueError, TypeError):
+                return "-"
+        return "-"
+
+    image_size_mb.short_description = "Image Size (MB)"
+
+    def estimated_money_egp(self, obj):
+        if obj.estimated_money is None:
+            return "-"
+        return f"{obj.estimated_money:.2f} EGP"
+
+    estimated_money_egp.short_description = "Estimated Money (EGP)"
+    estimated_money_egp.admin_order_field = "estimated_money"
+
+    def request_time_display(self, obj):
+        if obj.request_time is None:
+            return "-"
+        return f"{obj.request_time:.2f}s"
+
+    request_time_display.short_description = "Request Time"
+    request_time_display.admin_order_field = "request_time"
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        obj.save()
+
+
+class CloneCarOperationForm(forms.Form):
+    """Only the amount is editable; every other field is copied as-is."""
+
+    amount = forms.DecimalField(
+        label=_("Amount"),
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+    )
+
+
 @admin.register(CarOperation)
 class CarOperationAdmin(admin.ModelAdmin):
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.status == "completed":
+            return False
+        return super().has_delete_permission(request, obj)
+
+    def delete_model(self, request, obj):
+        if obj.status == "completed":
+            raise PermissionDenied("Cannot delete a completed operation.")
+        super().delete_model(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        if queryset.filter(status="completed").exists():
+            raise PermissionDenied("Cannot delete completed operations.")
+        super().delete_queryset(request, queryset)
 
     def save_model(self, request, obj, form, change):
         """
@@ -596,14 +947,6 @@ class CarOperationAdmin(admin.ModelAdmin):
             obj.created_by = request.user
         obj.updated_by = request.user
         obj.save()
-
-    def get_sum_cost(self, request):
-        queryset = self.get_queryset(request)
-        return queryset.aggregate(total_cost=Sum("cost"))["total_cost"] or 0
-
-    def get_sum_amount(self, request):
-        queryset = self.get_queryset(request)
-        return queryset.aggregate(total_amount=Sum("amount"))["total_amount"] or 0
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
@@ -634,8 +977,9 @@ class CarOperationAdmin(admin.ModelAdmin):
         "worker",
         "service",
         "branch_company",
+        "clone_button",
     )
-    search_fields = ("code",)
+    search_fields = ("code", "car__code", "car__plate_number")
     list_filter = (
         "status",
         "start_time",
@@ -643,10 +987,10 @@ class CarOperationAdmin(admin.ModelAdmin):
         "car",
         "car__branch__company",
         "driver",
+        "station_branch__station",
         "station_branch",
         "worker",
         "service",
-        # CreatedDateRangeFilter,
     )
 
     readonly_fields = ("code", "created_by", "updated_by", "created")
@@ -656,6 +1000,86 @@ class CarOperationAdmin(admin.ModelAdmin):
         return obj.car.branch.company.name
 
     branch_company.short_description = "Company"
+
+    def clone_url_name(self):
+        # named per concrete admin so the MonthlyInventory proxy does not
+        # register a second url under the CarOperation name
+        return f"{self.opts.app_label}_{self.opts.model_name}_clone"
+
+    def clone_button(self, obj):
+        url = reverse(f"admin:{self.clone_url_name()}", args=[obj.pk])
+        return format_html('<a class="button" href="{}">{}</a>', url, _("Clone"))
+
+    clone_button.short_description = _("Clone")
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "<path:object_id>/clone/",
+                self.admin_site.admin_view(self.clone_view),
+                name=self.clone_url_name(),
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def clone_view(self, request, object_id):
+        """
+        Duplicate one operation: every field is carried over untouched except
+        the amount, which is re-entered here and drives a fresh cost calculation.
+        """
+        obj = self.get_object(request, unquote(object_id))
+        if obj is None:
+            raise Http404(
+                _("Car operation with ID %(key)r does not exist.") % {"key": object_id}
+            )
+        if not self.has_add_permission(request) or not self.has_view_permission(
+            request, obj
+        ):
+            raise PermissionDenied
+
+        if request.method == "POST":
+            form = CloneCarOperationForm(request.POST)
+            if form.is_valid():
+                try:
+                    # the history entry commits with the clone or not at all
+                    with transaction.atomic():
+                        clone = clone_car_operation(
+                            source=obj,
+                            amount=form.cleaned_data["amount"],
+                            user=request.user,
+                        )
+                        self.log_addition(
+                            request,
+                            clone,
+                            [{"added": {"name": str(clone._meta.verbose_name)}}],
+                        )
+                except CloneError as error:
+                    form.add_error("amount", str(error))
+                else:
+                    messages.success(
+                        request,
+                        f"تم إنشاء العملية {clone.code} كنسخة من العملية {obj.code}.",
+                    )
+                    return redirect(
+                        reverse(
+                            f"admin:{self.opts.app_label}_{self.opts.model_name}_change",
+                            args=[clone.pk],
+                        )
+                    )
+        else:
+            form = CloneCarOperationForm(initial={"amount": obj.amount})
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": _("Clone operation %(code)s") % {"code": obj.code},
+            "opts": self.opts,
+            "original": obj,
+            "form": form,
+            "media": self.media + form.media,
+        }
+        return TemplateResponse(
+            request, "admin/companies/caroperation/clone_form.html", context
+        )
 
     def get_queryset(self, request):
         return (
@@ -670,3 +1094,98 @@ class CarOperationAdmin(admin.ModelAdmin):
                 "created_by",
             )
         )
+
+
+@admin.register(MonthlyInventory)
+class MonthlyInventoryAdmin(CarOperationAdmin):
+    list_display = (
+        "id",
+        "code",
+        "amount",
+        "profits",
+        "station_branch",
+        "service",
+        "car",
+        "branch_company",
+    )
+    list_filter = (
+        CreatedDateRangeFilter,
+        "status",
+        "car__branch__company",
+        STATION_PARENT_FILTER,
+        ("station_branch", StationBranchByStationListFilter),
+        "service",
+    )
+    # skips the extra unfiltered COUNT(*) over the whole operations table
+    show_full_result_count = False
+
+    def has_add_permission(self, request):
+        return False
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "branches-by-station/",
+                self.admin_site.admin_view(self.branches_by_station),
+                name="companies_monthlyinventory_branches_by_station",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def branches_by_station(self, request):
+        """Options for the dependent station-branch filter."""
+        try:
+            station_id = int(request.GET.get(STATION_PARENT_FILTER, ""))
+        except (TypeError, ValueError):
+            return JsonResponse({"results": []})
+
+        return JsonResponse(
+            {
+                "results": [
+                    {"id": pk, "name": label}
+                    for pk, label in station_branch_options(station_id)
+                ]
+            }
+        )
+
+    def get_queryset(self, request):
+        # every relation touched by list_display, including the `station` that
+        # StationBranch.__str__ reads
+        return (
+            super(CarOperationAdmin, self)
+            .get_queryset(request)
+            .select_related(
+                "car__branch__company",
+                "station_branch__station",
+                "service",
+            )
+        )
+
+    def changelist_view(self, request, extra_context=None):
+        # skip CarOperationAdmin.changelist_view, which aggregates other columns
+        response = super(CarOperationAdmin, self).changelist_view(
+            request, extra_context
+        )
+
+        # reuse the ChangeList super() already built: asking for another one
+        # re-runs the count and the page query. Redirects carry no context.
+        changelist = getattr(response, "context_data", {}).get("cl")
+        if changelist is None:
+            return response
+
+        # cl.queryset is filtered but unpaginated, so the totals match the filters
+        totals = changelist.queryset.aggregate(
+            total_amount=Sum("amount"),
+            total_profits=Sum("profits"),
+            total_company_cost=Sum("company_cost"),
+            total_station_cost=Sum("station_cost"),
+        )
+        response.context_data.update(
+            {
+                "sum_amount": totals["total_amount"] or 0,
+                "sum_profits": totals["total_profits"] or 0,
+                "sum_company_cost": totals["total_company_cost"] or 0,
+                "sum_station_cost": totals["total_station_cost"] or 0,
+            }
+        )
+        return response

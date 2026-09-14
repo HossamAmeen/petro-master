@@ -25,6 +25,7 @@ from configrations.serializers import (
     ContactUsSerializer,
     SliderSerializer,
 )
+from configrations.throttles import ContactUsRateThrottle
 
 from .models import ConfigrationsModel, Slider
 
@@ -165,6 +166,10 @@ class StatisticsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     },
 )
 class ContactUsView(APIView):
+    permission_classes = []
+    authentication_classes = []
+    throttle_classes = [ContactUsRateThrottle]
+
     def post(self, request):
         serializer = ContactUsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -29,7 +29,6 @@ from apps.stations.api.v1.serializers import (
 from apps.stations.filters import StationBranchFilter
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import StationBranch, StationBranchService
-from apps.stations.tasks import add
 from apps.users.models import StationBranchManager, User
 
 SERVICE_CATEGORY_CHOICES = {
@@ -59,7 +58,6 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return super().get_permissions()
 
     def list(self, request, *args, **kwargs):
-        add.delay(4, 4)
         return super().list(request, *args, **kwargs)
 
     def get_serializer_class(self):

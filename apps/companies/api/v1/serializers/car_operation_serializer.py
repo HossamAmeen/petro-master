@@ -10,6 +10,7 @@ from apps.accounting.helpers import (
 )
 from apps.accounting.models import KhaznaTransaction
 from apps.companies.api.v1.serializers.car_serializer import CarWithPlateInfoSerializer
+from apps.companies.api.v1.serializers.company_serializer import CompanyNameSerializer
 from apps.companies.api.v1.serializers.driver_serializer import SingleDriverSerializer
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
@@ -22,15 +23,19 @@ from apps.stations.api.v1.serializers import (
 from apps.stations.models.service_models import Service
 from apps.users.models import CompanyUser, StationOwner, User
 from apps.users.v1.serializers.station_serializer import WorkerWithBranchSerializer
+from apps.users.v1.serializers.user_serializers import SingleUserSerializer
 
 
 class ListCarOperationSerializer(serializers.ModelSerializer):
     car = CarWithPlateInfoSerializer()
+    company = CompanyNameSerializer(source="car.branch.company")
     driver = SingleDriverSerializer()
     station_branch = SingleStationBranchSerializer()
     worker = WorkerWithBranchSerializer()
     service = ServiceNameSerializer()
     service_category = serializers.SerializerMethodField()
+    created_by = SingleUserSerializer()
+    updated_by = SingleUserSerializer()
 
     class Meta:
         model = CarOperation
@@ -50,6 +55,7 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             "unit",
             "fuel_type",
             "car",
+            "company",
             "driver",
             "station_branch",
             "worker",
@@ -59,6 +65,8 @@ class ListCarOperationSerializer(serializers.ModelSerializer):
             "fuel_image",
             "fuel_consumption_rate",
             "service_category",
+            "created_by",
+            "updated_by",
         ]
 
     def to_representation(self, instance):
@@ -94,6 +102,7 @@ class ListCompanyCarOperationSerializer(ListCarOperationSerializer):
             "unit",
             "fuel_type",
             "car",
+            "company",
             "driver",
             "station_branch",
             "worker",
@@ -202,7 +211,7 @@ class ListStationCarOperationSerializer(serializers.ModelSerializer):
                 if car.permitted_fuel_amount
                 else car.tank_capacity
             )
-            available_liters = math.floor(car.balance / liter_cost)
+            available_liters = math.floor(car.available_balance / liter_cost)
             available_liters = min(liters_count, available_liters)
         else:
             available_liters = 0
@@ -266,7 +275,7 @@ class CreateCarOperationSerializer(CarOperationSerializer):
         )
         service = validated_data["service"]
         company_liter_cost = service.cost * (car.branch.fees / 100) + service.cost
-        available_liters = math.floor(car.balance / company_liter_cost)
+        available_liters = math.floor(car.available_balance / company_liter_cost)
         available_liters = min(car_tank_capacity, available_liters)
         if validated_data["amount"] > available_liters:
             raise CustomValidationError(
@@ -302,8 +311,8 @@ class CreateCarOperationSerializer(CarOperationSerializer):
         )
 
         car.last_meter = validated_data["car_meter"]
-        car.balance = car.balance - validated_data["company_cost"]
         car.save()
+        car.deduct_balance(validated_data["company_cost"])
         request = self.context["request"]
         station_id = worker.station_branch.station_id
         if (

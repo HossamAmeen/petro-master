@@ -50,19 +50,19 @@ class CarOperation(AbstractBaseModel):
     fuel_image = models.ImageField(upload_to="fuel_images/", null=True, blank=True)
     car_image = models.ImageField(upload_to="car_images/", null=True, blank=True)
 
-    car = models.ForeignKey(Car, on_delete=models.CASCADE, related_name="operations")
+    car = models.ForeignKey(Car, on_delete=models.PROTECT, related_name="operations")
     driver = models.ForeignKey(
-        Driver, on_delete=models.CASCADE, related_name="operations"
+        Driver, on_delete=models.PROTECT, related_name="operations"
     )
     station_branch = models.ForeignKey(
-        StationBranch, on_delete=models.CASCADE, related_name="operations"
+        StationBranch, on_delete=models.PROTECT, related_name="operations"
     )
     worker = models.ForeignKey(
-        Worker, on_delete=models.CASCADE, related_name="operations"
+        Worker, on_delete=models.PROTECT, related_name="operations"
     )
     service = models.ForeignKey(
         Service,
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name="operations",
@@ -75,7 +75,28 @@ class CarOperation(AbstractBaseModel):
     def __str__(self):
         return f"{self.car} - {self.service} - {self.code}"
 
+    def delete(self, *args, **kwargs):
+        if self.status == self.OperationStatus.COMPLETED:
+            raise PermissionError(
+                f"Deleting Car Operation {self.car} - {self.service} - {self.code} is not allowed, because it is {self.OperationStatus.COMPLETED}."
+            )
+        super().delete(*args, **kwargs)
+
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = generate_unique_code(self.__class__)
         super().save(*args, **kwargs)
+
+
+class CompanyOperationReport(CarOperation):
+    class Meta:
+        proxy = True
+        verbose_name = "Company Operations Report"
+        verbose_name_plural = "Company Operations Reports"
+
+
+class MonthlyInventory(CarOperation):
+    class Meta:
+        proxy = True
+        verbose_name = "Monthly Inventory"
+        verbose_name_plural = "Monthly Inventories"
