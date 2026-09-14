@@ -79,6 +79,14 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
     filterset_class = CompanyFilter
     search_fields = ["name", "phone_number"]
 
+    def perform_destroy(self, instance):
+        if CarOperation.objects.filter(car__branch__company=instance).exists():
+            raise CustomValidationError(
+                message="لا يمكن حذف الشركة لوجود عمليات مرتبطة بها",
+                code="has_operations",
+            )
+        instance.delete()
+
 
 class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CompanyBranch.objects.order_by("-id")
