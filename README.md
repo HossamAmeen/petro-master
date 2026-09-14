@@ -34,12 +34,21 @@ black and isort read `pyproject.toml`; flake8 reads `.flake8`. Migrations, `venv
 gunicorn config.wsgi:application -b 0.0.0.0:8001 --log-level debug -w 1
 ```
 
-## Celery worker
+## Background tasks (Celery)
+
+Push notifications, SMS, and emails are Celery tasks, started with `run_task` (`apps/shared/task_runner.py`). `USE_CELERY` in `.env` picks where they run:
+
+- `USE_CELERY=false` (default): inline, inside the request. No Redis or worker needed.
+- `USE_CELERY=true`: queued on Redis (`CELERY_BROKER_URL`) once the DB transaction commits, then run by a worker, which retries SMS and email on network errors.
+
+Start a worker before turning it on:
 
 ```bash
-celery -A config worker --loglevel=info
+make worker   # celery -A config worker --loglevel=info
 celery -A config worker --loglevel=info --purge
 ```
+
+For deployment, install `deploy/celery-worker.service` (instructions at the top of the file). Once installed, `make restart` / `make stop` and the scripts in `deploy/` restart the worker along with the API.
 
 ## Celery beat
 

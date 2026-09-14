@@ -20,3 +20,28 @@ line_length = 88
 extend_skip = ["venv", "migrations", "settings.py"]
 # Apply the skips to files passed by name too (pre-commit).
 filter_files = true
+
+[tool.coverage.run]
+# Measure the application code only; exclude tests, migrations, and config.
+source = ["apps", "configrations"]
+branch = true
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "tests/*",
+    "*/apps.py",
+    "manage.py",
+    "config/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __str__",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]

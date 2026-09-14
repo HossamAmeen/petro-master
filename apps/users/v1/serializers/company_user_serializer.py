@@ -155,7 +155,8 @@ class CompanyBranchManagerSerializer(serializers.ModelSerializer):
             "company_branches",
         ]
 
-    def create(self, validated_data):
+    # the viewset creates with CreateCompanyOwnerSerializer.
+    def create(self, validated_data):  # pragma: no cover
         validated_data["role"] = User.UserRoles.CompanyBranchManager
         validated_data["email"] = validated_data.get(
             "email", validated_data["phone_number"] + "@petro.com"

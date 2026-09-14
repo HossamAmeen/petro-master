@@ -129,3 +129,19 @@ class TestUpdate:
 
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
         assert Notification.objects.filter(pk=note.id).exists()
+
+    def test_full_update_raises_type_error_fail(
+        self, auth_client, admin_user, notification_factory
+    ):
+        """Documents actual (buggy) behavior: `UpdateModelMixin` exposes PUT, but
+        `get_serializer_class` only handles GET and PATCH and returns `None`
+        otherwise, so PUT crashes with an unhandled `TypeError` (HTTP 500)."""
+        note = notification_factory(user=admin_user, is_read=False)
+
+        with pytest.raises(TypeError, match="not callable"):
+            auth_client(admin_user).put(
+                notifications_detail_url(note.id), {"is_read": True}, format="json"
+            )
+
+        note.refresh_from_db()
+        assert note.is_read is False

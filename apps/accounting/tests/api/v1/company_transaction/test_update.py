@@ -139,3 +139,84 @@ class TestCompanyKhaznaTransactionUpdate:
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_update_status_to_declined_does_not_touch_balance_or_notify_success(
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_branch_manager,
+        company_transaction_factory,
+    ):
+        company_branch.balance = Decimal("100.00")
+        company_branch.save(update_fields=["balance"])
+        tx = company_transaction_factory(
+            company=company,
+            company_branch=company_branch,
+            status="pending",
+            amount=Decimal("40.00"),
+            is_incoming=True,
+        )
+
+        response = auth_client(admin_user).patch(
+            company_transaction_detail_url(tx.id),
+            {
+                "company": company.id,
+                "company_branch": company_branch.id,
+                "status": "declined",
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        tx.refresh_from_db()
+        company_branch.refresh_from_db()
+        assert tx.status == CompanyKhaznaTransaction.TransactionStatus.DECLINED
+        assert tx.updated_by_id == admin_user.id
+        assert company_branch.balance == Decimal("100.00")
+        assert not Notification.objects.exists()
+
+    def test_put_bypasses_finalized_guard_success(
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
+    ):
+        """Documents actual (buggy) behavior: PUT maps to the `update` action, which
+        `get_serializer_class` does not handle, so it falls back to the read
+        serializer (`fields = "__all__"`). That skips
+        `UpdateCompanyKhaznaTransactionSerializer`, letting a client rewrite an
+        already approved transaction (amount and status) without any balance
+        reversal. PATCH correctly rejects the same change."""
+        company_branch.balance = Decimal("60.00")
+        company_branch.save(update_fields=["balance"])
+        tx = company_transaction_factory(
+            company=company,
+            company_branch=company_branch,
+            status="approved",
+            amount=Decimal("40.00"),
+            is_incoming=True,
+        )
+
+        response = auth_client(admin_user).put(
+            company_transaction_detail_url(tx.id),
+            {
+                "company": company.id,
+                "company_branch": company_branch.id,
+                "amount": "999.00",
+                "reference_code": tx.reference_code,
+                "created_by": admin_user.id,
+                "status": "pending",
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        tx.refresh_from_db()
+        company_branch.refresh_from_db()
+        assert tx.amount == Decimal("999.00")
+        assert tx.status == CompanyKhaznaTransaction.TransactionStatus.PENDING
+        assert company_branch.balance == Decimal("60.00")

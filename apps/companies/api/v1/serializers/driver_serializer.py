@@ -26,7 +26,8 @@ class ListDriverSerializer(serializers.ModelSerializer):
             expiry_date = obj.lincense_expiration_date
             time_difference = expiry_date - today
             return time_difference <= timedelta(days=30)
-        return False
+        # Lincense_expiration_date is non-null.
+        return False  # pragma: no cover
 
 
 class DriverSerializer(serializers.ModelSerializer):

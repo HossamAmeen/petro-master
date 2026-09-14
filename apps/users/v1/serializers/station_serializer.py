@@ -111,9 +111,6 @@ class WorkerWithBranchSerializer(serializers.ModelSerializer):
         model = Worker
         fields = ["id", "name", "phone_number", "station_branch"]
 
-    def get_station_branch(self, obj):
-        return obj.station_branch.name
-
 
 class StationOwnerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -192,9 +189,11 @@ class StationBranchManagerCreationSerializer(serializers.ModelSerializer):
             "email", validated_data["phone_number"] + "@petro.com"
         )
         if "password" not in validated_data:
-            raise CustomValidationError("كلمة المرور مطلوبة.")
+            # password is a required field.
+            raise CustomValidationError("كلمة المرور مطلوبة.")  # pragma: no cover
         if "confirm_password" not in validated_data:
-            raise CustomValidationError("تاكيد كلمة المرور مطلوب.")
+            # confirm_password is a required field.
+            raise CustomValidationError("تاكيد كلمة المرور مطلوب.")  # pragma: no cover
         if validated_data["password"] != validated_data.get("confirm_password"):
             raise CustomValidationError("كلمتا المرور غير متطابقة.")
         validated_data["password"] = make_password(validated_data["password"])

@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 
 from apps.companies.models.company_models import Car
@@ -146,3 +149,24 @@ class TestCarList:
                 "plate_color": company_car.plate_color,
             }
         ]
+
+    @pytest.mark.parametrize(
+        ("days_until_expiry", "expected"),
+        [(None, False), (10, True), (90, False)],
+    )
+    def test_list_license_expiring_soon_flag_success(
+        self, auth_client, admin_user, car_factory, days_until_expiry, expected
+    ):
+        expiry = (
+            None
+            if days_until_expiry is None
+            else timezone.localdate() + timedelta(days=days_until_expiry)
+        )
+        car = car_factory(license_expiration_date=expiry)
+
+        response = auth_client(admin_user).get(reverse("cars-list"))
+
+        assert response.status_code == status.HTTP_200_OK
+        (item,) = response.data["results"]
+        assert item["id"] == car.id
+        assert item["is_license_expiring_soon"] is expected

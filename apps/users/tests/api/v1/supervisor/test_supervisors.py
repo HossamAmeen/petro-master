@@ -172,3 +172,15 @@ class TestSupervisors:
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not Supervisor.objects.filter(pk=user_id).exists()
+
+    def test_update_password_success(self, auth_client, admin_user, supervisor):
+        response = auth_client(admin_user).patch(
+            supervisors_detail_url(supervisor.id),
+            {"password": "new-pass-123", "confirm_password": "new-pass-123"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert "password" not in response.data
+        supervisor.refresh_from_db()
+        assert supervisor.check_password("new-pass-123")

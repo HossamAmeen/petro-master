@@ -9,8 +9,9 @@ from openpyxl.utils import get_column_letter
 from rest_framework import status
 
 from apps.companies.models.operation_model import Car, CarOperation
+from apps.notifications.tasks import send_sms_task
 from apps.shared.base_exception_class import CustomValidationError
-from apps.shared.send_sms import send_sms
+from apps.shared.task_runner import run_task
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ def send_cash_request_otp(instance):
     message = "كود استلام طلبك النقدي بمقدار {} هو {}".format(
         instance.amount, instance.otp
     )
-    send_sms(message, instance.driver.phone_number)
+    run_task(send_sms_task, message, instance.driver.phone_number)
 
 
 def export_car_operations(*args, **kwargs):

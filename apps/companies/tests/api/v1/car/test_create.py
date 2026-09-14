@@ -134,3 +134,11 @@ class TestCarCreate:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert Car.objects.count() == 0
+
+    def test_create_with_different_backup_service_success(self, service, other_service):
+        response = self.create(self.build_payload(backup_service=other_service.id))
+
+        assert response.status_code == status.HTTP_201_CREATED, response.data
+        created_car = Car.objects.get(pk=response.data["id"])
+        assert created_car.service == service
+        assert created_car.backup_service == other_service

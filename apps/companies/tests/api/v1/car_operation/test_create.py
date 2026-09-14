@@ -13,6 +13,7 @@ from apps.companies.tests.api.v1.car_operation.helpers import (
     set_balance,
 )
 from apps.notifications.models import Notification
+from apps.stations.models.stations_models import StationBranchService
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
@@ -305,3 +306,38 @@ class TestCarOperationCreate:
         self.car.refresh_from_db()
         assert holder.balance == Decimal("50.00")
         assert self.car.balance == Decimal("5000.00")
+
+    def test_create_car_without_odometer_keeps_consumption_rate_success(self):
+        self.car.is_with_odometer = False
+        self.car.fuel_consumption_rate = 7
+        self.car.save(update_fields=["is_with_odometer", "fuel_consumption_rate"])
+
+        response = self.create()
+
+        assert response.status_code == status.HTTP_201_CREATED, response.data
+        self.car.refresh_from_db()
+        assert self.car.fuel_consumption_rate == 7
+        assert self.car.last_meter == 100
+        assert self.car.balance == Decimal("900.00")
+
+    def test_create_rejected_when_branch_service_link_id_matches_service_id_fail(
+        self, admin_user, branch, service
+    ):
+        """Documents actual (buggy) behavior: `CarOperationSerializer.validate`
+        runs `station_branch.station_branch_services.filter(id=service.id)`,
+        comparing the *link row's* id with the service id, and raises when it
+        matches. So a branch that offers the service can be rejected with
+        "Service not found in station branch", while an unrelated link whose id
+        doesn't collide lets any service through."""
+        StationBranchService.objects.create(
+            id=service.id,
+            station_branch=branch,
+            service=service,
+            created_by=admin_user,
+        )
+
+        response = self.create()
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["message"] == "Service not found in station branch"
+        assert CarOperation.objects.count() == 0

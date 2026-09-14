@@ -21,6 +21,7 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
 )
 from apps.companies.models.company_cash_models import CompanyCashRequest
 from apps.companies.models.operation_model import CarOperation
+from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
     DashboardPermission,
@@ -79,6 +80,14 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
                 EitherPermission([DashboardPermission, StationPermission]),
             ]
         return super().get_permissions()
+
+    def perform_destroy(self, instance):
+        if CarOperation.objects.filter(station_branch__station=instance).exists():
+            raise CustomValidationError(
+                message="لا يمكن حذف المحطة لوجود عمليات مرتبطة بها",
+                code="has_operations",
+            )
+        instance.delete()
 
 
 class StationHomeAPIView(APIView):
