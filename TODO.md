@@ -9,7 +9,7 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
   - Token lives on the user: `create_password_reset_token()` / `is_valid_password_reset_token()` in [apps/users/models.py](apps/users/models.py) (24h expiry).
   - Tests: [apps/auth/tests/test_password_reset_request.py](apps/auth/tests/test_password_reset_request.py).
 
-- [ ] **Use Celery to send notifications and background tasks**
+- [x] **Use Celery to send notifications and background tasks**
   - Celery is already wired up: [config/celery.py](config/celery.py), `CELERY_*` settings in [config/settings.py](config/settings.py#L330) (Redis broker), `celery==5.5.3` in [requirements/base.txt](requirements/base.txt).
   - Nothing uses it yet — every send is inline and blocks the request.
   - Move these off the request path into tasks: FCM push in [apps/notifications/fcm_manager.py](apps/notifications/fcm_manager.py) (fired from [apps/notifications/signals.py](apps/notifications/signals.py)), SMS in [apps/shared/send_sms.py](apps/shared/send_sms.py), password-reset email in [apps/auth/v1/views.py](apps/auth/v1/views.py), and the senders in [apps/companies/signals.py](apps/companies/signals.py) / [apps/companies/helper.py](apps/companies/helper.py).
