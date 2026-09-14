@@ -1,11 +1,11 @@
 from datetime import datetime, time, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.options import IncorrectLookupParameters
 from django.contrib.admin.utils import unquote
-from django.utils import timezone
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, DecimalField, F, OuterRef, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
@@ -13,12 +13,13 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
+from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
+from apps.companies.models.ai_api_response_model import AIApiResponse
 from apps.companies.models.operation_model import CarOperation, MonthlyInventory
 from apps.companies.operation_clone import CloneError, clone_car_operation
-from apps.companies.models.ai_api_response_model import AIApiResponse
 from apps.geo.models import District
 from apps.shared.generate_code import generate_unique_code
 from apps.stations.models.service_models import Service
@@ -26,14 +27,11 @@ from apps.stations.models.stations_models import StationBranch
 
 from .models.company_cash_models import CompanyCashRequest
 from .models.company_models import Car, CarCode, Company, CompanyBranch, Driver
-from django.core.exceptions import PermissionDenied
 
 
 class CompanyBranchForm(forms.ModelForm):
     district = forms.ModelChoiceField(
-        queryset=District.objects.all(),
-        required=True,
-        empty_label=None
+        queryset=District.objects.all(), required=True, empty_label=None
     )
 
     class Meta:
@@ -288,7 +286,9 @@ class CarForm(forms.ModelForm):
             raise forms.ValidationError(_("كود العربيه لا يوجد في النظام"))
 
         if car_code.car and car_code.car != self.instance:
-            raise forms.ValidationError(_("Car code is already assigned to another car."))
+            raise forms.ValidationError(
+                _("Car code is already assigned to another car.")
+            )
 
         return code
 
@@ -302,6 +302,63 @@ class CarForm(forms.ModelForm):
             if day not in valid_choices:
                 raise forms.ValidationError(f"{day} is not a valid choice.")
         return fuel_allowed_days
+
+
+class RangeListFilter(admin.SimpleListFilter):
+    """A filter driven by free-form bound inputs instead of fixed lookups."""
+
+    range_parameters = ()
+
+    def __init__(self, request, params, model, model_admin):
+        super().__init__(request, params, model, model_admin)
+        # SimpleListFilter only consumes `parameter_name`; the extra range
+        # params must be removed here or the changelist passes them to the ORM.
+        for param in self.range_parameters:
+            if param in params:
+                value = params.pop(param)
+                if isinstance(value, list):
+                    value = value[-1] if value else ""
+                self.used_parameters[param] = value
+
+    def expected_parameters(self):
+        return [self.parameter_name, *self.range_parameters]
+
+    def lookups(self, request, model_admin):
+        # required by Django admin, but not really used
+        return (("custom", _("Custom range")),)
+
+
+class BalanceRangeFilter(RangeListFilter):
+    """Inclusive min/max bounds on the car's own `balance` column."""
+
+    title = _("Balance")
+    parameter_name = "balance_range"
+    template = "admin/car_balance_filter.html"
+
+    range_parameters = ("balance_min", "balance_max")
+
+    def parsed_amount(self, param):
+        value = self.used_parameters.get(param)
+        if not value:
+            return None
+        try:
+            amount = Decimal(value)
+        except InvalidOperation:
+            return None
+        # "nan" and "inf" parse fine but are not usable bounds
+        return amount if amount.is_finite() else None
+
+    def queryset(self, request, queryset):
+        minimum = self.parsed_amount("balance_min")
+        maximum = self.parsed_amount("balance_max")
+
+        if minimum is not None:
+            queryset = queryset.filter(balance__gte=minimum)
+
+        if maximum is not None:
+            queryset = queryset.filter(balance__lte=maximum)
+
+        return queryset
 
 
 @admin.register(Car)
@@ -338,6 +395,7 @@ class CarAdmin(admin.ModelAdmin):
         "is_with_odometer",
         "tank_capacity",
         "fuel_type",
+        BalanceRangeFilter,
         "balance_source",
         "city",
         "branch",
@@ -358,7 +416,10 @@ class CarAdmin(admin.ModelAdmin):
     company_name.short_description = "Company"
 
     def operations_link(self, obj):
-        url = reverse("admin:companies_caroperation_changelist") + f"?car__id__exact={obj.id}"
+        url = (
+            reverse("admin:companies_caroperation_changelist")
+            + f"?car__id__exact={obj.id}"
+        )
         return format_html('<a class="button" href="{}">Operations</a>', url)
 
     operations_link.short_description = "Operations"
@@ -650,30 +711,12 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
         obj.save()
 
 
-class CreatedDateRangeFilter(admin.SimpleListFilter):
+class CreatedDateRangeFilter(RangeListFilter):
     title = _("Created Date Range")
     parameter_name = "created_range"
     template = "admin/caroperation_date_filter.html"
 
-    date_parameters = ("created_from", "created_to")
-
-    def __init__(self, request, params, model, model_admin):
-        super().__init__(request, params, model, model_admin)
-        # SimpleListFilter only consumes `parameter_name`; the extra range
-        # params must be removed here or the changelist passes them to the ORM.
-        for param in self.date_parameters:
-            if param in params:
-                value = params.pop(param)
-                if isinstance(value, list):
-                    value = value[-1] if value else ""
-                self.used_parameters[param] = value
-
-    def expected_parameters(self):
-        return [self.parameter_name, *self.date_parameters]
-
-    def lookups(self, request, model_admin):
-        # required by Django admin, but not really used
-        return (("custom", _("Custom range")),)
+    range_parameters = ("created_from", "created_to")
 
     def parsed_date(self, param):
         value = self.used_parameters.get(param)
@@ -799,20 +842,24 @@ class AIApiResponseAdmin(admin.ModelAdmin):
             self.list_per_page = original_list_per_page
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            "car_operation", "car_operation__station_branch"
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("car_operation", "car_operation__station_branch")
         )
 
     def get_station_branch(self, obj):
         if obj.car_operation and obj.car_operation.station_branch:
             return obj.car_operation.station_branch
         return "-"
+
     get_station_branch.short_description = "Station Branch"
 
     def car_operation_amount(self, obj):
         if obj.car_operation:
             return obj.car_operation.amount
         return "-"
+
     car_operation_amount.short_description = "Amount"
 
     def image_preview(self, obj):
@@ -826,6 +873,7 @@ class AIApiResponseAdmin(admin.ModelAdmin):
                 url,
             )
         return "-"
+
     image_preview.short_description = "Image"
 
     def image_size_mb(self, obj):
@@ -836,12 +884,14 @@ class AIApiResponseAdmin(admin.ModelAdmin):
             except (ValueError, TypeError):
                 return "-"
         return "-"
+
     image_size_mb.short_description = "Image Size (MB)"
 
     def estimated_money_egp(self, obj):
         if obj.estimated_money is None:
             return "-"
         return f"{obj.estimated_money:.2f} EGP"
+
     estimated_money_egp.short_description = "Estimated Money (EGP)"
     estimated_money_egp.admin_order_field = "estimated_money"
 
@@ -849,6 +899,7 @@ class AIApiResponseAdmin(admin.ModelAdmin):
         if obj.request_time is None:
             return "-"
         return f"{obj.request_time:.2f}s"
+
     request_time_display.short_description = "Request Time"
     request_time_display.admin_order_field = "request_time"
 
@@ -979,8 +1030,7 @@ class CarOperationAdmin(admin.ModelAdmin):
         obj = self.get_object(request, unquote(object_id))
         if obj is None:
             raise Http404(
-                _("Car operation with ID %(key)r does not exist.")
-                % {"key": object_id}
+                _("Car operation with ID %(key)r does not exist.") % {"key": object_id}
             )
         if not self.has_add_permission(request) or not self.has_view_permission(
             request, obj
@@ -991,19 +1041,21 @@ class CarOperationAdmin(admin.ModelAdmin):
             form = CloneCarOperationForm(request.POST)
             if form.is_valid():
                 try:
-                    clone = clone_car_operation(
-                        source=obj,
-                        amount=form.cleaned_data["amount"],
-                        user=request.user,
-                    )
+                    # the history entry commits with the clone or not at all
+                    with transaction.atomic():
+                        clone = clone_car_operation(
+                            source=obj,
+                            amount=form.cleaned_data["amount"],
+                            user=request.user,
+                        )
+                        self.log_addition(
+                            request,
+                            clone,
+                            [{"added": {"name": str(clone._meta.verbose_name)}}],
+                        )
                 except CloneError as error:
                     form.add_error("amount", str(error))
                 else:
-                    self.log_addition(
-                        request,
-                        clone,
-                        [{"added": {"name": str(clone._meta.verbose_name)}}],
-                    )
                     messages.success(
                         request,
                         f"تم إنشاء العملية {clone.code} كنسخة من العملية {obj.code}.",

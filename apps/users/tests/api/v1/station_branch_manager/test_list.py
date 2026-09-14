@@ -6,18 +6,15 @@ from apps.users.tests.helpers import (
     station_branch_managers_list_url,
 )
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestStationBranchManagerList:
 
-
     def test_list_without_authentication_fail(self, api_client):
         response = api_client.get(station_branch_managers_list_url())
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
 
     def test_list_as_company_owner_fail(self, auth_client, company_owner, company):
         response = auth_client(company_owner, company_id=company.id).get(
@@ -26,8 +23,8 @@ class TestStationBranchManagerList:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-    def test_list_as_station_owner_is_station_scoped_success(self,
+    def test_list_as_station_owner_is_station_scoped_success(
+        self,
         auth_client,
         station_owner,
         station,
@@ -56,9 +53,8 @@ class TestStationBranchManagerList:
         assert branch_manager.id in ids
         assert other_manager.id not in ids
 
-
-    def test_list_as_dashboard_sees_all_success(self,
-        auth_client, admin_user, branch_manager, other_station, station
+    def test_list_as_dashboard_sees_all_success(
+        self, auth_client, admin_user, branch_manager, other_station, station
     ):
         from apps.users.models import StationOwner, User
 
@@ -80,9 +76,8 @@ class TestStationBranchManagerList:
         ids = returned_ids(response)
         assert {branch_manager.id, other_manager.id}.issubset(ids)
 
-
-    def test_list_payload_includes_station_and_branches_success(self,
-        auth_client, admin_user, branch_manager, station, branch
+    def test_list_payload_includes_station_and_branches_success(
+        self, auth_client, admin_user, branch_manager, station, branch
     ):
         response = auth_client(admin_user).get(
             station_branch_managers_list_url(no_paginate="true")

@@ -1,4 +1,3 @@
-from apps.users.models import User
 import base64
 import json
 import os
@@ -13,6 +12,7 @@ from openai import OpenAI, RateLimitError
 
 from apps.companies.models.ai_api_response_model import AIApiResponse
 from apps.companies.models.operation_model import CarOperation
+from apps.users.models import User
 
 
 class Command(BaseCommand):
@@ -28,7 +28,9 @@ class Command(BaseCommand):
     )
     PRICE_PER_MILLION_TOKENS_USD = 5.0
     USD_TO_EGP = 50.0
-    MEDIA_BASE_URL = getattr(settings, "MEDIA_PUBLIC_BASE_URL", "https://api.petro-master.org")
+    MEDIA_BASE_URL = getattr(
+        settings, "MEDIA_PUBLIC_BASE_URL", "https://api.petro-master.org"
+    )
     MAX_RESPONSES_PER_BRANCH = 100
     BATCH_SIZE = 20
     BATCH_SLEEP_SECONDS = 5
@@ -36,7 +38,9 @@ class Command(BaseCommand):
     RETRY_BASE_SECONDS = 2
 
     def add_arguments(self, parser):
-        parser.add_argument("limit", type=int, help="The number of CarOperations to process")
+        parser.add_argument(
+            "limit", type=int, help="The number of CarOperations to process"
+        )
         parser.add_argument(
             "--image-field",
             type=str,
@@ -45,9 +49,13 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        api_key = getattr(settings, "OPENAI_API_KEY", None) or os.getenv("OPENAI_API_KEY")
+        api_key = getattr(settings, "OPENAI_API_KEY", None) or os.getenv(
+            "OPENAI_API_KEY"
+        )
         if not api_key:
-            raise CommandError("OPENAI_API_KEY is not set in settings or environment variables.")
+            raise CommandError(
+                "OPENAI_API_KEY is not set in settings or environment variables."
+            )
 
         self.api_key = api_key
         self.client = OpenAI(api_key=api_key)
@@ -148,9 +156,7 @@ class Command(BaseCommand):
         if not image_file:
             raise ValueError(f"CarOperation {operation.code} has no {image_field}.")
         if not operation.car or operation.car.tank_capacity is None:
-            raise ValueError(
-                f"CarOperation {operation.code} has no car tank capacity."
-            )
+            raise ValueError(f"CarOperation {operation.code} has no car tank capacity.")
 
         image_url = self.build_image_url(image_file)
         image_bytes, media_type = self.download_image(image_url)
@@ -203,18 +209,20 @@ class Command(BaseCommand):
             try:
                 return self.client.chat.completions.create(
                     model=self.MODEL,
-                    messages=[{
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:{media_type};base64,{b64}"
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:{media_type};base64,{b64}"
+                                    },
                                 },
-                            },
-                        ],
-                    }],
+                            ],
+                        }
+                    ],
                     max_tokens=self.MAX_TOKENS,
                 )
             except RateLimitError as exc:
@@ -264,14 +272,18 @@ class Command(BaseCommand):
             return 50
         return 0
 
-    def save_response(self, operation, result: dict, image_size: int, created_by: int) -> None:
+    def save_response(
+        self, operation, result: dict, image_size: int, created_by: int
+    ) -> None:
         extracted_number = result.get("extracted_number")
         try:
             AIApiResponse.objects.create(
                 car_operation=operation,
                 raw_response=result.get("raw_response", {}),
                 extracted_number=extracted_number,
-                match_score=self.calculate_match_score(extracted_number, operation.amount),
+                match_score=self.calculate_match_score(
+                    extracted_number, operation.amount
+                ),
                 image_size=str(image_size),
                 token_taken=result.get("token_taken"),
                 estimated_money=result.get("estimated_money"),

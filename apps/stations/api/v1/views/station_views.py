@@ -1,6 +1,5 @@
 from datetime import date
 
-from apps.stations.filters import StationFilter
 from django.db.models import Count, F, Q, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
@@ -39,6 +38,7 @@ from apps.stations.api.station_serializers.station_serailizers import (
     StationUpdateSerializer,
 )
 from apps.stations.api.v1.serializers import ListStationSerializer
+from apps.stations.filters import StationFilter
 from apps.stations.models.service_models import Service
 from apps.stations.models.stations_models import Station, StationBranch
 from apps.users.models import StationBranchManager, StationOwner, User, Worker

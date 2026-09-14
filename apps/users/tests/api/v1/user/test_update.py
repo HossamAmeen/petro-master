@@ -4,12 +4,10 @@ from rest_framework import status
 from apps.users.models import User
 from apps.users.tests.helpers import users_detail_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestUserUpdate:
-
 
     def test_update_without_authentication_fail(self, api_client, finance_user):
         response = api_client.patch(
@@ -19,7 +17,6 @@ class TestUserUpdate:
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
 
     def test_update_non_admin_fail(self, auth_client, finance_user):
         response = auth_client(finance_user).patch(
@@ -31,7 +28,6 @@ class TestUserUpdate:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         finance_user.refresh_from_db()
         assert finance_user.name != "Nope"
-
 
     def test_update_name_success(self, auth_client, admin_user, finance_user):
         response = auth_client(admin_user).patch(
@@ -45,7 +41,6 @@ class TestUserUpdate:
         assert finance_user.name == "Updated Finance"
         assert finance_user.updated_by_id == admin_user.id
 
-
     def test_update_password_success(self, auth_client, admin_user, finance_user):
         response = auth_client(admin_user).patch(
             users_detail_url(finance_user.id),
@@ -58,7 +53,6 @@ class TestUserUpdate:
         assert finance_user.check_password("new-pass-123")
         assert "password" not in response.data
 
-
     def test_update_password_mismatch_fail(self, auth_client, admin_user, finance_user):
         response = auth_client(admin_user).patch(
             users_detail_url(finance_user.id),
@@ -70,8 +64,9 @@ class TestUserUpdate:
         finance_user.refresh_from_db()
         assert not finance_user.check_password("new-pass-123")
 
-
-    def test_update_password_without_confirm_fail(self, auth_client, admin_user, finance_user):
+    def test_update_password_without_confirm_fail(
+        self, auth_client, admin_user, finance_user
+    ):
         response = auth_client(admin_user).patch(
             users_detail_url(finance_user.id),
             {"password": "new-pass-123"},
@@ -80,8 +75,9 @@ class TestUserUpdate:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
-    def test_update_non_dashboard_user_fail(self, auth_client, admin_user, company_owner):
+    def test_update_non_dashboard_user_fail(
+        self, auth_client, admin_user, company_owner
+    ):
         response = auth_client(admin_user).patch(
             users_detail_url(company_owner.id),
             {"name": "Should Not Update"},
@@ -91,7 +87,6 @@ class TestUserUpdate:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         company_owner.refresh_from_db()
         assert company_owner.name != "Should Not Update"
-
 
     def test_update_role_success(self, auth_client, admin_user, finance_user):
         response = auth_client(admin_user).patch(

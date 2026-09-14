@@ -3,12 +3,10 @@ from rest_framework import status
 
 from apps.users.tests.helpers import company_owners_detail_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestCompanyOwnerUpdate:
-
 
     def test_update_without_authentication_fail(self, api_client, company_owner):
         response = api_client.patch(
@@ -19,8 +17,9 @@ class TestCompanyOwnerUpdate:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_update_as_station_owner_fail(self, auth_client, station_owner, station, company_owner):
+    def test_update_as_station_owner_fail(
+        self, auth_client, station_owner, station, company_owner
+    ):
         response = auth_client(station_owner, station_id=station.id).patch(
             company_owners_detail_url(company_owner.id),
             {"name": "Nope"},
@@ -30,7 +29,6 @@ class TestCompanyOwnerUpdate:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         company_owner.refresh_from_db()
         assert company_owner.name != "Nope"
-
 
     def test_update_name_success(self, auth_client, admin_user, company_owner, company):
         response = auth_client(admin_user).patch(
@@ -43,8 +41,9 @@ class TestCompanyOwnerUpdate:
         company_owner.refresh_from_db()
         assert company_owner.name == "Updated Owner"
 
-
-    def test_update_password_success(self, auth_client, admin_user, company_owner, company):
+    def test_update_password_success(
+        self, auth_client, admin_user, company_owner, company
+    ):
         response = auth_client(admin_user).patch(
             company_owners_detail_url(company_owner.id),
             {"password": "new-owner-pass", "company_id": company.id},

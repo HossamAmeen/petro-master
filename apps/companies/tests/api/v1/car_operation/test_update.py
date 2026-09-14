@@ -11,7 +11,6 @@ from apps.companies.tests.api.v1.car_operation.helpers import (
 )
 from apps.notifications.models import Notification
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -29,8 +28,9 @@ def update_payload(operation, **overrides):
 
 class TestCarOperationUpdate:
 
-
-    def test_partial_update_without_authentication_fail(self, api_client, car_operation_factory):
+    def test_partial_update_without_authentication_fail(
+        self, api_client, car_operation_factory
+    ):
         operation = car_operation_factory()
 
         response = api_client.patch(
@@ -41,8 +41,8 @@ class TestCarOperationUpdate:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_partial_update_complete_as_station_worker_success(self,
+    def test_partial_update_complete_as_station_worker_success(
+        self,
         auth_client,
         station_worker,
         station,
@@ -105,9 +105,9 @@ class TestCarOperationUpdate:
         assert company_owner.id in money_user_ids
         assert company_branch_manager.id in money_user_ids
 
-
     @pytest.mark.parametrize("role_fixture", ["company_owner", "admin_user"])
-    def test_partial_update_complete_allowed_roles_success(self,
+    def test_partial_update_complete_allowed_roles_success(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -140,8 +140,8 @@ class TestCarOperationUpdate:
         assert StationKhaznaTransaction.objects.count() == 1
         assert CompanyKhaznaTransaction.objects.count() == 1
 
-
-    def test_partial_update_cancel_does_not_create_transactions_success(self,
+    def test_partial_update_cancel_does_not_create_transactions_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -166,7 +166,6 @@ class TestCarOperationUpdate:
         assert CompanyKhaznaTransaction.objects.count() == 0
         assert StationKhaznaTransaction.objects.count() == 0
 
-
     @pytest.mark.parametrize(
         "operation_status",
         [
@@ -174,7 +173,8 @@ class TestCarOperationUpdate:
             CarOperation.OperationStatus.CANCELLED,
         ],
     )
-    def test_partial_update_finished_operation_fail(self,
+    def test_partial_update_finished_operation_fail(
+        self,
         operation_status,
         auth_client,
         company_owner,
@@ -193,8 +193,8 @@ class TestCarOperationUpdate:
         operation.refresh_from_db()
         assert operation.status == operation_status
 
-
-    def test_partial_update_car_meter_below_last_meter_fail(self,
+    def test_partial_update_car_meter_below_last_meter_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -215,8 +215,8 @@ class TestCarOperationUpdate:
         operation.refresh_from_db()
         assert operation.status == CarOperation.OperationStatus.PENDING
 
-
-    def test_partial_update_other_company_as_owner_fail(self,
+    def test_partial_update_other_company_as_owner_fail(
+        self,
         auth_client,
         company_owner,
         company,

@@ -13,62 +13,56 @@ class TestKhaznaTransactionUpdate:
     override and no balance side effects, unlike the company/station child
     serializers."""
 
-    def test_update_unauthenticated_fail(self, api_client, khazna_transaction_factory):
-        tx = khazna_transaction_factory()
+    @pytest.fixture(autouse=True)
+    def setup(self, auth_client, admin_user, khazna_transaction_factory):
+        self.admin_client = auth_client(admin_user)
+        self.create_transaction = khazna_transaction_factory
 
-        response = api_client.patch(
-            transaction_detail_url(tx.id), {"status": "approved"}, format="json"
+    def update(self, pk, payload, client=None):
+        return (client or self.admin_client).patch(
+            transaction_detail_url(pk), payload, format="json"
         )
+
+    def test_update_unauthenticated_fail(self, api_client):
+        tx = self.create_transaction()
+
+        response = self.update(tx.id, {"status": "approved"}, client=api_client)
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_update_not_found_fail(self, auth_client, admin_user):
-        response = auth_client(admin_user).patch(
-            transaction_detail_url(999999), {"status": "approved"}, format="json"
-        )
+    def test_update_not_found_fail(self):
+        response = self.update(999999, {"status": "approved"})
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_update_status_success(
-        self, auth_client, admin_user, khazna_transaction_factory
-    ):
-        tx = khazna_transaction_factory(status=KhaznaTransaction.TransactionStatus.PENDING)
+    def test_update_status_success(self):
+        tx = self.create_transaction(status=KhaznaTransaction.TransactionStatus.PENDING)
 
-        response = auth_client(admin_user).patch(
-            transaction_detail_url(tx.id), {"status": "approved"}, format="json"
-        )
+        response = self.update(tx.id, {"status": "approved"})
 
         assert response.status_code == status.HTTP_200_OK
         tx.refresh_from_db()
         assert tx.status == KhaznaTransaction.TransactionStatus.APPROVED
 
-    def test_update_can_be_reopened_after_approval_success(
-        self, auth_client, admin_user, khazna_transaction_factory
-    ):
+    def test_update_can_be_reopened_after_approval_success(self):
         """No guard against re-editing an already approved/declined base
         transaction (that guard only exists on the company/station child
         serializers)."""
-        tx = khazna_transaction_factory(
+        tx = self.create_transaction(
             status=KhaznaTransaction.TransactionStatus.APPROVED
         )
 
-        response = auth_client(admin_user).patch(
-            transaction_detail_url(tx.id), {"status": "pending"}, format="json"
-        )
+        response = self.update(tx.id, {"status": "pending"})
 
         assert response.status_code == status.HTTP_200_OK
         tx.refresh_from_db()
         assert tx.status == KhaznaTransaction.TransactionStatus.PENDING
 
-    def test_update_duplicate_reference_code_fail(
-        self, auth_client, admin_user, khazna_transaction_factory
-    ):
-        khazna_transaction_factory(reference_code="TAKEN")
-        tx = khazna_transaction_factory(reference_code="FREE")
+    def test_update_duplicate_reference_code_fail(self):
+        self.create_transaction(reference_code="TAKEN")
+        tx = self.create_transaction(reference_code="FREE")
 
-        response = auth_client(admin_user).patch(
-            transaction_detail_url(tx.id), {"reference_code": "TAKEN"}, format="json"
-        )
+        response = self.update(tx.id, {"reference_code": "TAKEN"})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["errors"][0]["field"] == "reference_code"

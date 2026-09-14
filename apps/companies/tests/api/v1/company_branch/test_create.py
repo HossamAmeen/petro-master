@@ -6,7 +6,6 @@ from rest_framework import status
 
 from apps.companies.models.company_models import CompanyBranch
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -15,9 +14,8 @@ REQUIRED_FIELDS = ["name", "company"]
 
 class TestCompanyBranchCreate:
 
-
-    def test_create_without_authentication_fail(self,
-        api_client, company_branch_payload_factory
+    def test_create_without_authentication_fail(
+        self, api_client, company_branch_payload_factory
     ):
         response = api_client.post(
             reverse("company-branches-list"),
@@ -28,12 +26,12 @@ class TestCompanyBranchCreate:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert CompanyBranch.objects.count() == 0
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["company_owner", "company_branch_manager", "station_worker"],
     )
-    def test_create_forbidden_role_fail(self,
+    def test_create_forbidden_role_fail(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -59,9 +57,9 @@ class TestCompanyBranchCreate:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert set(CompanyBranch.objects.values_list("id", flat=True)) == existing_ids
 
-
     @pytest.mark.parametrize("role_fixture", ["admin_user", "finance_user"])
-    def test_create_branch_success(self,
+    def test_create_branch_success(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -88,9 +86,8 @@ class TestCompanyBranchCreate:
         assert created.balance == Decimal("0.00")
         assert created.created_by_id == user.id
 
-
-    def test_create_without_optional_fields_success(self,
-        auth_client, admin_user, company, company_branch_payload_factory
+    def test_create_without_optional_fields_success(
+        self, auth_client, admin_user, company, company_branch_payload_factory
     ):
         payload = company_branch_payload_factory()
         for field in [
@@ -118,9 +115,8 @@ class TestCompanyBranchCreate:
         assert created.fees == Decimal("0.00")
         assert created.created_by_id == admin_user.id
 
-
-    def test_create_with_fees_success(self,
-        auth_client, admin_user, company_branch_payload_factory
+    def test_create_with_fees_success(
+        self, auth_client, admin_user, company_branch_payload_factory
     ):
         payload = company_branch_payload_factory(
             fees="5.50",
@@ -140,9 +136,8 @@ class TestCompanyBranchCreate:
         assert created.other_service_fees == Decimal("2.25")
         assert created.cash_request_fees == Decimal("1.00")
 
-
-    def test_create_submitted_balance_ignored_success(self,
-        auth_client, admin_user, company_branch_payload_factory
+    def test_create_submitted_balance_ignored_success(
+        self, auth_client, admin_user, company_branch_payload_factory
     ):
         payload = company_branch_payload_factory()
         payload["balance"] = "999.00"
@@ -157,9 +152,9 @@ class TestCompanyBranchCreate:
         created = CompanyBranch.objects.get(name=payload["name"])
         assert created.balance == Decimal("0.00")
 
-
     @pytest.mark.parametrize("missing_field", REQUIRED_FIELDS)
-    def test_create_missing_required_field_fail(self,
+    def test_create_missing_required_field_fail(
+        self,
         missing_field,
         auth_client,
         admin_user,
@@ -178,7 +173,6 @@ class TestCompanyBranchCreate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert set(CompanyBranch.objects.values_list("id", flat=True)) == existing_ids
 
-
     @pytest.mark.parametrize(
         ("field", "invalid_value"),
         [
@@ -190,7 +184,8 @@ class TestCompanyBranchCreate:
             ("fees", "1000.00"),
         ],
     )
-    def test_create_invalid_field_fail(self,
+    def test_create_invalid_field_fail(
+        self,
         field,
         invalid_value,
         auth_client,

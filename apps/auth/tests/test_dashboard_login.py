@@ -9,7 +9,6 @@ from apps.auth.tests.helpers import (
     set_login_password,
 )
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -24,12 +23,13 @@ def _login(api_client, user, **payload_kwargs):
 
 class TestDashboardLogin:
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["finance_user", "customer_support_user"],
     )
-    def test_dashboard_login_with_email_success(self, role_fixture, request, api_client):
+    def test_dashboard_login_with_email_success(
+        self, role_fixture, request, api_client
+    ):
         user = request.getfixturevalue(role_fixture)
 
         response = _login(api_client, user)
@@ -45,7 +45,6 @@ class TestDashboardLogin:
         assert "company_id" not in access
         assert "station_id" not in access
 
-
     def test_dashboard_login_with_phone_number_success(self, api_client, admin_user):
         response = _login(api_client, admin_user, identifier=admin_user.phone_number)
 
@@ -58,9 +57,10 @@ class TestDashboardLogin:
         assert access["user_name"] == admin_user.name
         assert access["role"] == admin_user.role
 
-
     @pytest.mark.parametrize("missing_field", ["identifier", "password"])
-    def test_dashboard_login_missing_field_fail(self, api_client, admin_user, missing_field):
+    def test_dashboard_login_missing_field_fail(
+        self, api_client, admin_user, missing_field
+    ):
         set_login_password(admin_user)
         payload = login_payload(admin_user)
         payload.pop(missing_field)
@@ -70,14 +70,12 @@ class TestDashboardLogin:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "validation_error"
 
-
     def test_dashboard_login_wrong_password_fail(self, api_client, admin_user):
         response = _login(api_client, admin_user, password="wrong-password")
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.data["code"] == "invalid_credentials"
         assert response.data["message"] == "Invalid credentials"
-
 
     def test_dashboard_login_unknown_identifier_fail(self, api_client):
         response = api_client.post(
@@ -88,7 +86,6 @@ class TestDashboardLogin:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.data["code"] == "invalid_credentials"
-
 
     def test_dashboard_login_inactive_admin_fail(self, api_client, admin_user):
         set_login_password(admin_user)
@@ -103,7 +100,6 @@ class TestDashboardLogin:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.data["code"] == "invalid_credentials"
-
 
     @pytest.mark.parametrize(
         "role_fixture",
@@ -125,7 +121,6 @@ class TestDashboardLogin:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.data["code"] == "invalid_credentials"
-
 
     def test_dashboard_login_get_method_fail(self, api_client):
         response = api_client.get(dashboard_login_url())

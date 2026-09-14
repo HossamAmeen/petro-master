@@ -16,7 +16,6 @@ from apps.stations.tests.helpers import (
 )
 from apps.users.models import StationBranchManager
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -56,7 +55,6 @@ def available_services_url(pk, **params):
     return url
 
 
-
 class TestStationBranchCRUD:
     def test_list_public_success(self, api_client, branch, other_station_branch):
         response = api_client.get(branches_list_url(no_paginate="true"))
@@ -67,9 +65,8 @@ class TestStationBranchCRUD:
         assert set(row) >= {"id", "name", "address", "district", "station"}
         assert "managers_count" not in row
 
-
-    def test_list_as_station_owner_scoped_success(self,
-        auth_client, station_owner, station, branch, other_station_branch
+    def test_list_as_station_owner_scoped_success(
+        self, auth_client, station_owner, station, branch, other_station_branch
     ):
         response = auth_client(station_owner, station_id=station.id).get(
             branches_list_url(no_paginate="true")
@@ -83,9 +80,8 @@ class TestStationBranchCRUD:
         assert "services" in row
         assert "managers_count" in row
 
-
-    def test_list_as_branch_manager_scoped_success(self,
-        auth_client, branch_manager, station, branch, second_station_branch
+    def test_list_as_branch_manager_scoped_success(
+        self, auth_client, branch_manager, station, branch, second_station_branch
     ):
         response = auth_client(branch_manager, station_id=station.id).get(
             branches_list_url(no_paginate="true")
@@ -96,9 +92,14 @@ class TestStationBranchCRUD:
         assert branch.id in ids
         assert second_station_branch.id not in ids
 
-
-    def test_list_as_dashboard_includes_counts_success(self,
-        auth_client, admin_user, branch, station_worker, branch_manager, branch_petrol_service
+    def test_list_as_dashboard_includes_counts_success(
+        self,
+        auth_client,
+        admin_user,
+        branch,
+        station_worker,
+        branch_manager,
+        branch_petrol_service,
     ):
         response = auth_client(admin_user).get(branches_list_url(no_paginate="true"))
 
@@ -108,9 +109,8 @@ class TestStationBranchCRUD:
         assert row["managers_count"] >= 1
         assert row["services_count"] >= 1
 
-
-    def test_list_filter_by_station_success(self,
-        api_client, branch, other_station_branch, station
+    def test_list_filter_by_station_success(
+        self, api_client, branch, other_station_branch, station
     ):
         response = api_client.get(
             branches_list_url(station=station.id, no_paginate="true")
@@ -121,9 +121,8 @@ class TestStationBranchCRUD:
         assert branch.id in ids
         assert other_station_branch.id not in ids
 
-
-    def test_create_without_authentication_fail(self,
-        api_client, station_branch_payload_factory
+    def test_create_without_authentication_fail(
+        self, api_client, station_branch_payload_factory
     ):
         response = api_client.post(
             reverse("station-branches-list"),
@@ -133,12 +132,12 @@ class TestStationBranchCRUD:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["station_owner", "station_worker", "company_owner"],
     )
-    def test_create_forbidden_role_fail(self,
+    def test_create_forbidden_role_fail(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -163,9 +162,8 @@ class TestStationBranchCRUD:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert set(StationBranch.objects.values_list("id", flat=True)) == existing
 
-
-    def test_create_as_admin_success(self,
-        auth_client, admin_user, station, geo_data, station_branch_payload_factory
+    def test_create_as_admin_success(
+        self, auth_client, admin_user, station, geo_data, station_branch_payload_factory
     ):
         payload = station_branch_payload_factory(fees="1.50")
 
@@ -179,8 +177,9 @@ class TestStationBranchCRUD:
         assert created.fees == Decimal("1.50")
         assert created.created_by_id == admin_user.id
 
-
-    def test_retrieve_as_station_owner_success(self, auth_client, station_owner, station, branch):
+    def test_retrieve_as_station_owner_success(
+        self, auth_client, station_owner, station, branch
+    ):
         response = auth_client(station_owner, station_id=station.id).get(
             branches_detail_url(branch.id)
         )
@@ -188,7 +187,6 @@ class TestStationBranchCRUD:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == branch.id
         assert response.data["name"] == branch.name
-
 
     def test_update_as_admin_success(self, auth_client, admin_user, branch):
         response = auth_client(admin_user).patch(
@@ -202,9 +200,8 @@ class TestStationBranchCRUD:
         assert branch.name == "Renamed Branch"
         assert branch.fees == Decimal("3.25")
 
-
-    def test_delete_empty_branch_as_admin_success(self,
-        auth_client, admin_user, station_branch_factory
+    def test_delete_empty_branch_as_admin_success(
+        self, auth_client, admin_user, station_branch_factory
     ):
         empty = station_branch_factory(name="Deletable Branch")
 
@@ -212,7 +209,6 @@ class TestStationBranchCRUD:
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not StationBranch.objects.filter(id=empty.id).exists()
-
 
     def test_update_balance_without_authentication_fail(self, api_client, branch):
         response = api_client.post(
@@ -223,13 +219,12 @@ class TestStationBranchCRUD:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["admin_user", "branch_manager", "station_worker", "company_owner"],
     )
-    def test_update_balance_forbidden_role_fail(self,
-        role_fixture, request, auth_client, company, station, branch
+    def test_update_balance_forbidden_role_fail(
+        self, role_fixture, request, auth_client, company, station, branch
     ):
         user = request.getfixturevalue(role_fixture)
         client_kwargs = {}
@@ -246,9 +241,8 @@ class TestStationBranchCRUD:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-    def test_add_balance_as_station_owner_success(self,
-        auth_client, station_owner, station, branch, branch_manager
+    def test_add_balance_as_station_owner_success(
+        self, auth_client, station_owner, station, branch, branch_manager
     ):
         set_balance(station, "100.00")
         set_balance(branch, "20.00")
@@ -276,9 +270,8 @@ class TestStationBranchCRUD:
         users = notification_user_ids(Notification.NotificationType.MONEY)
         assert users == {station_owner.id, branch_manager.id}
 
-
-    def test_add_balance_insufficient_station_fail(self,
-        auth_client, station_owner, station, branch
+    def test_add_balance_insufficient_station_fail(
+        self, auth_client, station_owner, station, branch
     ):
         set_balance(station, "5.00")
 
@@ -297,9 +290,8 @@ class TestStationBranchCRUD:
         assert StationKhaznaTransaction.objects.count() == 0
         assert Notification.objects.count() == 0
 
-
-    def test_subtract_balance_as_station_owner_success(self,
-        auth_client, station_owner, station, branch, branch_manager
+    def test_subtract_balance_as_station_owner_success(
+        self, auth_client, station_owner, station, branch, branch_manager
     ):
         set_balance(station, "10.00")
         set_balance(branch, "50.00")
@@ -325,9 +317,8 @@ class TestStationBranchCRUD:
             branch_manager.id,
         }
 
-
-    def test_subtract_balance_insufficient_branch_fail(self,
-        auth_client, station_owner, station, branch
+    def test_subtract_balance_insufficient_branch_fail(
+        self, auth_client, station_owner, station, branch
     ):
         set_balance(branch, "5.00")
 
@@ -342,9 +333,8 @@ class TestStationBranchCRUD:
         branch.refresh_from_db()
         assert branch.balance == Decimal("5.00")
 
-
-    def test_update_balance_amount_below_minimum_fail(self,
-        auth_client, station_owner, station, branch
+    def test_update_balance_amount_below_minimum_fail(
+        self, auth_client, station_owner, station, branch
     ):
         set_balance(station, "100.00")
 
@@ -356,9 +346,14 @@ class TestStationBranchCRUD:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
-    def test_assign_managers_success(self,
-        auth_client, station_owner, station, branch, branch_manager, second_station_owner
+    def test_assign_managers_success(
+        self,
+        auth_client,
+        station_owner,
+        station,
+        branch,
+        branch_manager,
+        second_station_owner,
     ):
         response = auth_client(station_owner, station_id=station.id).post(
             assign_managers_url(branch.id),
@@ -375,9 +370,8 @@ class TestStationBranchCRUD:
         assert assigned == {second_station_owner.id}
         assert branch_manager.id not in assigned
 
-
-    def test_assign_managers_invalid_station_fail(self,
-        auth_client, station_owner, station, branch, other_station_owner
+    def test_assign_managers_invalid_station_fail(
+        self, auth_client, station_owner, station, branch, other_station_owner
     ):
         response = auth_client(station_owner, station_id=station.id).post(
             assign_managers_url(branch.id),
@@ -386,12 +380,15 @@ class TestStationBranchCRUD:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert StationBranchManager.objects.filter(
-            station_branch=branch, user=other_station_owner
-        ).count() == 0
+        assert (
+            StationBranchManager.objects.filter(
+                station_branch=branch, user=other_station_owner
+            ).count()
+            == 0
+        )
 
-
-    def test_assign_services_replaces_existing_success(self,
+    def test_assign_services_replaces_existing_success(
+        self,
         auth_client,
         admin_user,
         branch,
@@ -415,9 +412,14 @@ class TestStationBranchCRUD:
         assert linked == {other_service.id, diesel_service.id}
         assert service.id not in linked
 
-
-    def test_add_service_success(self,
-        auth_client, admin_user, branch, other_service, branch_petrol_service, service
+    def test_add_service_success(
+        self,
+        auth_client,
+        admin_user,
+        branch,
+        other_service,
+        branch_petrol_service,
+        service,
     ):
         response = auth_client(admin_user).post(
             add_service_url(branch.id),
@@ -433,9 +435,8 @@ class TestStationBranchCRUD:
         )
         assert linked == {service.id, other_service.id}
 
-
-    def test_add_service_already_exists_fail(self,
-        auth_client, admin_user, branch, service, branch_petrol_service
+    def test_add_service_already_exists_fail(
+        self, auth_client, admin_user, branch, service, branch_petrol_service
     ):
         response = auth_client(admin_user).post(
             add_service_url(branch.id),
@@ -446,9 +447,14 @@ class TestStationBranchCRUD:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["code"] == "service_exists"
 
-
-    def test_delete_service_success(self,
-        auth_client, admin_user, branch, service, other_service, branch_petrol_service
+    def test_delete_service_success(
+        self,
+        auth_client,
+        admin_user,
+        branch,
+        service,
+        other_service,
+        branch_petrol_service,
     ):
         StationBranchService.objects.create(
             station_branch=branch,
@@ -470,9 +476,15 @@ class TestStationBranchCRUD:
         )
         assert linked == {other_service.id}
 
-
-    def test_list_branch_services_success(self,
-        auth_client, station_owner, station, branch, service, other_service, branch_petrol_service
+    def test_list_branch_services_success(
+        self,
+        auth_client,
+        station_owner,
+        station,
+        branch,
+        service,
+        other_service,
+        branch_petrol_service,
     ):
         response = auth_client(station_owner, station_id=station.id).get(
             services_url(branch.id, no_paginate="true")
@@ -483,8 +495,8 @@ class TestStationBranchCRUD:
         assert service.id in ids
         assert other_service.id not in ids
 
-
-    def test_list_available_services_excludes_assigned_success(self,
+    def test_list_available_services_excludes_assigned_success(
+        self,
         auth_client,
         station_owner,
         station,
@@ -502,8 +514,8 @@ class TestStationBranchCRUD:
         assert other_service.id in ids
         assert service.id not in ids
 
-
-    def test_list_branch_services_filter_category_success(self,
+    def test_list_branch_services_filter_category_success(
+        self,
         auth_client,
         station_owner,
         station,
@@ -525,9 +537,8 @@ class TestStationBranchCRUD:
         assert returned_ids(petrol) == {service.id}
         assert returned_ids(other) == {other_service.id}
 
-
-    def test_list_filter_by_city_success(self,
-        api_client, branch, other_station_branch, geo_data, station_branch_factory
+    def test_list_filter_by_city_success(
+        self, api_client, branch, other_station_branch, geo_data, station_branch_factory
     ):
         from apps.geo.models import City, District
 
@@ -544,11 +555,12 @@ class TestStationBranchCRUD:
         assert branch.id in ids
         assert giza_branch.id not in ids
 
-
-    def test_list_filter_by_landing_page_success(self,
-        api_client, branch, station_branch_factory
+    def test_list_filter_by_landing_page_success(
+        self, api_client, branch, station_branch_factory
     ):
-        landing = station_branch_factory(name="Landing Branch", is_for_landing_page=True)
+        landing = station_branch_factory(
+            name="Landing Branch", is_for_landing_page=True
+        )
 
         response = api_client.get(
             branches_list_url(is_for_landing_page="true", no_paginate="true")
@@ -559,9 +571,8 @@ class TestStationBranchCRUD:
         assert landing.id in ids
         assert branch.id not in ids
 
-
-    def test_list_as_worker_unscoped_success(self,
-        auth_client, station_worker, station, branch, other_station_branch
+    def test_list_as_worker_unscoped_success(
+        self, auth_client, station_worker, station, branch, other_station_branch
     ):
         response = auth_client(station_worker, station_id=station.id).get(
             branches_list_url(no_paginate="true")
@@ -572,15 +583,13 @@ class TestStationBranchCRUD:
         assert branch.id in ids
         assert other_station_branch.id in ids
 
-
     def test_retrieve_without_authentication_fail(self, api_client, branch):
         response = api_client.get(branches_detail_url(branch.id))
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_retrieve_other_station_as_owner_fail(self,
-        auth_client, station_owner, station, other_station_branch
+    def test_retrieve_other_station_as_owner_fail(
+        self, auth_client, station_owner, station, other_station_branch
     ):
         response = auth_client(station_owner, station_id=station.id).get(
             branches_detail_url(other_station_branch.id)
@@ -588,8 +597,9 @@ class TestStationBranchCRUD:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
-    def test_update_as_station_owner_success(self, auth_client, station_owner, station, branch):
+    def test_update_as_station_owner_success(
+        self, auth_client, station_owner, station, branch
+    ):
         response = auth_client(station_owner, station_id=station.id).patch(
             branches_detail_url(branch.id),
             {"name": "Owner Renamed Branch"},
@@ -600,8 +610,9 @@ class TestStationBranchCRUD:
         branch.refresh_from_db()
         assert branch.name == "Owner Renamed Branch"
 
-
-    def test_update_balance_invalid_type_fail(self, auth_client, station_owner, station, branch):
+    def test_update_balance_invalid_type_fail(
+        self, auth_client, station_owner, station, branch
+    ):
         response = auth_client(station_owner, station_id=station.id).post(
             update_balance_url(branch.id),
             {"type": "transfer", "amount": "10.00"},
@@ -610,9 +621,8 @@ class TestStationBranchCRUD:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
-    def test_update_balance_other_station_branch_fail(self,
-        auth_client, station_owner, station, other_station_branch
+    def test_update_balance_other_station_branch_fail(
+        self, auth_client, station_owner, station, other_station_branch
     ):
         response = auth_client(station_owner, station_id=station.id).post(
             update_balance_url(other_station_branch.id),
@@ -622,8 +632,9 @@ class TestStationBranchCRUD:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
-    def test_assign_managers_without_authentication_fail(self, api_client, branch, branch_manager):
+    def test_assign_managers_without_authentication_fail(
+        self, api_client, branch, branch_manager
+    ):
         response = api_client.post(
             assign_managers_url(branch.id),
             {"managers": [branch_manager.id]},
@@ -632,9 +643,8 @@ class TestStationBranchCRUD:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_assign_services_empty_clears_existing_success(self,
-        auth_client, admin_user, branch, branch_petrol_service, service
+    def test_assign_services_empty_clears_existing_success(
+        self, auth_client, admin_user, branch, branch_petrol_service, service
     ):
         assert StationBranchService.objects.filter(station_branch=branch).exists()
 
@@ -647,9 +657,8 @@ class TestStationBranchCRUD:
         assert response.status_code == status.HTTP_200_OK, response.data
         assert not StationBranchService.objects.filter(station_branch=branch).exists()
 
-
-    def test_delete_service_empty_list_success(self,
-        auth_client, admin_user, branch, service, branch_petrol_service
+    def test_delete_service_empty_list_success(
+        self, auth_client, admin_user, branch, service, branch_petrol_service
     ):
         response = auth_client(admin_user).post(
             delete_service_url(branch.id),
@@ -662,9 +671,14 @@ class TestStationBranchCRUD:
             station_branch=branch, service=service
         ).exists()
 
-
-    def test_add_multiple_services_success(self,
-        auth_client, admin_user, branch, other_service, diesel_service, branch_petrol_service
+    def test_add_multiple_services_success(
+        self,
+        auth_client,
+        admin_user,
+        branch,
+        other_service,
+        diesel_service,
+        branch_petrol_service,
     ):
         response = auth_client(admin_user).post(
             add_service_url(branch.id),
@@ -680,8 +694,8 @@ class TestStationBranchCRUD:
         )
         assert {other_service.id, diesel_service.id}.issubset(linked)
 
-
-    def test_list_branch_services_types_and_search_success(self,
+    def test_list_branch_services_types_and_search_success(
+        self,
         auth_client,
         station_owner,
         station,
@@ -703,8 +717,8 @@ class TestStationBranchCRUD:
         assert returned_ids(types_resp) == {service.id}
         assert returned_ids(search_resp) == {service.id}
 
-
-    def test_list_branch_services_as_manager_excludes_unmanaged_success(self,
+    def test_list_branch_services_as_manager_excludes_unmanaged_success(
+        self,
         auth_client,
         branch_manager,
         station,
@@ -729,8 +743,8 @@ class TestStationBranchCRUD:
         assert other.status_code == status.HTTP_200_OK
         assert returned_ids(other) == set()
 
-
-    def test_available_services_search_and_category_success(self,
+    def test_available_services_search_and_category_success(
+        self,
         auth_client,
         station_owner,
         station,
@@ -741,7 +755,9 @@ class TestStationBranchCRUD:
         branch_petrol_service,
     ):
         search = auth_client(station_owner, station_id=station.id).get(
-            available_services_url(branch.id, search=other_service.name, no_paginate="true")
+            available_services_url(
+                branch.id, search=other_service.name, no_paginate="true"
+            )
         )
         category = auth_client(station_owner, station_id=station.id).get(
             available_services_url(

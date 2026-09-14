@@ -11,15 +11,13 @@ from apps.companies.tests.api.v1.cash_request.helpers import (
 )
 from apps.notifications.models import Notification
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestCashRequestCreate:
 
-
-    def test_create_without_authentication_fail(self,
-        api_client, cash_request_payload_factory
+    def test_create_without_authentication_fail(
+        self, api_client, cash_request_payload_factory
     ):
         response = api_client.post(
             cash_request_list_url(),
@@ -30,9 +28,9 @@ class TestCashRequestCreate:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert CompanyCashRequest.objects.count() == 0
 
-
     @pytest.mark.parametrize("role_fixture", ["station_worker", "station_owner"])
-    def test_create_station_role_fail(self,
+    def test_create_station_role_fail(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -50,8 +48,8 @@ class TestCashRequestCreate:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert CompanyCashRequest.objects.count() == 0
 
-
-    def test_create_as_company_owner_success(self,
+    def test_create_as_company_owner_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -105,8 +103,8 @@ class TestCashRequestCreate:
         assert created.otp in sms_message
         assert str(created.amount) in sms_message
 
-
-    def test_create_as_branch_manager_deducts_branch_balance_success(self,
+    def test_create_as_branch_manager_deducts_branch_balance_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -140,9 +138,11 @@ class TestCashRequestCreate:
             type=Notification.NotificationType.GENERAL
         ).exists()
 
-
-    @pytest.mark.parametrize("role_fixture", ["admin_user", "finance_user", "customer_support_user"])
-    def test_create_as_dashboard_deducts_branch_balance_success(self,
+    @pytest.mark.parametrize(
+        "role_fixture", ["admin_user", "finance_user", "customer_support_user"]
+    )
+    def test_create_as_dashboard_deducts_branch_balance_success(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -178,8 +178,8 @@ class TestCashRequestCreate:
         assert company.balance == Decimal("200.00")
         assert company_branch.balance == Decimal("90.00")
 
-
-    def test_create_duplicate_in_progress_for_driver_fail(self,
+    def test_create_duplicate_in_progress_for_driver_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -202,8 +202,8 @@ class TestCashRequestCreate:
         company.refresh_from_db()
         assert company.balance == Decimal("200.00")
 
-
-    def test_create_after_previous_request_completed_success(self,
+    def test_create_after_previous_request_completed_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -232,8 +232,8 @@ class TestCashRequestCreate:
         company.refresh_from_db()
         assert company.balance == Decimal("160.00")
 
-
-    def test_create_other_company_driver_fail(self,
+    def test_create_other_company_driver_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -253,8 +253,8 @@ class TestCashRequestCreate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert CompanyCashRequest.objects.count() == 0
 
-
-    def test_create_unmanaged_driver_as_branch_manager_fail(self,
+    def test_create_unmanaged_driver_as_branch_manager_fail(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -274,8 +274,8 @@ class TestCashRequestCreate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert CompanyCashRequest.objects.count() == 0
 
-
-    def test_create_insufficient_company_balance_fail(self,
+    def test_create_insufficient_company_balance_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -294,8 +294,8 @@ class TestCashRequestCreate:
         company.refresh_from_db()
         assert company.balance == Decimal("49.99")
 
-
-    def test_create_insufficient_branch_balance_as_manager_fail(self,
+    def test_create_insufficient_branch_balance_as_manager_fail(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -316,8 +316,8 @@ class TestCashRequestCreate:
         company_branch.refresh_from_db()
         assert company_branch.balance == Decimal("10.00")
 
-
-    def test_create_amount_equal_to_balance_success(self,
+    def test_create_amount_equal_to_balance_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -340,8 +340,8 @@ class TestCashRequestCreate:
         assert created.driver_id == company_driver.id
         assert company.balance == Decimal("0.00")
 
-
-    def test_create_fees_push_cost_over_balance_success(self,
+    def test_create_fees_push_cost_over_balance_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -364,7 +364,6 @@ class TestCashRequestCreate:
         assert created.company_cost == Decimal("110.00")
         assert company.balance == Decimal("-5.00")
 
-
     @pytest.mark.parametrize(
         "payload",
         [
@@ -375,7 +374,8 @@ class TestCashRequestCreate:
             {"driver": 999_999, "amount": "50.00"},
         ],
     )
-    def test_create_invalid_payload_fail(self,
+    def test_create_invalid_payload_fail(
+        self,
         payload,
         auth_client,
         company_owner,
@@ -395,6 +395,6 @@ class TestCashRequestCreate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert CompanyCashRequest.objects.count() == 0
         assert Company.objects.get(pk=company.id).balance == Decimal("200.00")
-        assert CompanyBranch.objects.get(pk=company_driver.branch_id).balance == Decimal(
-            "0.00"
-        )
+        assert CompanyBranch.objects.get(
+            pk=company_driver.branch_id
+        ).balance == Decimal("0.00")

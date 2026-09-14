@@ -9,15 +9,13 @@ from apps.companies.tests.api.v1.cash_request.helpers import (
     cash_request_detail_url,
 )
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestCashRequestRetrieve:
 
-
-    def test_retrieve_without_authentication_fail(self,
-        api_client, company, company_driver, cash_request_factory
+    def test_retrieve_without_authentication_fail(
+        self, api_client, company, company_driver, cash_request_factory
     ):
         cash_request = cash_request_factory(company=company, driver=company_driver)
 
@@ -25,8 +23,8 @@ class TestCashRequestRetrieve:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_retrieve_as_company_owner_success(self,
+    def test_retrieve_as_company_owner_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -58,8 +56,8 @@ class TestCashRequestRetrieve:
         assert response.data["approved_by"] is None
         assert response.data["worker"] is None
 
-
-    def test_retrieve_approved_request_as_station_worker_success(self,
+    def test_retrieve_approved_request_as_station_worker_success(
+        self,
         auth_client,
         station_worker,
         station,
@@ -110,8 +108,8 @@ class TestCashRequestRetrieve:
         }
         assert response.data["worker"] == response.data["approved_by"]
 
-
-    def test_retrieve_as_creator_branch_manager_success(self,
+    def test_retrieve_as_creator_branch_manager_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -132,8 +130,8 @@ class TestCashRequestRetrieve:
         assert_cash_request_payload(response.data, cash_request, company_branch_manager)
         assert response.data["is_owner"] is True
 
-
-    def test_retrieve_other_user_request_as_branch_manager_fail(self,
+    def test_retrieve_other_user_request_as_branch_manager_fail(
+        self,
         auth_client,
         company_branch_manager,
         company_owner,
@@ -155,8 +153,8 @@ class TestCashRequestRetrieve:
         assert response.data["code"] == "permission_denied"
         assert company_owner.name in str(response.data["message"])
 
-
-    def test_retrieve_in_progress_as_station_worker_success(self,
+    def test_retrieve_in_progress_as_station_worker_success(
+        self,
         auth_client,
         station_worker,
         station,
@@ -176,8 +174,8 @@ class TestCashRequestRetrieve:
         assert response.data["is_owner"] is False
         assert response.data["station_branch"] is None
 
-
-    def test_retrieve_unlinked_request_as_station_owner_fail(self,
+    def test_retrieve_unlinked_request_as_station_owner_fail(
+        self,
         auth_client,
         station_owner,
         station,
@@ -193,8 +191,8 @@ class TestCashRequestRetrieve:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
-    def test_retrieve_other_company_as_owner_fail(self,
+    def test_retrieve_other_company_as_owner_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -212,7 +210,6 @@ class TestCashRequestRetrieve:
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-
 
     def test_retrieve_unknown_request_fail(self, auth_client, company_owner, company):
         response = auth_client(company_owner, company_id=company.id).get(

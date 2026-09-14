@@ -21,7 +21,6 @@ from apps.stations.tests.helpers import (
     worker_client,
 )
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -67,9 +66,7 @@ class TestStationGasOperationUpdate:
         assert gas_operation.status == CarOperation.OperationStatus.PENDING
 
     def test_get_not_allowed_fail(self, gas_operation):
-        response = self.client.get(
-            gas_url(gas_operation.id)
-        )
+        response = self.client.get(gas_url(gas_operation.id))
 
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
@@ -394,9 +391,7 @@ class TestStationGasOperationUpdate:
             )
         )
         assert worker_types == {Notification.NotificationType.MONEY}
-        assert (
-            Notification.objects.filter(user_id=station_worker.id).count() == 2
-        )
+        assert Notification.objects.filter(user_id=station_worker.id).count() == 2
 
     def test_complete_sends_oil_change_to_company_owner_and_branch_manager_success(
         self,
@@ -549,9 +544,7 @@ class TestStationGasOperationUpdate:
         )
 
     def test_patch_empty_payload_leaves_pending_success(self, gas_operation):
-        response = self.client.patch(
-            gas_url(gas_operation.id), {}, format="json"
-        )
+        response = self.client.patch(gas_url(gas_operation.id), {}, format="json")
 
         assert response.status_code == status.HTTP_200_OK, response.data
         gas_operation.refresh_from_db()
@@ -650,7 +643,9 @@ class TestStationGasOperationUpdate:
 
         assert response.status_code == status.HTTP_200_OK, response.data
         assert (
-            Notification.objects.filter(type=Notification.NotificationType.GENERAL).count()
+            Notification.objects.filter(
+                type=Notification.NotificationType.GENERAL
+            ).count()
             == 0
         )
 

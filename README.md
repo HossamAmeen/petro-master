@@ -16,6 +16,18 @@ Python is not pinned in this repository; Django 4.2 officially supports Python 3
 python manage.py runserver
 ```
 
+## Format and lint
+
+Install the dev tools with `pip install -r requirements/dev.txt`, then with the venv active:
+
+```bash
+make format   # isort + black, rewrites files
+make lint     # flake8
+make check    # all three without writing; fails if anything needs fixing (CI)
+```
+
+black and isort read `pyproject.toml`; flake8 reads `.flake8`. Migrations, `venv`, and `settings.py` are excluded from all three. `.pre-commit-config.yaml` pins the same versions as `requirements/dev.txt` — bump both together.
+
 ## Run with Gunicorn
 
 ```bash

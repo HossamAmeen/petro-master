@@ -9,24 +9,23 @@ from apps.users.tests.helpers import (
     user_ref,
 )
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestSupervisors:
-
 
     def test_list_without_authentication_fail(self, api_client):
         response = api_client.get(supervisors_list_url())
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["finance_user", "company_owner", "station_owner"],
     )
-    def test_list_non_admin_fail(self, role_fixture, request, auth_client, company, station):
+    def test_list_non_admin_fail(
+        self, role_fixture, request, auth_client, company, station
+    ):
         user = request.getfixturevalue(role_fixture)
         client_kwargs = {}
         if role_fixture == "company_owner":
@@ -37,7 +36,6 @@ class TestSupervisors:
         response = auth_client(user, **client_kwargs).get(supervisors_list_url())
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-
 
     def test_list_success(self, auth_client, admin_user, supervisor, geo_data):
         response = auth_client(admin_user).get(supervisors_list_url(no_paginate="true"))
@@ -51,8 +49,9 @@ class TestSupervisors:
         assert row["created_by"] == user_ref(admin_user)
         assert any(item["id"] == geo_data["district"].id for item in row["district"])
 
-
-    def test_create_without_authentication_fail(self, api_client, supervisor_payload_factory):
+    def test_create_without_authentication_fail(
+        self, api_client, supervisor_payload_factory
+    ):
         response = api_client.post(
             supervisors_list_url(),
             supervisor_payload_factory(),
@@ -61,9 +60,8 @@ class TestSupervisors:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_create_as_finance_fail(self,
-        auth_client, finance_user, supervisor_payload_factory
+    def test_create_as_finance_fail(
+        self, auth_client, finance_user, supervisor_payload_factory
     ):
         before = Supervisor.objects.count()
 
@@ -76,9 +74,8 @@ class TestSupervisors:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert Supervisor.objects.count() == before
 
-
-    def test_create_success(self,
-        auth_client, admin_user, geo_data, supervisor_payload_factory
+    def test_create_success(
+        self, auth_client, admin_user, geo_data, supervisor_payload_factory
     ):
         payload = supervisor_payload_factory()
 
@@ -98,9 +95,8 @@ class TestSupervisors:
             geo_data["district"].id
         ]
 
-
-    def test_create_password_mismatch_fail(self,
-        auth_client, admin_user, supervisor_payload_factory
+    def test_create_password_mismatch_fail(
+        self, auth_client, admin_user, supervisor_payload_factory
     ):
         payload = supervisor_payload_factory(confirm_password="other-pass")
         before = Supervisor.objects.count()
@@ -114,9 +110,8 @@ class TestSupervisors:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert Supervisor.objects.count() == before
 
-
-    def test_create_missing_district_fail(self,
-        auth_client, admin_user, supervisor_payload_factory
+    def test_create_missing_district_fail(
+        self, auth_client, admin_user, supervisor_payload_factory
     ):
         payload = supervisor_payload_factory()
         payload.pop("district")
@@ -131,7 +126,6 @@ class TestSupervisors:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert Supervisor.objects.count() == before
 
-
     def test_retrieve_success(self, auth_client, admin_user, supervisor, geo_data):
         response = auth_client(admin_user).get(supervisors_detail_url(supervisor.id))
 
@@ -141,7 +135,6 @@ class TestSupervisors:
         assert any(
             item["id"] == geo_data["district"].id for item in response.data["district"]
         )
-
 
     def test_update_name_success(self, auth_client, admin_user, supervisor):
         response = auth_client(admin_user).patch(
@@ -155,7 +148,6 @@ class TestSupervisors:
         assert supervisor.name == "Updated Supervisor"
         assert supervisor.updated_by_id == admin_user.id
 
-
     def test_update_password_mismatch_fail(self, auth_client, admin_user, supervisor):
         response = auth_client(admin_user).patch(
             supervisors_detail_url(supervisor.id),
@@ -165,13 +157,13 @@ class TestSupervisors:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
     def test_delete_as_finance_fail(self, auth_client, finance_user, supervisor):
-        response = auth_client(finance_user).delete(supervisors_detail_url(supervisor.id))
+        response = auth_client(finance_user).delete(
+            supervisors_detail_url(supervisor.id)
+        )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert Supervisor.objects.filter(pk=supervisor.id).exists()
-
 
     def test_delete_success(self, auth_client, admin_user, supervisor):
         user_id = supervisor.id

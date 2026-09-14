@@ -61,7 +61,7 @@ class StationAdmin(admin.ModelAdmin):
         "updated_by",
     )
     search_fields = ("name", "address", "district__name")
-    readonly_fields = ("balance","created_by", "updated_by")
+    readonly_fields = ("balance", "created_by", "updated_by")
 
     def get_queryset(self, request):
         """Annotate the station balance parts and its operation count."""
@@ -264,9 +264,7 @@ class StationBranchAdmin(admin.ModelAdmin):
                     ],
                     "branch_name": item["car_operation__station_branch__name"],
                     "ai_responses_url": ai_responses_url,
-                    "fuel_image_ops_count": fuel_image_ops_by_branch.get(
-                        branch_id, 0
-                    ),
+                    "fuel_image_ops_count": fuel_image_ops_by_branch.get(branch_id, 0),
                     "match_100_count": match_100,
                     "total_responses": total,
                     "match_percentage": round(percentage, 2),

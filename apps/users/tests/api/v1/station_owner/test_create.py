@@ -4,15 +4,13 @@ from rest_framework import status
 from apps.users.models import StationOwner, User
 from apps.users.tests.helpers import station_owners_list_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestStationOwnerCreate:
 
-
-    def test_create_without_authentication_fail(self,
-        api_client, station_owner_payload_factory
+    def test_create_without_authentication_fail(
+        self, api_client, station_owner_payload_factory
     ):
         response = api_client.post(
             station_owners_list_url(),
@@ -22,9 +20,8 @@ class TestStationOwnerCreate:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_create_as_company_owner_fail(self,
-        auth_client, company_owner, company, station_owner_payload_factory
+    def test_create_as_company_owner_fail(
+        self, auth_client, company_owner, company, station_owner_payload_factory
     ):
         before = StationOwner.objects.count()
 
@@ -37,9 +34,8 @@ class TestStationOwnerCreate:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert StationOwner.objects.count() == before
 
-
-    def test_create_as_dashboard_success(self,
-        auth_client, admin_user, station, station_owner_payload_factory
+    def test_create_as_dashboard_success(
+        self, auth_client, admin_user, station, station_owner_payload_factory
     ):
         payload = station_owner_payload_factory()
 
@@ -55,9 +51,8 @@ class TestStationOwnerCreate:
         assert created.station_id == station.id
         assert created.role == User.UserRoles.StationOwner
 
-
-    def test_create_as_station_owner_success(self,
-        auth_client, station_owner, station, station_owner_payload_factory
+    def test_create_as_station_owner_success(
+        self, auth_client, station_owner, station, station_owner_payload_factory
     ):
         payload = station_owner_payload_factory()
 
@@ -71,9 +66,8 @@ class TestStationOwnerCreate:
         created = StationOwner.objects.get(phone_number=payload["phone_number"])
         assert created.station_id == station.id
 
-
-    def test_create_missing_station_fail(self,
-        auth_client, admin_user, station_owner_payload_factory
+    def test_create_missing_station_fail(
+        self, auth_client, admin_user, station_owner_payload_factory
     ):
         payload = station_owner_payload_factory()
         payload.pop("station")

@@ -14,7 +14,6 @@ from apps.companies.tests.api.v1.car_operation.helpers import (
 )
 from apps.notifications.models import Notification
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 HOLDERS = [
@@ -25,7 +24,9 @@ HOLDERS = [
 
 class TestCarOperationCreate:
     @pytest.fixture(autouse=True)
-    def setup(self, auth_client, admin_user, company_car, car_operation_payload_factory):
+    def setup(
+        self, auth_client, admin_user, company_car, car_operation_payload_factory
+    ):
         self.admin = admin_user
         self.car = company_car
         self.build_payload = car_operation_payload_factory
@@ -35,7 +36,9 @@ class TestCarOperationCreate:
 
     def create(self, payload=None, client=None):
         return (client or self.client).post(
-            self.url, self.build_payload() if payload is None else payload, format="json"
+            self.url,
+            self.build_payload() if payload is None else payload,
+            format="json",
         )
 
     def fund_holder(self, request, balance_source, holder_fixture, **balances):

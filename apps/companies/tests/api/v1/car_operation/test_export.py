@@ -12,7 +12,6 @@ from apps.companies.tests.api.v1.car_operation.helpers import (
 )
 from apps.notifications.models import Notification
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -24,19 +23,17 @@ def export_media_root(settings, tmp_path):
 
 class TestCarOperationExport:
 
-
     def test_export_without_authentication_fail(self, api_client):
         response = api_client.get(operation_export_url())
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
     @pytest.mark.parametrize(
         "role_fixture",
         ["admin_user", "station_worker", "station_owner", "finance_user"],
     )
-    def test_export_forbidden_role_fail(self,
-        role_fixture, request, auth_client, company, station
+    def test_export_forbidden_role_fail(
+        self, role_fixture, request, auth_client, company, station
     ):
         user = request.getfixturevalue(role_fixture)
         client_kwargs = {}
@@ -47,9 +44,8 @@ class TestCarOperationExport:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-    def test_export_without_completed_operations_fail(self,
-        auth_client, company_owner, company, car_operation_factory
+    def test_export_without_completed_operations_fail(
+        self, auth_client, company_owner, company, car_operation_factory
     ):
         car_operation_factory(status=CarOperation.OperationStatus.PENDING)
 
@@ -60,8 +56,8 @@ class TestCarOperationExport:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["message"] == "لا توجد بيانات للاستخراج"
 
-
-    def test_export_as_company_owner_success(self,
+    def test_export_as_company_owner_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -96,8 +92,8 @@ class TestCarOperationExport:
         assert notification.url == download_url
         assert operation.id
 
-
-    def test_export_as_branch_manager_only_managed_branch_success(self,
+    def test_export_as_branch_manager_only_managed_branch_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -122,8 +118,8 @@ class TestCarOperationExport:
         assert managed.id
         assert os.listdir(os.path.join(settings.MEDIA_ROOT, "excel_exports"))
 
-
-    def test_export_filter_by_car_success(self,
+    def test_export_filter_by_car_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -147,9 +143,8 @@ class TestCarOperationExport:
         assert response.status_code == status.HTTP_200_OK, response.data
         assert response.data["query_param"]["car"] == str(matching.car_id)
 
-
-    def test_export_invalid_date_from_fail(self,
-        auth_client, company_owner, company, car_operation_factory
+    def test_export_invalid_date_from_fail(
+        self, auth_client, company_owner, company, car_operation_factory
     ):
         car_operation_factory(status=CarOperation.OperationStatus.COMPLETED)
 
@@ -161,9 +156,8 @@ class TestCarOperationExport:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["message"] == "Invalid date from format"
 
-
-    def test_export_no_data_for_date_range_fail(self,
-        auth_client, company_owner, company, car_operation_factory
+    def test_export_no_data_for_date_range_fail(
+        self, auth_client, company_owner, company, car_operation_factory
     ):
         car_operation_factory(status=CarOperation.OperationStatus.COMPLETED)
 
@@ -175,19 +169,16 @@ class TestCarOperationExport:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "لا توجد بيانات للاستخراج" in response.data["message"]
 
-
     def test_export_without_company_claim_fail(self, auth_client, company_owner):
         response = auth_client(company_owner).get(operation_export_url())
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Branches are required" in response.data["message"]
 
-
     def test_download_excel_without_authentication_fail(self, api_client):
         response = api_client.get(operation_download_url(), {"file": "export.xlsx"})
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
 
     def test_download_excel_forbidden_role_fail(self, auth_client, admin_user):
         response = auth_client(admin_user).get(
@@ -196,16 +187,18 @@ class TestCarOperationExport:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-    def test_download_excel_missing_file_param_fail(self, auth_client, company_owner, company):
+    def test_download_excel_missing_file_param_fail(
+        self, auth_client, company_owner, company
+    ):
         response = auth_client(company_owner, company_id=company.id).get(
             operation_download_url()
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
-    def test_download_excel_unknown_file_fail(self, auth_client, company_owner, company):
+    def test_download_excel_unknown_file_fail(
+        self, auth_client, company_owner, company
+    ):
         response = auth_client(company_owner, company_id=company.id).get(
             operation_download_url(),
             {"file": "missing.xlsx"},
@@ -213,8 +206,8 @@ class TestCarOperationExport:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
-    def test_download_excel_after_export_success(self,
+    def test_download_excel_after_export_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -225,7 +218,9 @@ class TestCarOperationExport:
         export_response = auth_client(company_owner, company_id=company.id).get(
             operation_export_url()
         )
-        filename = parse_qs(urlparse(export_response.data["download_url"]).query)["file"][0]
+        filename = parse_qs(urlparse(export_response.data["download_url"]).query)[
+            "file"
+        ][0]
 
         response = auth_client(company_owner, company_id=company.id).get(
             operation_download_url(),

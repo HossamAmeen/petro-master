@@ -4,15 +4,13 @@ from rest_framework import status
 from apps.users.models import StationBranchManager, StationOwner, User
 from apps.users.tests.helpers import station_branch_managers_list_url
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestStationBranchManagerCreate:
 
-
-    def test_create_without_authentication_fail(self,
-        api_client, station_branch_manager_payload_factory
+    def test_create_without_authentication_fail(
+        self, api_client, station_branch_manager_payload_factory
     ):
         response = api_client.post(
             station_branch_managers_list_url(),
@@ -22,9 +20,12 @@ class TestStationBranchManagerCreate:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_create_as_company_owner_fail(self,
-        auth_client, company_owner, company, station_branch_manager_payload_factory
+    def test_create_as_company_owner_fail(
+        self,
+        auth_client,
+        company_owner,
+        company,
+        station_branch_manager_payload_factory,
     ):
         before = StationOwner.objects.filter(
             role=User.UserRoles.StationBranchManager
@@ -38,13 +39,19 @@ class TestStationBranchManagerCreate:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert (
-            StationOwner.objects.filter(role=User.UserRoles.StationBranchManager).count()
+            StationOwner.objects.filter(
+                role=User.UserRoles.StationBranchManager
+            ).count()
             == before
         )
 
-
-    def test_create_as_dashboard_success(self,
-        auth_client, admin_user, station, branch, station_branch_manager_payload_factory
+    def test_create_as_dashboard_success(
+        self,
+        auth_client,
+        admin_user,
+        station,
+        branch,
+        station_branch_manager_payload_factory,
     ):
         payload = station_branch_manager_payload_factory()
 
@@ -63,9 +70,13 @@ class TestStationBranchManagerCreate:
             user=created, station_branch=branch
         ).exists()
 
-
-    def test_create_as_station_owner_uses_jwt_station_success(self,
-        auth_client, station_owner, station, branch, station_branch_manager_payload_factory
+    def test_create_as_station_owner_uses_jwt_station_success(
+        self,
+        auth_client,
+        station_owner,
+        station,
+        branch,
+        station_branch_manager_payload_factory,
     ):
         payload = station_branch_manager_payload_factory()
         payload.pop("station_id")
@@ -80,9 +91,8 @@ class TestStationBranchManagerCreate:
         created = StationOwner.objects.get(phone_number=payload["phone_number"])
         assert created.station_id == station.id
 
-
-    def test_create_dashboard_without_station_id_fail(self,
-        auth_client, admin_user, station_branch_manager_payload_factory
+    def test_create_dashboard_without_station_id_fail(
+        self, auth_client, admin_user, station_branch_manager_payload_factory
     ):
         payload = station_branch_manager_payload_factory()
         payload.pop("station_id")
@@ -98,13 +108,14 @@ class TestStationBranchManagerCreate:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert (
-            StationOwner.objects.filter(role=User.UserRoles.StationBranchManager).count()
+            StationOwner.objects.filter(
+                role=User.UserRoles.StationBranchManager
+            ).count()
             == before
         )
 
-
-    def test_create_password_mismatch_fail(self,
-        auth_client, admin_user, station_branch_manager_payload_factory
+    def test_create_password_mismatch_fail(
+        self, auth_client, admin_user, station_branch_manager_payload_factory
     ):
         payload = station_branch_manager_payload_factory(confirm_password="other-pass")
 
@@ -116,8 +127,8 @@ class TestStationBranchManagerCreate:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
-    def test_create_foreign_station_branches_fail(self,
+    def test_create_foreign_station_branches_fail(
+        self,
         auth_client,
         admin_user,
         station,

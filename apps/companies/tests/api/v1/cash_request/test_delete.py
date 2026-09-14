@@ -9,15 +9,13 @@ from apps.companies.tests.api.v1.cash_request.helpers import (
     set_balance,
 )
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestCashRequestDelete:
 
-
-    def test_delete_without_authentication_fail(self,
-        api_client, company, company_driver, cash_request_factory
+    def test_delete_without_authentication_fail(
+        self, api_client, company, company_driver, cash_request_factory
     ):
         cash_request = cash_request_factory(company=company, driver=company_driver)
 
@@ -26,9 +24,9 @@ class TestCashRequestDelete:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert CompanyCashRequest.objects.filter(pk=cash_request.id).exists()
 
-
     @pytest.mark.parametrize("role_fixture", ["station_worker", "station_owner"])
-    def test_delete_station_role_fail(self,
+    def test_delete_station_role_fail(
+        self,
         role_fixture,
         request,
         auth_client,
@@ -48,8 +46,8 @@ class TestCashRequestDelete:
         cash_request.refresh_from_db()
         assert cash_request.status == CompanyCashRequest.Status.IN_PROGRESS
 
-
-    def test_delete_in_progress_as_company_owner_refunds_company_success(self,
+    def test_delete_in_progress_as_company_owner_refunds_company_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -79,8 +77,8 @@ class TestCashRequestDelete:
         assert cash_request.driver_id == company_driver.id
         assert company.balance == Decimal("200.00")
 
-
-    def test_delete_in_progress_as_creator_manager_refunds_branch_success(self,
+    def test_delete_in_progress_as_creator_manager_refunds_branch_success(
+        self,
         auth_client,
         company_branch_manager,
         company,
@@ -107,8 +105,8 @@ class TestCashRequestDelete:
         assert cash_request.status == CompanyCashRequest.Status.REJECTED
         assert company_branch.balance == Decimal("200.00")
 
-
-    def test_delete_manager_created_request_as_owner_refunds_company_success(self,
+    def test_delete_manager_created_request_as_owner_refunds_company_success(
+        self,
         auth_client,
         company_owner,
         company_branch_manager,
@@ -139,8 +137,8 @@ class TestCashRequestDelete:
         assert company.balance == Decimal("200.00")
         assert company_branch.balance == Decimal("90.00")
 
-
-    def test_delete_as_dashboard_refunds_branch_success(self,
+    def test_delete_as_dashboard_refunds_branch_success(
+        self,
         auth_client,
         admin_user,
         company,
@@ -170,8 +168,8 @@ class TestCashRequestDelete:
         assert company.balance == Decimal("90.00")
         assert company_branch.balance == Decimal("200.00")
 
-
-    def test_delete_request_created_by_someone_else_as_manager_fail(self,
+    def test_delete_request_created_by_someone_else_as_manager_fail(
+        self,
         auth_client,
         company_branch_manager,
         company_owner,
@@ -195,7 +193,6 @@ class TestCashRequestDelete:
         cash_request.refresh_from_db()
         assert cash_request.status == CompanyCashRequest.Status.IN_PROGRESS
 
-
     @pytest.mark.parametrize(
         "request_status",
         [
@@ -203,7 +200,8 @@ class TestCashRequestDelete:
             CompanyCashRequest.Status.REJECTED,
         ],
     )
-    def test_delete_non_in_progress_fail(self,
+    def test_delete_non_in_progress_fail(
+        self,
         request_status,
         auth_client,
         company_owner,
@@ -231,8 +229,8 @@ class TestCashRequestDelete:
         assert cash_request.status == request_status
         assert company.balance == Decimal("100.00")
 
-
-    def test_delete_other_company_as_owner_fail(self,
+    def test_delete_other_company_as_owner_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -253,7 +251,6 @@ class TestCashRequestDelete:
         other.refresh_from_db()
         assert other.status == CompanyCashRequest.Status.IN_PROGRESS
 
-
     def test_delete_unknown_request_fail(self, auth_client, company_owner, company):
         response = auth_client(company_owner, company_id=company.id).delete(
             cash_request_detail_url(999_999)
@@ -261,9 +258,8 @@ class TestCashRequestDelete:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
-    def test_put_not_allowed_fail(self,
-        auth_client, company_owner, company, company_driver, cash_request_factory
+    def test_put_not_allowed_fail(
+        self, auth_client, company_owner, company, company_driver, cash_request_factory
     ):
         cash_request = cash_request_factory(company=company, driver=company_driver)
 

@@ -5,7 +5,6 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 
-
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -15,14 +14,13 @@ def driver_detail_url(driver_id):
 
 class TestDriverRetrieve:
 
-
     def test_retrieve_without_authentication_fail(self, api_client, company_driver):
         response = api_client.get(driver_detail_url(company_driver.id))
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-    def test_retrieve_owned_driver_success(self,
+    def test_retrieve_owned_driver_success(
+        self,
         auth_client,
         company_owner,
         company,
@@ -41,8 +39,8 @@ class TestDriverRetrieve:
         assert response.data["is_license_expiring_soon"] is False
         assert response.data["created_by"]["id"] == company_driver.created_by_id
 
-
-    def test_retrieve_outside_company_scope_fail(self,
+    def test_retrieve_outside_company_scope_fail(
+        self,
         auth_client,
         company_owner,
         company,
@@ -57,12 +55,10 @@ class TestDriverRetrieve:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-
     def test_retrieve_unknown_driver_fail(self, auth_client, admin_user):
         response = auth_client(admin_user).get(driver_detail_url(999_999))
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-
 
     @pytest.mark.parametrize(
         ("days_until_expiry", "expected"),
@@ -72,7 +68,8 @@ class TestDriverRetrieve:
             (31, False),
         ],
     )
-    def test_retrieve_license_expiring_soon_success(self,
+    def test_retrieve_license_expiring_soon_success(
+        self,
         days_until_expiry,
         expected,
         auth_client,

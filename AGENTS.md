@@ -1,5 +1,9 @@
 # Petro Master Backend Guide
 
+## Formatting
+
+- Run `make format` on your changes and make sure `make check` passes (activate the venv first: `source venv/bin/activate && make check`). black and isort are configured in `pyproject.toml`, flake8 in `.flake8`.
+
 ## Testing
 
 - Use `pytest` with `pytest-django`; run the suite with `venv/bin/python -m pytest`.
@@ -54,6 +58,15 @@ Living guide for coding agents working on Petro Master backend.
 ## Product docs
 
 Read `business-analysis.txt` and `documentation.txt` before planning changes when those files exist. Do not violate documented rules, flows, or assumptions unless the task explicitly asks for a change.
+
+## Docker
+
+Layouts live in `docker/dev/` and `docker/prod/`. Each folder has a `Dockerfile`, `docker-compose.yml`, `entrypoint.sh`, `start.sh`, `up.sh`, and `down.sh`. Compose build context is the backend root. Do not run these stacks unless the task asks you to.
+
+- **Dev**: Python 3.12 image with `requirements/dev.txt`, Django `runserver` on port 8000, Postgres 16, Redis 7, Celery worker, and Celery beat. The repo is bind-mounted. `ENVIRONMENT=local` and `DB_SSL_MODE=disable`. Optional overlay: project-root `.env` (`required: false`).
+- **Prod**: Multi-stage image, non-root `app` user, Gunicorn, `collectstatic` on boot, healthcheck on `web` only. Same Postgres/Redis/Celery services without a source bind-mount. Override secrets via host env or `.env`.
+- Entrypoint waits for Postgres and Redis, then runs `migrate` only when `RUN_MIGRATIONS=true` (web service). Celery processes reuse the same image with a different command.
+- Convenience scripts: `docker/dev/up.sh` / `docker/prod/up.sh` (compose up --build) and matching `down.sh`. Pytest still runs with `venv/bin/python -m pytest`; Docker is not required for tests.
 
 ## Admin: parent → branch dependent dropdowns
 

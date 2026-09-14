@@ -1,7 +1,7 @@
+import pytest
+
 from apps.notifications.fcm_manager import FCMManager
 from apps.notifications.models import Notification
-
-import pytest
 
 # Captured at import time, before the autouse FCM mock replaces the class attribute.
 ORIGINAL_SEND_FCM = FCMManager.send_fcm_message
