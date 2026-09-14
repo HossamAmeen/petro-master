@@ -1,8 +1,5 @@
-from django.conf import settings
-from django.core.mail import send_mail
 from django.db.models import Q
 from django.shortcuts import render
-from django.template.loader import render_to_string
 from django.urls import reverse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
@@ -13,8 +10,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from apps.auth.tasks import send_password_reset_email_task
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import DASHBOARD_ROLES
+from apps.shared.task_runner import run_task
 from apps.users.models import User
 from apps.utilities.serializers import MessageErrorsSerializer
 
@@ -218,22 +217,8 @@ class PasswordResetRequestAPIView(APIView):
             reset_token = user.create_password_reset_token()
             reset_url = reverse("password_reset_confirm", kwargs={"token": reset_token})
             reset_link = request.build_absolute_uri(reset_url)
-
-            subject = "Password Reset Request"
-            from_email = settings.DEFAULT_FROM_EMAIL
-            recipient_list = [user.email]
-            html_message = render_to_string(
-                "reset_password_email_template.html", {"reset_password_url": reset_link}
-            )
             try:
-                send_mail(
-                    subject=subject,
-                    message="",
-                    from_email=from_email,
-                    recipient_list=recipient_list,
-                    fail_silently=False,
-                    html_message=html_message,
-                )
+                run_task(send_password_reset_email_task, user.email, reset_link)
                 return Response(
                     {"message": "Password reset request sent successfully"},
                     status=status.HTTP_200_OK,

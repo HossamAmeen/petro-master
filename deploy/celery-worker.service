@@ -1,0 +1,31 @@
+# systemd unit for the Celery worker that runs the background tasks (push
+# notifications, SMS, emails) queued when USE_CELERY=true. Not needed while
+# USE_CELERY is off.
+#
+# Install it next to the API's unit, named <SERVICE_NAME>-celery:
+#   sudo cp deploy/celery-worker.service /etc/systemd/system/petromaster-staging-celery.service
+#   sudo nano /etc/systemd/system/petromaster-staging-celery.service  # replace the CHANGE_ME values
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now petromaster-staging-celery
+# Then set USE_CELERY=true in .env and restart the API.
+#
+# Under that name, deploy/restart_Service.sh, deploy/service.sh and
+# `make restart` / `make stop` manage it together with the API, so it never keeps
+# running old task code after a deploy.
+# Logs: sudo journalctl -fu petromaster-staging-celery
+
+[Unit]
+Description=Petro Master Celery worker
+After=network.target
+
+[Service]
+# Use the same user and directory as the API's unit. The directory matters:
+# settings read .env relative to it.
+User=CHANGE_ME
+WorkingDirectory=/CHANGE_ME/backend
+ExecStart=/CHANGE_ME/backend/venv/bin/celery -A config worker --loglevel=info
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

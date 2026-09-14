@@ -33,6 +33,7 @@ class TestCompanyOwnerRetrieve:
         assert response.data["phone_number"] == company_owner.phone_number
         assert response.data["role"] == User.UserRoles.CompanyOwner
         assert response.data["company_id"] == company.id
+        assert response.data["company"] == {"id": company.id, "name": company.name}
         assert response.data["created_by"] == user_ref(admin_user)
 
     def test_retrieve_branch_manager_fail(

@@ -40,6 +40,24 @@ class TestPasswordResetRequest:
         assert user.reset_password_token in html_body
         assert "password-reset-confirm" in html_body
 
+    def test_password_reset_request_queues_email_with_celery_success(
+        self, api_client, settings, django_capture_on_commit_callbacks
+    ):
+        settings.USE_CELERY = True
+        user = UserFactory()
+
+        with django_capture_on_commit_callbacks(execute=True) as callbacks:
+            response = api_client.post(
+                password_reset_request_url(),
+                {"email": user.email},
+                format="json",
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(callbacks) == 1
+        assert len(mail.outbox) == 1
+        assert mail.outbox[0].to == [user.email]
+
     def test_password_reset_request_unknown_email_fail(self, api_client):
         response = api_client.post(
             password_reset_request_url(),
@@ -88,7 +106,7 @@ class TestPasswordResetRequest:
         user = UserFactory()
 
         with patch(
-            "apps.auth.v1.views.send_mail",
+            "apps.auth.tasks.send_mail",
             side_effect=Exception("smtp down"),
         ):
             response = api_client.post(

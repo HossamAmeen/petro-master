@@ -22,7 +22,7 @@
 - Reuse `driver_factory`, `driver_payload_factory`, and `company_driver` from `apps/companies/tests/conftest.py` instead of creating driver graphs inside tests.
 - Company API tests live in `apps/companies/tests/api/v1/company/`, with one module per CRUD action. Wrap tests in a `Test*` class; method names end in `_success` or `_fail`.
 - Reuse `company_factory`, `company_payload_factory`, `company`, and `other_company` from `apps/companies/tests/conftest.py` instead of creating company graphs inside tests.
-- `CompanyViewSet` is authenticated but not role-scoped: any logged-in user can list, retrieve, create, update, or delete companies. Cover annotated branch/car/driver/manager counts, district/city filters, name/phone search, `no_paginate`, ignored writable-balance, and PROTECT deletes when branches or owners exist.
+- `CompanyViewSet` is authenticated but not role-scoped: any logged-in user can list, retrieve, create, update, or delete companies. Cover annotated branch/car/driver/manager counts, district/city filters, name/phone search, `no_paginate`, ignored writable-balance, PROTECT deletes when branches or owners exist, and the 400 `has_operations` rejection when any `CarOperation` (any status) belongs to the company's cars.
 - Company home tests live in `apps/companies/tests/api/v1/company/test_home.py`. Reuse `car_factory`, `driver_factory`, `car_operation_factory`, `cash_request_factory`, and `company_transaction_factory`. Cover owner vs branch-manager scoping, empty companies, missing `company_id`, fuel-type and license-expiration counts, in-progress cash-request totals, and the latest-three operations/transactions windows.
 - Company cash-request API tests live in `apps/companies/tests/api/v1/cash_request/`, with one module per CRUD action. Wrap tests in a `Test*` class; method names end in `_success` or `_fail`.
 - Reuse `cash_request_factory`, `cash_request_payload_factory`, `driver_factory`, and `company_driver` from `apps/companies/tests/conftest.py`. SMS is autouse-mocked in that package; do not hit the SMS provider.
@@ -69,6 +69,15 @@ Living guide for coding agents working on Petro Master backend.
 ## Product docs
 
 Read `business-analysis.txt` and `documentation.txt` before planning changes when those files exist. Do not violate documented rules, flows, or assumptions unless the task explicitly asks for a change.
+
+## Docker
+
+Layouts live in `docker/dev/` and `docker/prod/`. Each folder has a `Dockerfile`, `docker-compose.yml`, `entrypoint.sh`, `start.sh`, `up.sh`, and `down.sh`. Compose build context is the backend root. Do not run these stacks unless the task asks you to.
+
+- **Dev**: Python 3.12 image with `requirements/dev.txt`, Django `runserver` on port 8000, Postgres 16, Redis 7, Celery worker, and Celery beat. The repo is bind-mounted. `ENVIRONMENT=local` and `DB_SSL_MODE=disable`. Optional overlay: project-root `.env` (`required: false`).
+- **Prod**: Multi-stage image, non-root `app` user, Gunicorn, `collectstatic` on boot, healthcheck on `web` only. Same Postgres/Redis/Celery services without a source bind-mount. Override secrets via host env or `.env`.
+- Entrypoint waits for Postgres and Redis, then runs `migrate` only when `RUN_MIGRATIONS=true` (web service). Celery processes reuse the same image with a different command.
+- Convenience scripts: `docker/dev/up.sh` / `docker/prod/up.sh` (compose up --build) and matching `down.sh`. Pytest still runs with `venv/bin/python -m pytest`; Docker is not required for tests.
 
 ## Admin: parent → branch dependent dropdowns
 
@@ -118,6 +127,13 @@ class TestCarUpdateBalance:
 - **Comprehensive Coverage**: Tests must cover all logical edge cases. Do not just test validation errors; ensure you test the full "happy path" (successful creation, balance deductions, profits). Test different permission layers for user roles (Owner vs Manager vs Worker).
 - **Avoid Repetition**: Utilize `@pytest.mark.parametrize` where applicable to test multiple roles or conditions within the same test method.
 - **Fixture Reusability**: Do not duplicate data creation in test methods. Create and utilize standard fixtures in `conftest.py` that fully model business requirements (e.g. `company`, `car`, `car_operation`).
+
+## Background tasks (Celery)
+
+- Calls to external services that should stay off the request path (push, SMS, email) are Celery tasks in their app's `tasks.py`: `apps/notifications/tasks.py` (`send_fcm_message_task`, `send_sms_task`) and `apps/auth/tasks.py` (`send_password_reset_email_task`). Keep tasks in installed apps so the worker autodiscovers them — `apps/shared` is not an installed app.
+- Start a task with `run_task(task, *args, **kwargs)` from `apps/shared/task_runner.py`, never `.delay()` directly. `USE_CELERY` (env, default off) picks the mode: on → queued once the current transaction commits (nothing is sent for rolled-back work; a broker failure is logged, not raised); off → runs inline like a plain call (one attempt, no retries, exceptions reach the caller).
+- Pass the JSON-serializable data the task needs (titles, phone numbers, tokens), not model instances. Retry only transient network errors (`autoretry_for`). Fire-and-forget tasks set `ignore_result=True`.
+- Tests run inline (`USE_CELERY = False` in `config/settings_test.py`). Mock the adapter where the task module looks it up: `FCMManager.send_fcm_message` (root autouse), `apps.notifications.tasks.send_sms`, `apps.auth.tasks.send_mail`. To cover the Celery path, set `settings.USE_CELERY = True` and wrap the act in `django_capture_on_commit_callbacks(execute=True)`; `CELERY_TASK_ALWAYS_EAGER` then runs the queued task in-process. Exercise retries with `task.apply(...)`.
 
 ## Entity availability
 
@@ -183,7 +199,7 @@ The `auth` app (`apps/auth`) issues JWT sessions for company, station, and dashb
 - **`DashboardLoginAPIView`**: Unauthenticated. Allows `DASHBOARD_ROLES` (admin, finance, customer_support). Tokens do not embed company/station claims.
 - **`CustomTokenRefreshView`**: Copies `company_id` / `station_id` from the refresh token onto the new access token. Company/station roles without those claims are rejected.
 - **`ProfileAPIView`**: Authenticated retrieve/update of the current user. Password is write-only; phone and role are read-only. `to_representation` adds role-specific `balance` and `available_balance`.
-- **`PasswordResetRequestAPIView`** / **`PasswordResetConfirmAPIView`**: Unauthenticated. Request emails a 24-hour token via Django `send_mail`. Confirm GET renders HTML; POST sets the password and clears the token.
+- **`PasswordResetRequestAPIView`** / **`PasswordResetConfirmAPIView`**: Unauthenticated. Request emails a 24-hour token via `send_password_reset_email_task` (Django `send_mail`), through `run_task`. Confirm GET renders HTML; POST sets the password and clears the token.
 
 ### Testing
 - Auth API tests live in `apps/auth/tests/` with one module per endpoint. Reuse shared user/company/station fixtures and `apps/auth/tests/helpers.py` (`set_login_password`, URL reverses, JWT helpers).
@@ -194,7 +210,7 @@ The `auth` app (`apps/auth`) issues JWT sessions for company, station, and dashb
 The `notifications` app (`apps/notifications`) stores in-app notifications and fans them out over FCM.
 
 - **`NotificationViewSet`**: Authenticated list + PATCH. Queryset is `user=request.user`. Search `title`/`description`; filter `is_read` and `type` (iexact). List adds `unread_count` for dashboard roles only (always `0` for company/station). PATCH serializer accepts `is_read` only. No retrieve/create/delete.
-- Creating a `Notification` fires `post_save` → `FCMManager.send_fcm_message` with that user's Firebase tokens. Updates do not resend. `user=None` raises on send because the signal dereferences `instance.user.firebase_tokens`.
+- Creating a `Notification` fires `post_save` → `run_task(send_fcm_message_task, ...)` → `FCMManager.send_fcm_message` with that user's Firebase tokens. Updates do not resend. `user=None` raises on send because the signal dereferences `instance.user.firebase_tokens`.
 - Tests live in `apps/notifications/tests/`. Mock FCM at `FCMManager.send_fcm_message`; unit-test the real sender via `ORIGINAL_SEND_FCM`.
 
 ## Geo App Overview
@@ -230,5 +246,5 @@ The `stations` app (`apps/stations`) manages gas station networks, their physica
 - `StationGasOperationAPIView` PATCH is authenticated only (not worker-scoped). Completing `amount` requires `start_time` within 60 seconds, `fuel_image`, and amount ≤ min(tank/permitted, floor(car.balance / company_liter_cost)). It deducts `company_cost` from `car.balance` and `station_cost` from `station_branch.balance` (station/company entity balances are unchanged).
 - Gas MONEY notifications: all `StationOwner` rows for the JWT `station_id` plus the acting user; company MONEY goes to managers of that car's company branch plus the acting user (not the company owner). Oil-change GENERAL goes to company owners and that branch's managers.
 - `StationOtherOperationAPIView` is worker-scoped and requires `service__isnull=True`. Completing deducts `company_cost` from the car only (station branch balance is not changed). Station MONEY: all station owners plus the worker. Company MONEY: all `CompanyUser` rows for the company plus the worker.
-- `StationViewSet` list/create are dashboard-only; retrieve/PATCH allow dashboard or station roles. `StationBranchViewSet` list is public; `update-balance` is station-owner-only. `StationHomeAPIView` / `StationReportsAPIView` require station roles; operations list is authenticated and role-scoped.
+- `StationViewSet` list/create are dashboard-only; retrieve/PATCH allow dashboard or station roles. Delete returns 400 `has_operations` when any `CarOperation` (any status) ran at one of the station's branches. `StationBranchViewSet` list is public; `update-balance` is station-owner-only. `StationHomeAPIView` / `StationReportsAPIView` require station roles; operations list is authenticated and role-scoped.
 - Model smoke tests remain in `apps/stations/tests/test_models.py`.

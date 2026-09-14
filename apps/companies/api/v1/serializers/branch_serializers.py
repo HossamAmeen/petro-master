@@ -36,6 +36,7 @@ class ListCompanyBranchNameSerializer(serializers.ModelSerializer):
 class ListCompanyBranchSerializer(serializers.ModelSerializer):
     district = ListDistrictSerializer()
     company = CompanyNameSerializer()
+    created_by = SingleUserSerializer()
     cars_count = serializers.IntegerField()
     drivers_count = serializers.IntegerField()
     managers_count = serializers.IntegerField()

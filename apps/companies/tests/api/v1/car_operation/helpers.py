@@ -120,6 +120,8 @@ def assert_operation_payload(data, operation, user=None, *, include_profits=None
     assert data["unit"] == SERVICE_UNIT_CHOICES.get(operation.unit, operation.unit)
     assert data["fuel_type"] == operation.fuel_type
     assert data["car"] == expected_car_payload(operation.car)
+    company = operation.car.branch.company
+    assert data["company"] == {"id": company.id, "name": company.name}
     assert data["driver"] == expected_driver_payload(operation.driver)
     assert data["station_branch"] == expected_station_branch_payload(
         operation.station_branch

@@ -1,0 +1,90 @@
+{% load i18n %}
+
+<style>
+    #changelist-search .balance-range-filter {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+
+    #changelist-search .balance-range-filter .input-group-text {
+        font-size: .8125rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+        background-color: #f4f6f9;
+        border-color: #ced4da;
+        color: #6c757d;
+    }
+
+    #changelist-search .balance-range-filter input[type="number"] {
+        min-width: 7rem;
+        height: calc(2.25rem + 2px);
+    }
+
+    #changelist-search .balance-range-filter .btn-clear-balance {
+        white-space: nowrap;
+    }
+</style>
+
+<div class="form-group balance-range-filter">
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <span class="input-group-text">
+                <i class="fas fa-wallet mr-2"></i>{{ title }}
+            </span>
+        </div>
+        <input type="number"
+               step="0.01"
+               class="form-control"
+               name="balance_min"
+               id="balance_min"
+               placeholder="{% trans 'Min' %}"
+               aria-label="{% trans 'Min' %}"
+               title="{% trans 'Min' %}"
+               value="{{ spec.used_parameters.balance_min|default:'' }}">
+        <div class="input-group-prepend input-group-append">
+            <span class="input-group-text">{% trans "to" %}</span>
+        </div>
+        <input type="number"
+               step="0.01"
+               class="form-control"
+               name="balance_max"
+               id="balance_max"
+               placeholder="{% trans 'Max' %}"
+               aria-label="{% trans 'Max' %}"
+               title="{% trans 'Max' %}"
+               value="{{ spec.used_parameters.balance_max|default:'' }}">
+        {% if spec.used_parameters.balance_min or spec.used_parameters.balance_max %}
+            <div class="input-group-append">
+                <button type="button" class="btn btn-outline-secondary btn-clear-balance">
+                    <i class="fas fa-times mr-1"></i>{% trans "Clear" %}
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    (function () {
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('.btn-clear-balance');
+            if (!button) {
+                return;
+            }
+            var group = button.closest('.balance-range-filter');
+            group.querySelectorAll('input[type="number"]').forEach(function (input) {
+                input.value = '';
+            });
+            button.closest('form').submit();
+        });
+
+        // keep empty bounds out of the query string, like the select2 filters do
+        document.addEventListener('submit', function (event) {
+            event.target.querySelectorAll('.balance-range-filter input[type="number"]').forEach(
+                function (input) {
+                    input.disabled = !input.value;
+                }
+            );
+        }, true);
+    })();
+</script>

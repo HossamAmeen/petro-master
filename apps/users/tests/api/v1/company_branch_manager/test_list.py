@@ -99,5 +99,6 @@ class TestCompanyBranchManagerList:
         row = listed[company_branch_manager.id]
         assert row["name"] == company_branch_manager.name
         assert row["company_id"] == company.id
+        assert row["company"] == {"id": company.id, "name": company.name}
         assert row["created_by"] == user_ref(admin_user)
         assert "company_branches" not in row

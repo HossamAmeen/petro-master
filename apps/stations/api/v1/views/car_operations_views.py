@@ -3,7 +3,8 @@ import math
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.transaction import atomic
+from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
@@ -33,7 +34,7 @@ class StationGasOperationAPIView(APIView):
         request=updateStationGasCarOperationSerializer,
         responses={200: updateStationGasCarOperationSerializer},
     )
-    @atomic
+    @transaction.atomic
     def patch(self, request, pk, *args, **kwargs):
         car_opertion = CarOperation.objects.filter(
             id=pk,
@@ -132,6 +133,7 @@ class StationGasOperationAPIView(APIView):
 
                 car.is_blocked_balance_update = False
                 car.last_meter = car_opertion.car_meter
+                car.balance = F("balance") - company_cost
                 car.save()
                 car.deduct_balance(company_cost)
 
@@ -176,7 +178,7 @@ class StationGasOperationAPIView(APIView):
                     is_internal=False,
                 )
                 station_branch = worker.station_branch
-                station_branch.balance = station_branch.balance - station_cost
+                station_branch.balance = F("balance") - station_cost
                 station_branch.save()
 
                 # send notifications for station users
@@ -237,7 +239,7 @@ class StationGasOperationAPIView(APIView):
 
         raise CustomValidationError(serializer.errors)
 
-    @atomic
+    @transaction.atomic
     def delete(self, request, pk, *args, **kwargs):
         car_opertion = CarOperation.objects.filter(
             id=pk,
@@ -272,7 +274,7 @@ class StationOtherOperationAPIView(APIView):
             )
         },
     )
-    @atomic
+    @transaction.atomic
     def patch(self, request, pk, *args, **kwargs):
         car_operation = CarOperation.objects.filter(
             id=pk,
@@ -313,6 +315,7 @@ class StationOtherOperationAPIView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
             car.is_blocked_balance_update = False
+            car.balance = F("balance") - company_cost
             car.save()
             car.deduct_balance(company_cost)
 

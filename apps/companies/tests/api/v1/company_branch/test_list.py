@@ -2,6 +2,8 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
+from apps.users.tests.helpers import user_ref
+
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
@@ -200,3 +202,13 @@ class TestCompanyBranchList:
         assert response.data["results"] == [
             {"id": company_branch.id, "name": company_branch.name}
         ]
+
+    def test_list_includes_created_by_success(
+        self, auth_client, admin_user, company_branch
+    ):
+        response = auth_client(admin_user).get(reverse("company-branches-list"))
+
+        assert response.status_code == status.HTTP_200_OK
+        (item,) = response.data["results"]
+        assert item["id"] == company_branch.id
+        assert item["created_by"] == user_ref(admin_user)

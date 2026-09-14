@@ -69,6 +69,7 @@ class TestCompanyOwnerList:
         assert row["phone_number"] == company_owner.phone_number
         assert row["role"] == User.UserRoles.CompanyOwner
         assert row["company_id"] == company.id
+        assert row["company"] == {"id": company.id, "name": company.name}
         assert row["created_by"] == user_ref(admin_user)
 
     def test_list_search_by_phone_success(

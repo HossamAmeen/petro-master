@@ -42,11 +42,13 @@ from apps.users.models import User
 
 class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CarOperation.objects.select_related(
-        "car",
+        "car__branch__company",
         "driver",
         "station_branch",
         "worker__station_branch__district__city",
         "service",
+        "created_by",
+        "updated_by",
     ).order_by("-id")
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CarOperationFilter

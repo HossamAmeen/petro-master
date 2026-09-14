@@ -1,5 +1,5 @@
 from datetime import datetime, time, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django import forms
 from django.contrib import admin, messages
@@ -304,6 +304,63 @@ class CarForm(forms.ModelForm):
         return fuel_allowed_days
 
 
+class RangeListFilter(admin.SimpleListFilter):
+    """A filter driven by free-form bound inputs instead of fixed lookups."""
+
+    range_parameters = ()
+
+    def __init__(self, request, params, model, model_admin):
+        super().__init__(request, params, model, model_admin)
+        # SimpleListFilter only consumes `parameter_name`; the extra range
+        # params must be removed here or the changelist passes them to the ORM.
+        for param in self.range_parameters:
+            if param in params:
+                value = params.pop(param)
+                if isinstance(value, list):
+                    value = value[-1] if value else ""
+                self.used_parameters[param] = value
+
+    def expected_parameters(self):
+        return [self.parameter_name, *self.range_parameters]
+
+    def lookups(self, request, model_admin):
+        # required by Django admin, but not really used
+        return (("custom", _("Custom range")),)
+
+
+class BalanceRangeFilter(RangeListFilter):
+    """Inclusive min/max bounds on the car's own `balance` column."""
+
+    title = _("Balance")
+    parameter_name = "balance_range"
+    template = "admin/car_balance_filter.html"
+
+    range_parameters = ("balance_min", "balance_max")
+
+    def parsed_amount(self, param):
+        value = self.used_parameters.get(param)
+        if not value:
+            return None
+        try:
+            amount = Decimal(value)
+        except InvalidOperation:
+            return None
+        # "nan" and "inf" parse fine but are not usable bounds
+        return amount if amount.is_finite() else None
+
+    def queryset(self, request, queryset):
+        minimum = self.parsed_amount("balance_min")
+        maximum = self.parsed_amount("balance_max")
+
+        if minimum is not None:
+            queryset = queryset.filter(balance__gte=minimum)
+
+        if maximum is not None:
+            queryset = queryset.filter(balance__lte=maximum)
+
+        return queryset
+
+
 @admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
     form = CarForm
@@ -338,6 +395,7 @@ class CarAdmin(admin.ModelAdmin):
         "is_with_odometer",
         "tank_capacity",
         "fuel_type",
+        BalanceRangeFilter,
         "balance_source",
         "city",
         "branch",
@@ -653,30 +711,12 @@ class CompanyCashRequestAdmin(admin.ModelAdmin):
         obj.save()
 
 
-class CreatedDateRangeFilter(admin.SimpleListFilter):
+class CreatedDateRangeFilter(RangeListFilter):
     title = _("Created Date Range")
     parameter_name = "created_range"
     template = "admin/caroperation_date_filter.html"
 
-    date_parameters = ("created_from", "created_to")
-
-    def __init__(self, request, params, model, model_admin):
-        super().__init__(request, params, model, model_admin)
-        # SimpleListFilter only consumes `parameter_name`; the extra range
-        # params must be removed here or the changelist passes them to the ORM.
-        for param in self.date_parameters:
-            if param in params:
-                value = params.pop(param)
-                if isinstance(value, list):
-                    value = value[-1] if value else ""
-                self.used_parameters[param] = value
-
-    def expected_parameters(self):
-        return [self.parameter_name, *self.date_parameters]
-
-    def lookups(self, request, model_admin):
-        # required by Django admin, but not really used
-        return (("custom", _("Custom range")),)
+    range_parameters = ("created_from", "created_to")
 
     def parsed_date(self, param):
         value = self.used_parameters.get(param)
@@ -1001,19 +1041,21 @@ class CarOperationAdmin(admin.ModelAdmin):
             form = CloneCarOperationForm(request.POST)
             if form.is_valid():
                 try:
-                    clone = clone_car_operation(
-                        source=obj,
-                        amount=form.cleaned_data["amount"],
-                        user=request.user,
-                    )
+                    # the history entry commits with the clone or not at all
+                    with transaction.atomic():
+                        clone = clone_car_operation(
+                            source=obj,
+                            amount=form.cleaned_data["amount"],
+                            user=request.user,
+                        )
+                        self.log_addition(
+                            request,
+                            clone,
+                            [{"added": {"name": str(clone._meta.verbose_name)}}],
+                        )
                 except CloneError as error:
                     form.add_error("amount", str(error))
                 else:
-                    self.log_addition(
-                        request,
-                        clone,
-                        [{"added": {"name": str(clone._meta.verbose_name)}}],
-                    )
                     messages.success(
                         request,
                         f"تم إنشاء العملية {clone.code} كنسخة من العملية {obj.code}.",
