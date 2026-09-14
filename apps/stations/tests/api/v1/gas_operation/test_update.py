@@ -831,3 +831,14 @@ class TestStationGasOperationUpdate:
         assert company_txn.company_branch_id == company_branch.id
         assert company_txn.amount == expected["company_cost"]
         assert StationKhaznaTransaction.objects.count() == 1
+
+    def test_patch_malformed_field_fail(self, gas_operation):
+        response = self.client.patch(
+            gas_url(gas_operation.id), {"amount": "not-a-number"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "amount" in response.data["message"]
+        gas_operation.refresh_from_db()
+        assert gas_operation.amount is None
+        assert gas_operation.status == CarOperation.OperationStatus.PENDING

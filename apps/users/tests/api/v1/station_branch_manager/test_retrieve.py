@@ -117,3 +117,40 @@ class TestStationBranchManagerRetrieve:
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not StationOwner.objects.filter(pk=manager.id).exists()
+
+    def test_update_password_without_confirmation_fail(
+        self, auth_client, admin_user, branch_manager
+    ):
+        response = auth_client(admin_user).patch(
+            station_branch_managers_detail_url(branch_manager.id),
+            {"password": "new-pass-123"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["message"] == "تاكيد كلمة المرور مطلوب."
+        branch_manager.refresh_from_db()
+        assert not branch_manager.check_password("new-pass-123")
+
+    def test_update_password_success(self, auth_client, admin_user, branch_manager):
+        response = auth_client(admin_user).patch(
+            station_branch_managers_detail_url(branch_manager.id),
+            {"password": "new-pass-123", "confirm_password": "new-pass-123"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert "password" not in response.data
+        branch_manager.refresh_from_db()
+        assert branch_manager.check_password("new-pass-123")
+
+    def test_delete_manager_assigned_to_branches_fail(
+        self, auth_client, admin_user, branch_manager
+    ):
+        response = auth_client(admin_user).delete(
+            station_branch_managers_detail_url(branch_manager.id)
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["code"] == "protected"
+        assert StationOwner.objects.filter(pk=branch_manager.id).exists()

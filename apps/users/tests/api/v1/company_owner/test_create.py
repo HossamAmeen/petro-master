@@ -121,3 +121,21 @@ class TestCompanyOwnerCreate:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_create_with_company_branches_raises_type_error_fail(
+        self, auth_client, admin_user, company_branch, company_owner_payload_factory
+    ):
+        """Documents actual (buggy) behavior: `CreateCompanyOwnerSerializer.validate`
+        accepts `company_branches` that belong to the company, but `create` passes
+        them straight to `CompanyUser.objects.create`, which crashes with an
+        unhandled `TypeError` (HTTP 500) and creates nothing."""
+        payload = company_owner_payload_factory(company_branches=[company_branch.id])
+
+        with pytest.raises(TypeError, match="company_branches"):
+            auth_client(admin_user).post(
+                company_owners_list_url(), payload, format="json"
+            )
+
+        assert not CompanyUser.objects.filter(
+            phone_number=payload["phone_number"]
+        ).exists()

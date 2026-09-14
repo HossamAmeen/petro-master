@@ -79,3 +79,42 @@ class TestCompanyBranchManagerUpdate:
         assert response.status_code == status.HTTP_200_OK, response.data
         company_branch_manager.refresh_from_db()
         assert company_branch_manager.check_password("manager-pass-1")
+
+    def test_update_as_dashboard_raises_keyerror_fail(
+        self, auth_client, admin_user, company_branch_manager
+    ):
+        """Documents actual (buggy) behavior: for dashboard users
+        `CompanyBranchManagerSerializer.update` reads `validated_data["company_id"]`,
+        but `company_id` is a read-only field, so it is never present and every
+        dashboard PATCH crashes with an unhandled `KeyError` (HTTP 500)."""
+        with pytest.raises(KeyError, match="company_id"):
+            auth_client(admin_user).patch(
+                company_branch_managers_detail_url(company_branch_manager.id),
+                {"name": "Dashboard Rename"},
+                format="json",
+            )
+
+        company_branch_manager.refresh_from_db()
+        assert company_branch_manager.name != "Dashboard Rename"
+
+    def test_update_other_company_manager_as_branch_manager_success(
+        self,
+        auth_client,
+        company,
+        company_branch_manager,
+        other_company_branch_manager,
+        other_company,
+    ):
+        """Documents actual (buggy) behavior: `get_queryset` only scopes company
+        owners, so a company branch manager can edit branch managers of any
+        company."""
+        response = auth_client(company_branch_manager, company_id=company.id).patch(
+            company_branch_managers_detail_url(other_company_branch_manager.id),
+            {"name": "Renamed Across Companies"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        other_company_branch_manager.refresh_from_db()
+        assert other_company_branch_manager.name == "Renamed Across Companies"
+        assert other_company_branch_manager.company_id == other_company.id

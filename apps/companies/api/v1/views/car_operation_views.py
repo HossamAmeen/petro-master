@@ -169,7 +169,10 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
         branches = []
         if request.user.role == User.UserRoles.CompanyOwner:
             branches = CompanyBranch.objects.filter(company_id=request.company_id)
-        elif request.user.role == User.UserRoles.CompanyBranchManager:
+        # CompanyPermission allows only these roles.
+        elif (
+            request.user.role == User.UserRoles.CompanyBranchManager
+        ):  # pragma: no branch
             branches = CompanyBranch.objects.filter(
                 managers__user=request.user, company_id=request.company_id
             )

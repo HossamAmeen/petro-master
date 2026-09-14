@@ -118,3 +118,58 @@ class TestStationKhaznaTransactionUpdate:
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_update_status_to_declined_does_not_touch_balance_or_notify_success(
+        self, auth_client, admin_user, station, branch, station_transaction_factory
+    ):
+        branch.balance = Decimal("100.00")
+        branch.save(update_fields=["balance"])
+        tx = station_transaction_factory(
+            station=station, station_branch=branch, status="pending"
+        )
+
+        response = auth_client(admin_user).patch(
+            station_transaction_detail_url(tx.id),
+            {
+                "station": station.id,
+                "station_branch": branch.id,
+                "status": "declined",
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        tx.refresh_from_db()
+        branch.refresh_from_db()
+        assert tx.status == StationKhaznaTransaction.TransactionStatus.DECLINED
+        assert tx.updated_by_id == admin_user.id
+        assert branch.balance == Decimal("100.00")
+        assert not Notification.objects.exists()
+
+    def test_put_uses_read_serializer_and_rejects_nested_station_fail(
+        self, auth_client, admin_user, station, branch, station_transaction_factory
+    ):
+        """PUT is not handled by `get_serializer_class`, so it falls back to the
+        read serializer whose nested `station` field only accepts objects. The
+        request is rejected and the transaction is left unchanged."""
+        tx = station_transaction_factory(
+            station=station, station_branch=branch, status="approved"
+        )
+
+        response = auth_client(admin_user).put(
+            station_transaction_detail_url(tx.id),
+            {
+                "station": station.id,
+                "amount": "999.00",
+                "reference_code": tx.reference_code,
+                "created_by": admin_user.id,
+                "status": "pending",
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["errors"][0]["field"] == "station"
+        tx.refresh_from_db()
+        assert tx.amount == Decimal("10.00")
+        assert tx.status == StationKhaznaTransaction.TransactionStatus.APPROVED

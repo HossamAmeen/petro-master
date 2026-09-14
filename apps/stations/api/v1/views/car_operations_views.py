@@ -219,7 +219,8 @@ class StationGasOperationAPIView(APIView):
                             company_branch_managers__company_branch=car.branch_id,
                         ).values_list("id", flat=True)
                     )
-                except Exception as e:
+                # defensive, the query can't raise.
+                except Exception as e:  # pragma: no cover
                     logger.error(e)
                 notification_users.append(request.user.id)
                 for user_id in notification_users:

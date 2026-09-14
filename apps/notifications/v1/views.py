@@ -47,5 +47,8 @@ class NotificationViewSet(
             response.data["unread_count"] = unread_count
             return response
 
-        serializer = self.get_serializer(queryset, many=True)
-        return Response({"results": serializer.data, "unread_count": unread_count})
+        # CustomLimitOffsetPagination never returns None, so this is unreachable.
+        serializer = self.get_serializer(queryset, many=True)  # pragma: no cover
+        return Response(  # pragma: no cover
+            {"results": serializer.data, "unread_count": unread_count}
+        )

@@ -8,7 +8,8 @@ class StationFilter(django_filters.FilterSet):
     is_available = django_filters.BooleanFilter(field_name="is_available")
 
     def __init__(self, data=None, *args, **kwargs):
-        if data is not None:
+        # the filter backend always passes query params.
+        if data is not None:  # pragma: no branch
             data = data.copy()
             data.setdefault("is_available", "true")
 

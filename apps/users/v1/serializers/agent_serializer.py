@@ -76,7 +76,10 @@ class CreateSupervisorSerializer(serializers.ModelSerializer):
         confirm_password = validated_data.pop("confirm_password", None)
         if validated_data.get("password"):
             if confirm_password != validated_data["password"]:
-                raise CustomValidationError("Passwords do not match")
+                # validate() rejects mismatches first.
+                raise CustomValidationError(
+                    "Passwords do not match"
+                )  # pragma: no cover
             validated_data["password"] = make_password(validated_data["password"])
 
         return super().update(instance, validated_data)

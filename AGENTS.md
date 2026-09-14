@@ -6,7 +6,8 @@
 
 ## Testing
 
-- Use `pytest` with `pytest-django`; run the suite with `venv/bin/python -m pytest`.
+- Use `pytest` with `pytest-django`; run the suite with `venv/bin/python -m pytest` (or `make test`).
+- Coverage: `make coverage` runs the whole suite with `pytest-cov`, prints a term-missing summary, writes `htmlcov/`, and fails under 80% (currently ~86%). `make coverage-api` fails unless the API layer (`apps/*/api`, `apps/*/v1`, `apps/shared`, `apps/stations/filters.py`, `configrations`) is at 100% statement and branch coverage; mark a genuinely unreachable line with `# pragma: no cover` / `# pragma: no branch` and a comment above it saying why. Config (measured packages, omits, exclude lines) is in `pyproject.toml` under `[tool.coverage.*]`; `pytest-cov` is pinned in `requirements/dev.txt`.
 - Keep shared API clients, JWT-claim helpers, and cross-domain fixtures in the root `conftest.py`.
 - Keep domain-specific fixtures in that app's test `conftest.py`.
 - Reuse factories from `apps/companies/factories.py`; add a factory before repeating model setup in tests.
@@ -51,6 +52,16 @@
 - `UserViewSet` and `SupervisorViewSet` are admin-only. `CompanyOwnerViewSet` is dashboard-only. Company branch managers allow company + dashboard (owners are company-scoped). Station owner/manager/worker endpoints allow station + dashboard. Firebase tokens are authenticated; queryset is the current user only. Cover unauthenticated 401, wrong-role 403, queryset scoping, search/filters, password hashing, default `{phone}@petro.com` email, and branch-assignment side effects.
 - Notifications API tests live in `apps/notifications/tests/` (`test_list.py`, `test_update.py`, `test_signals.py`, `test_fcm_manager.py`). The list is authenticated and current-user scoped. Dashboard roles get a real `unread_count`; company/station roles always receive `unread_count=0`. PATCH may only change `is_read`. FCM is autouse-mocked in root `conftest.py`; assert the mock from notification `post_save`. Test `FCMManager.send_fcm_message` against the original function captured in `apps/notifications/tests/conftest.py`.
 - Geo API tests live in `apps/geo/tests/` (`test_cities.py`, `test_districts.py`). Cities and districts are unauthenticated GET-only (`http_method_names=["get"]`). Cover public list/retrieve, `country`/`city` filters, name search, `no_paginate`, newest-first ordering, nested district→city payload, and POST/PATCH/DELETE 405. There is no Country endpoint.
+
+### Feature tests (end-to-end business scenarios)
+
+- Feature tests live in the root `tests/features/` package, one module per business scenario (`test_fueling.py`, `test_cash_request.py`, `test_company_onboarding.py`, `test_station_onboarding.py`, `test_company_money.py`, `test_station_money.py`, `test_other_services.py`, `test_dashboard_operations.py`, `test_reports.py`, `test_account_lifecycle.py`, `test_notifications.py`, `test_tenant_isolation.py`, `test_public_pages.py`, `test_ai_operations.py`). They differ from the per-app API tests: each runs a whole workflow across several `/api/v1/` endpoints in order and asserts the end state (balances, statuses, khazna rows, notifications).
+- They carry the `feature` marker (registered in `pytest.ini`): `pytestmark = [pytest.mark.django_db, pytest.mark.feature]`. Run them alone with `venv/bin/python -m pytest -m feature`.
+- Log in through the real login endpoints so the JWT claims come from the real flow. Use `sign_in(kind, user)` / `login(kind, user)` / `login_client(kind, token)` from `tests/features/helpers.py` (kind is `"company"`, `"station"`, or `"dashboard"`); it hashes the fixture's raw password first. Do not build clients with `auth_client` here.
+- Create through the API whatever the scenario itself creates; use factories only for the starting point (geo data, services, the users/companies the scenario doesn't create). Shared multi-request steps (`fuel`, `start_fueling`, `complete_other_service`, balance/branch URL builders, `fresh_balance`) live in `tests/features/helpers.py`.
+- `tests/features/conftest.py` mocks SMS, points `MEDIA_ROOT` at a temp dir, and adds `fees` (standard company/station fee percentages), `fuelable_car` (petrol car allowed every day), and `local_cache` (locmem cache + DB sessions, for admin-client and throttle tests). Add a new scenario as a new `test_*.py` module there.
+- When a flow hits a known bug, assert the current behaviour with a short "Open issue"/"Known bug" note and `pytest.raises` where it 500s (e.g. the approve-PATCH `KeyError` on khazna transactions); do not route around it. `_success`/`_fail` name the happy vs failure branches as elsewhere.
+- Each feature test body follows the **Given-When-Then** template with `# Given` / `# When` / `# Then` comment markers (a step with several requests may repeat When/Then). The shared Given usually lives in the class's `setup` fixture, so a test's `# Given` marks only its extra arrangement and may be omitted when there is none.
 # AGENTS.md
 
 Living guide for coding agents working on Petro Master backend.
