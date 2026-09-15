@@ -131,6 +131,25 @@ class TestCarOperationList:
         assert wash_item["service_category"] == "خدمات أخرى"
         assert wash_item["unit"] == "وحدة"
 
+    @pytest.mark.parametrize(
+        "role_fixture", ["admin_user", "finance_user", "customer_support_user"]
+    )
+    def test_list_as_dashboard_role_success(
+        self, role_fixture, request, auth_client, other_service, car_operation_factory
+    ):
+        user = request.getfixturevalue(role_fixture)
+        petrol = car_operation_factory()
+        wash = car_operation_factory(
+            service=other_service, unit=Service.ServiceUnit.UNIT
+        )
+
+        response = auth_client(user).get(operation_list_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert returned_ids(response) == {petrol.id, wash.id}
+        item = next(row for row in response.data["results"] if row["id"] == petrol.id)
+        assert_operation_payload(item, petrol, user, include_profits=True)
+
     def test_list_includes_created_by_and_updated_by_success(
         self, auth_client, admin_user, finance_user, car_operation_factory
     ):

@@ -54,3 +54,15 @@ class TestCarOperationDelete:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert CarOperation.objects.filter(pk=operation.id).exists()
+
+    def test_delete_as_customer_support_fail(
+        self, auth_client, customer_support_user, car_operation_factory
+    ):
+        operation = car_operation_factory()
+
+        response = auth_client(customer_support_user).delete(
+            operation_detail_url(operation.id)
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert CarOperation.objects.filter(pk=operation.id).exists()
