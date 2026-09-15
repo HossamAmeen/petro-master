@@ -28,6 +28,13 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
   - Then run the formatters across the whole repo once and commit the reformat on its own, so it doesn't get mixed into feature diffs.
 
 - [ ] **Customer support role: view only (no create / update / delete)**
+  - Progress: one PR per phase. Each branch is cut from the previous one, so merge them in order.
+    - [x] Phase 1: model, viewset, admin (`add/customer-support-model`)
+    - [ ] **Next:** Phase 2: car operations (`add/customer-support-read-only-car-operations`)
+    - [ ] Phase 3: transactions (`add/customer-support-read-only-transactions`)
+    - [ ] Phase 4: company-side viewsets (`add/customer-support-read-only-company-viewsets`)
+    - [ ] Phase 5: station-side viewsets (`add/customer-support-read-only-station-viewsets`)
+    - [ ] Phase 6: company/station staff viewsets (`add/customer-support-read-only-staff-viewsets`)
   - The role already exists (`User.UserRoles.CustomerSupport` in [apps/users/models.py](apps/users/models.py)) and is in `DASHBOARD_ROLES` in [apps/shared/constants.py](apps/shared/constants.py), so today it passes `DashboardPermission` and can **write** everywhere an admin can.
   - Rules for the whole task:
     - Block writes with a permission class, not by overriding `create` / `update` / `destroy` in the views. Only override a view method if the permission approach really doesn't work for that endpoint.
@@ -40,12 +47,24 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
     - Tests: CRUD by admin, and no other role can create customer-support users.
   - **Phase 2 — view only on `CarOperationViewSet`**
     - [apps/companies/api/v1/views/car_operation_views.py](apps/companies/api/v1/views/car_operation_views.py): `list` / `retrieve` stay open to customer support; `create` / `partial_update` (which use `DashboardPermission`) must reject it.
-    - Proposed solution: add a reusable permission in [apps/shared/permissions.py](apps/shared/permissions.py) (e.g. `CustomerSupportReadOnlyPermission`) that allows customer support only on `SAFE_METHODS`. Use it in `get_permissions` next to the existing classes. Once it works here, reuse it for the other `DashboardPermission` viewsets (company, station, users, station branches).
+    - Proposed solution: add a reusable permission in [apps/shared/permissions.py](apps/shared/permissions.py) (e.g. `CustomerSupportReadOnlyPermission`) that allows customer support only on `SAFE_METHODS`. Use it in `get_permissions` next to the existing classes. The other viewsets follow in phases 4 to 6.
     - Tests: customer support gets 200 on list/retrieve and 403 on create/patch; admin and finance behave as before.
   - **Phase 3 — view only on transaction viewsets (company, station)**
     - [apps/accounting/api/v1/views.py](apps/accounting/api/v1/views.py): `CompanyKhaznaTransactionViewSet` and `StationKhaznaTransactionViewSet`. Apply the same permission from phase 2.
     - Also check `KhaznaTransactionViewSet`: it only has `IsAuthenticated`, so any role (customer support included) can write there right now.
     - Tests: same matrix as phase 2 for both company and station transactions.
+  - **Phase 4 — view only on the other company-side viewsets**
+    - `CompanyViewSet` and `CompanyBranchViewSet` in [apps/companies/api/v1/views/company_views.py](apps/companies/api/v1/views/company_views.py), `CarViewSet` (including `update-balance`) and `DriverViewSet` in [apps/companies/api/v1/views/car_views.py](apps/companies/api/v1/views/car_views.py), and `CompanyCashRequestViewSet` in [apps/companies/api/v1/views/company_cash_request_views.py](apps/companies/api/v1/views/company_cash_request_views.py).
+    - Cars and drivers have no role check at all, and cash-request POST / DELETE move money for every dashboard role.
+    - Cover the `super().get_permissions()` fallback too: branch retrieve / update / delete only need authentication.
+    - Tests: read-200 / write-403 matrix in `apps/companies/tests/api/v1/test_customer_support_read_only.py` that also asserts the database is unchanged.
+  - **Phase 5 — view only on the station-side viewsets**
+    - `StationViewSet` and `StationBranchViewSet` (including `assign-services`, `add-service`, `delete-service`, `assign-managers`) in [apps/stations/api/v1/views/](apps/stations/api/v1/views/), `ServiceViewSet`, and the `StationGasOperationAPIView` PATCH (authenticated only, completes a fueling).
+    - Tests: same matrix in `apps/stations/tests/api/v1/test_customer_support_read_only.py`.
+  - **Phase 6 — view only on the company / station staff viewsets**
+    - `CompanyOwnerViewSet` and `CompanyBranchManagerViewSet` in [apps/users/v1/views/company_users_view.py](apps/users/v1/views/company_users_view.py); `StationOwnerViewSet`, `StationBranchManagerViewSet` and `WorkerViewSet` in [apps/users/v1/views/station_users_view.py](apps/users/v1/views/station_users_view.py).
+    - The user's own account stays writable: profile, notification `is_read`, firebase tokens.
+    - Tests: same matrix in `apps/users/tests/api/v1/test_customer_support_read_only.py`.
 
 - [x] **Feature tests: every business scenario end to end**
   - Done: `tests/features/` (14 modules, 125 tests, `-m feature`). See the "Feature tests" section in [AGENTS.md](AGENTS.md).
