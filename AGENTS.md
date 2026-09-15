@@ -53,10 +53,12 @@
 - Notifications API tests live in `apps/notifications/tests/` (`test_list.py`, `test_update.py`, `test_signals.py`, `test_fcm_manager.py`). The list is authenticated and current-user scoped. Dashboard roles get a real `unread_count`; company/station roles always receive `unread_count=0`. PATCH may only change `is_read`. FCM is autouse-mocked in root `conftest.py`; assert the mock from notification `post_save`. Test `FCMManager.send_fcm_message` against the original function captured in `apps/notifications/tests/conftest.py`.
 - Geo API tests live in `apps/geo/tests/` (`test_cities.py`, `test_districts.py`). Cities and districts are unauthenticated GET-only (`http_method_names=["get"]`). Cover public list/retrieve, `country`/`city` filters, name search, `no_paginate`, newest-first ordering, nested district→city payload, and POST/PATCH/DELETE 405. There is no Country endpoint.
 
-### Customer support role
+### Customer support (read-only dashboard role)
 
+- `customer_support` is a dashboard role (`DASHBOARD_ROLES`) that may only read. Writes are blocked by `CustomerSupportReadOnlyPermission` in `apps/shared/permissions.py`: it allows every role on `SAFE_METHODS` and every role except customer support on writes, so it goes next to the existing classes (after `IsAuthenticated`) instead of replacing them. Do not override `create` / `update` / `destroy` to block the role.
+- Add it to every new viewset or view a dashboard role can write through, including the `super().get_permissions()` fallback of a per-action `get_permissions`. Endpoints for the user's own account (profile, notification `is_read`, firebase tokens) stay writable.
 - `CustomerSupport` (`apps/users/models.py`) is a proxy of `User` (no table) whose manager filters on the role and whose `save()` forces it. Admins manage these users at `users/customer-support/` (`CustomerSupportViewSet`, admin-only) and in the Django admin.
-- Tests: `role_client(fixture_name)` in the root `conftest.py` builds a client with the claims that role logs in with, so role matrices can be parametrized over fixture names.
+- Tests: the car-operation per-action modules cover customer support directly. `role_client(fixture_name)` in the root `conftest.py` builds a client with the claims that role logs in with, so role matrices can be parametrized over fixture names.
 
 ### Feature tests (end-to-end business scenarios)
 

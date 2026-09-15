@@ -32,6 +32,7 @@ from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
     CompanyPermission,
+    CustomerSupportReadOnlyPermission,
     DashboardPermission,
     EitherPermission,
     StationPermission,
@@ -62,34 +63,23 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     ]
 
     def get_permissions(self):
-        if self.action == "export":
+        if self.action in ["export", "download_excel"]:
             return [IsAuthenticated(), CompanyPermission()]
-        if self.action == "download_excel":
-            return [IsAuthenticated(), CompanyPermission()]
-        if self.action == "list":
-            return [
-                IsAuthenticated(),
-                EitherPermission(
-                    [CompanyPermission, DashboardPermission, StationPermission]
-                ),
-            ]
-        if self.action == "retrieve":
-            return [
-                IsAuthenticated(),
-                EitherPermission(
-                    [CompanyPermission, DashboardPermission, StationPermission]
-                ),
-            ]
         if self.action == "create":
-            return [IsAuthenticated(), DashboardPermission()]
-        if self.action == "partial_update":
+            return [
+                IsAuthenticated(),
+                DashboardPermission(),
+                CustomerSupportReadOnlyPermission(),
+            ]
+        if self.action in ["list", "retrieve", "partial_update"]:
             return [
                 IsAuthenticated(),
                 EitherPermission(
                     [CompanyPermission, DashboardPermission, StationPermission]
                 ),
+                CustomerSupportReadOnlyPermission(),
             ]
-        return super().get_permissions()
+        return [*super().get_permissions(), CustomerSupportReadOnlyPermission()]
 
     def get_serializer_class(self):
         if self.action == "list":

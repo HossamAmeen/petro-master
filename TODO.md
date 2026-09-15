@@ -30,8 +30,8 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
 - [ ] **Customer support role: view only (no create / update / delete)**
   - Progress: one PR per phase. Each branch is cut from the previous one, so merge them in order.
     - [x] Phase 1: model, viewset, admin (`add/customer-support-model`)
-    - [ ] **Next:** Phase 2: car operations (`add/customer-support-read-only-car-operations`)
-    - [ ] Phase 3: transactions (`add/customer-support-read-only-transactions`)
+    - [x] Phase 2: car operations (`add/customer-support-read-only-car-operations`)
+    - [ ] **Next:** Phase 3: transactions (`add/customer-support-read-only-transactions`)
     - [ ] Phase 4: company-side viewsets (`add/customer-support-read-only-company-viewsets`)
     - [ ] Phase 5: station-side viewsets (`add/customer-support-read-only-station-viewsets`)
     - [ ] Phase 6: company/station staff viewsets (`add/customer-support-read-only-staff-viewsets`)

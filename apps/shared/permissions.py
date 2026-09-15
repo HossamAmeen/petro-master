@@ -1,4 +1,4 @@
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES, STATION_ROLES
 from apps.users.models import User
@@ -42,6 +42,17 @@ class StationPermission(BasePermission):
 class DashboardPermission(BasePermission):
     def has_permission(self, request, view):
         return request.user.role in DASHBOARD_ROLES
+
+
+class CustomerSupportReadOnlyPermission(BasePermission):
+    """Customer support may only read; every other role is left to the
+    permissions next to this one."""
+
+    def has_permission(self, request, view):
+        return (
+            request.method in SAFE_METHODS
+            or request.user.role != User.UserRoles.CustomerSupport
+        )
 
 
 class AdminPermission(BasePermission):
