@@ -234,6 +234,26 @@ def dashboard_user_payload_factory():
 
 
 @pytest.fixture
+def customer_support_payload_factory():
+    counter = {"n": 0}
+
+    def build(**overrides):
+        counter["n"] += 1
+        token = uuid4().hex
+        payload = {
+            "name": f"Customer Support {counter['n']}",
+            "phone_number": f"0168{token[:7]}",
+            "email": f"support-{token[:10]}@example.com",
+            "password": "password123",
+            "confirm_password": "password123",
+        }
+        payload.update(overrides)
+        return payload
+
+    return build
+
+
+@pytest.fixture
 def company_owner_payload_factory(company):
     counter = {"n": 0}
 

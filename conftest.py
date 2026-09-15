@@ -36,6 +36,28 @@ def auth_client():
 
 
 @pytest.fixture
+def role_client(request, auth_client):
+    """
+    Client for a user fixture given by name, with the `company_id` /
+    `station_id` claim its role logs in with, so role matrices can be
+    parametrized over fixture names.
+    """
+
+    def _role_client(user_fixture):
+        user = request.getfixturevalue(user_fixture)
+        claims = {}
+        if hasattr(user, "company_id"):
+            claims["company_id"] = user.company_id
+        if hasattr(user, "station_id"):
+            claims["station_id"] = user.station_id
+        if hasattr(user, "station_branch"):
+            claims["station_id"] = user.station_branch.station_id
+        return auth_client(user, **claims)
+
+    return _role_client
+
+
+@pytest.fixture
 def geo_data(db):
     country = Country.objects.create(name="Egypt", code="EG")
     city = City.objects.create(name="Cairo", country=country)

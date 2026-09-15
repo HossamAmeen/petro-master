@@ -18,6 +18,16 @@ def users_detail_url(user_id, **params):
     return with_query(reverse("users-detail", kwargs={"pk": user_id}), **params)
 
 
+def customer_support_list_url(**params):
+    return with_query(reverse("customer-support-list"), **params)
+
+
+def customer_support_detail_url(user_id, **params):
+    return with_query(
+        reverse("customer-support-detail", kwargs={"pk": user_id}), **params
+    )
+
+
 def company_owners_list_url(**params):
     return with_query(reverse("company-owners-list"), **params)
 
