@@ -77,3 +77,23 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
     14. **AI operation check**: completed operation → `manage.py process_ai_operations` with the OpenAI client and `requests.get` mocked → one `AIApiResponse` per operation, max 100 per branch.
   - Celery: once the `use-celery` branch is merged, keep `CELERY_TASK_ALWAYS_EAGER` on in [config/settings_test.py](config/settings_test.py) so notification / SMS tasks still run inside the test.
   - Done when: `venv/bin/python -m pytest -m feature` passes, the full suite still passes, `make check` is clean, and AGENTS.md says where feature tests live and how to add one.
+
+- [ ] **Store uploaded files on Google Drive**
+  - Today every file sits on the server's disk: `MEDIA_ROOT = BASE_DIR / "media"` in [config/settings.py](config/settings.py#L289), served through `static(settings.MEDIA_URL, …)` in [config/urls.py](config/urls.py) (Django only serves that with `DEBUG=True`). `django-storages` is not installed, and the `DEFAULT_FILE_STORAGE` / `AWS_*` (DigitalOcean Spaces) lines in [.env_example](.env_example) are not read by the settings.
+  - Files that would move:
+    - `CarOperation.motor_image`, `fuel_image`, `car_image` in [apps/companies/models/operation_model.py](apps/companies/models/operation_model.py).
+    - `KhaznaTransaction.photo` in [apps/accounting/models.py](apps/accounting/models.py).
+    - `Service.image` in [apps/stations/models/service_models.py](apps/stations/models/service_models.py).
+    - `Slider.image` in [configrations/models.py](configrations/models.py).
+    - Excel exports: `export_car_operations` in [apps/companies/helper.py](apps/companies/helper.py) writes into `MEDIA_ROOT/excel_exports` with `os.path`, and `download_excel` in [car_operation_views.py](apps/companies/api/v1/views/car_operation_views.py) opens that path directly. Both bypass Django's storage, so move them to `default_storage` first.
+  - Decide before building:
+    - **URLs.** Drive has no plain public file URL. The Django admin `<img>` previews (`image_preview` in [apps/companies/admin.py](apps/companies/admin.py)), the dashboard / mobile apps, and `process_ai_operations` (which downloads `image_file.url` with `requests.get`) all need a URL they can open. Either share each file as "anyone with the link" and return a direct-download link, or stream files through an authenticated backend endpoint.
+    - **Account.** A service account has no Drive storage quota of its own, so uploads must go to a Shared Drive (Google Workspace) or be made as a real user through OAuth.
+    - **Speed and quotas.** Drive API rate limits, and upload latency inside requests: the gas-operation PATCH uploads two images while the worker waits.
+    - **Alternative.** Compare with the object storage already sketched in `.env_example` (DigitalOcean Spaces / S3 through `django-storages`), which serves public URLs directly.
+  - How:
+    - A storage class implementing Django's `Storage` API (`_save`, `_open`, `exists`, `delete`, `url`, `size`) on the Drive API (`google-api-python-client`), or an existing package once you've checked it is maintained and works with Django 4.2. Drive addresses files by id, not path, so keep a name → file id mapping (a small table or Drive `appProperties`) so lookups by the stored name keep working.
+    - Configure it in `STORAGES["default"]` (Django 4.2) with the credentials and the Shared Drive / folder id from env, and add those variables to `.env_example`.
+    - Keep `FileSystemStorage` in [config/settings_test.py](config/settings_test.py).
+    - Management command to upload the existing `media/` files under the same names, so the paths already stored in the database still resolve.
+  - Tests: storage class with the Drive client mocked (save returns the name, `exists`, `open`, `url`, `delete`); an image sent to the gas-operation PATCH lands in the storage; export → `download-excel` goes through the storage.
