@@ -24,6 +24,7 @@ from apps.companies.models.operation_model import CarOperation
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
+    CustomerSupportReadOnlyPermission,
     DashboardPermission,
     EitherPermission,
     StationPermission,
@@ -73,13 +74,18 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ["create", "list"]:
-            return [IsAuthenticated(), DashboardPermission()]
+            return [
+                IsAuthenticated(),
+                DashboardPermission(),
+                CustomerSupportReadOnlyPermission(),
+            ]
         if self.action in ["partial_update", "retrieve"]:
             return [
                 IsAuthenticated(),
                 EitherPermission([DashboardPermission, StationPermission]),
+                CustomerSupportReadOnlyPermission(),
             ]
-        return super().get_permissions()
+        return [*super().get_permissions(), CustomerSupportReadOnlyPermission()]
 
     def perform_destroy(self, instance):
         if CarOperation.objects.filter(station_branch__station=instance).exists():

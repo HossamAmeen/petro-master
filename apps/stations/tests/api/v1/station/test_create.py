@@ -52,15 +52,23 @@ class TestStationCreate:
         assert created.balance == 0
         assert created.created_by_id == admin_user.id
 
-    @pytest.mark.parametrize("role_fixture", ["finance_user", "customer_support_user"])
-    def test_create_as_dashboard_role_success(self, role_fixture, request):
-        user = request.getfixturevalue(role_fixture)
+    def test_create_as_finance_success(self, finance_user):
         payload = self.payload_factory()
 
-        response = self.auth_client(user).post(self.url, payload, format="json")
+        response = self.auth_client(finance_user).post(self.url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED, response.data
         assert Station.objects.filter(name=payload["name"]).exists()
+
+    def test_create_as_customer_support_fail(self, customer_support_user):
+        payload = self.payload_factory()
+
+        response = self.auth_client(customer_support_user).post(
+            self.url, payload, format="json"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not Station.objects.filter(name=payload["name"]).exists()
 
     def test_create_missing_name_fail(self, admin_user):
         payload = self.payload_factory()

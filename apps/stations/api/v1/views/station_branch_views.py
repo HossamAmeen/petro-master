@@ -12,7 +12,11 @@ from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import DASHBOARD_ROLES
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
-from apps.shared.permissions import DashboardPermission, StationOwnerPermission
+from apps.shared.permissions import (
+    CustomerSupportReadOnlyPermission,
+    DashboardPermission,
+    StationOwnerPermission,
+)
 from apps.stations.api.station_serializers.station_branch_serializers import (
     StationBranchCreationSerializer,
     StationBranchUpdateSerializer,
@@ -52,10 +56,14 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.action == "list":
             return [AllowAny()]
         if self.action == "create":
-            return [IsAuthenticated(), DashboardPermission()]
+            return [
+                IsAuthenticated(),
+                DashboardPermission(),
+                CustomerSupportReadOnlyPermission(),
+            ]
         if self.action == "update_balance":
             return [IsAuthenticated(), StationOwnerPermission()]
-        return super().get_permissions()
+        return [*super().get_permissions(), CustomerSupportReadOnlyPermission()]
 
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)

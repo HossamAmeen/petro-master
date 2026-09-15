@@ -33,8 +33,8 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
     - [x] Phase 2: car operations (`add/customer-support-read-only-car-operations`)
     - [x] Phase 3: transactions (`add/customer-support-read-only-transactions`)
     - [x] Phase 4: company-side viewsets (`add/customer-support-read-only-company-viewsets`)
-    - [ ] **Next:** Phase 5: station-side viewsets (`add/customer-support-read-only-station-viewsets`)
-    - [ ] Phase 6: company/station staff viewsets (`add/customer-support-read-only-staff-viewsets`)
+    - [x] Phase 5: station-side viewsets (`add/customer-support-read-only-station-viewsets`)
+    - [ ] **Next:** Phase 6: company/station staff viewsets (`add/customer-support-read-only-staff-viewsets`)
   - The role already exists (`User.UserRoles.CustomerSupport` in [apps/users/models.py](apps/users/models.py)) and is in `DASHBOARD_ROLES` in [apps/shared/constants.py](apps/shared/constants.py), so today it passes `DashboardPermission` and can **write** everywhere an admin can.
   - Rules for the whole task:
     - Block writes with a permission class, not by overriding `create` / `update` / `destroy` in the views. Only override a view method if the permission approach really doesn't work for that endpoint.

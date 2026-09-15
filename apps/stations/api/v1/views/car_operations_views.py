@@ -8,6 +8,7 @@ from django.db.models import F
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -19,6 +20,7 @@ from apps.accounting.models import KhaznaTransaction
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.permissions import CustomerSupportReadOnlyPermission
 from apps.stations.api.station_serializers.car_operation_serializer import (
     updateStationGasCarOperationSerializer,
     updateStationOtherCarOperationSerializer,
@@ -30,6 +32,8 @@ logger = logging.getLogger(__name__)
 
 
 class StationGasOperationAPIView(APIView):
+    permission_classes = [IsAuthenticated, CustomerSupportReadOnlyPermission]
+
     @extend_schema(
         request=updateStationGasCarOperationSerializer,
         responses={200: updateStationGasCarOperationSerializer},
