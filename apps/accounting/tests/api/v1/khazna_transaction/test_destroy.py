@@ -10,7 +10,8 @@ pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 class TestKhaznaTransactionDestroy:
     """Unlike `CarOperationViewSet`, `KhaznaTransactionViewSet` does not
-    disable deletion; any authenticated user can delete any transaction."""
+    disable deletion; any authenticated user except customer support can
+    delete any transaction."""
 
     @pytest.fixture(autouse=True)
     def setup(self, auth_client, admin_user, khazna_transaction_factory):
@@ -51,3 +52,11 @@ class TestKhaznaTransactionDestroy:
         response = self.destroy(tx.id, client=client)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    def test_destroy_customer_support_fail(self, customer_support_user):
+        tx = self.create_transaction()
+
+        response = self.destroy(tx.id, client=self.auth_client(customer_support_user))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert KhaznaTransaction.objects.filter(id=tx.id).exists()

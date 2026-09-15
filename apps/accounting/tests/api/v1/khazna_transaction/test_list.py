@@ -87,3 +87,11 @@ class TestKhaznaTransactionList:
             self.list(
                 client=self.auth_client(company_branch_manager, company_id=company.id)
             )
+
+    def test_list_customer_support_success(self, customer_support_user):
+        tx = self.create_transaction()
+
+        response = self.list(client=self.auth_client(customer_support_user))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert tx.id in returned_ids(response)

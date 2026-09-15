@@ -173,3 +173,39 @@ class TestStationKhaznaTransactionUpdate:
         tx.refresh_from_db()
         assert tx.amount == Decimal("10.00")
         assert tx.status == StationKhaznaTransaction.TransactionStatus.APPROVED
+
+    def test_update_finance_success(self, finance_user):
+        tx = self.create_transaction(status="pending")
+
+        response = self.update(
+            tx.id,
+            self.full_payload("declined"),
+            client=self.auth_client(finance_user),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        tx.refresh_from_db()
+        assert tx.status == StationKhaznaTransaction.TransactionStatus.DECLINED
+        assert tx.updated_by_id == finance_user.id
+
+    @pytest.mark.parametrize("method", ["patch", "put"])
+    def test_update_customer_support_fail(self, method, customer_support_user):
+        self.branch.balance = Decimal("100.00")
+        self.branch.save(update_fields=["balance"])
+        tx = self.create_transaction(
+            status="pending", amount=Decimal("40.00"), is_incoming=True
+        )
+        client = self.auth_client(customer_support_user)
+
+        response = getattr(client, method)(
+            station_transaction_detail_url(tx.id),
+            self.full_payload("approved"),
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        tx.refresh_from_db()
+        self.branch.refresh_from_db()
+        assert tx.status == StationKhaznaTransaction.TransactionStatus.PENDING
+        assert self.branch.balance == Decimal("100.00")
+        assert not Notification.objects.exists()

@@ -85,3 +85,12 @@ class TestKhaznaTransactionCreate:
         )
 
         assert response.status_code == status.HTTP_201_CREATED
+
+    def test_create_customer_support_fail(self, customer_support_user):
+        response = self.create(
+            self.base_payload(created_by=customer_support_user.id),
+            client=self.auth_client(customer_support_user),
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not KhaznaTransaction.objects.filter(reference_code="NEWREF001").exists()

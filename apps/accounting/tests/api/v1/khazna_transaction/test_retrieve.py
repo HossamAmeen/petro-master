@@ -50,3 +50,11 @@ class TestKhaznaTransactionRetrieve:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == tx.id
+
+    def test_retrieve_customer_support_success(self, customer_support_user):
+        tx = self.create_transaction()
+
+        response = self.retrieve(tx.id, client=self.auth_client(customer_support_user))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["id"] == tx.id
