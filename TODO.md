@@ -27,14 +27,8 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
   - [.pre-commit-config.yaml](.pre-commit-config.yaml) pins older versions than dev.txt (isort 5.13.2 vs 6.0.0, flake8 6.0.0 vs 7.1.2) and has an empty `rev: ''` on the remove-print-statements hook — bump them to match so pre-commit and `make format` produce identical output.
   - Then run the formatters across the whole repo once and commit the reformat on its own, so it doesn't get mixed into feature diffs.
 
-- [ ] **Customer support role: view only (no create / update / delete)**
-  - Progress: one PR per phase. Each branch is cut from the previous one, so merge them in order.
-    - [x] Phase 1: model, viewset, admin (`add/customer-support-model`)
-    - [x] Phase 2: car operations (`add/customer-support-read-only-car-operations`)
-    - [x] Phase 3: transactions (`add/customer-support-read-only-transactions`)
-    - [x] Phase 4: company-side viewsets (`add/customer-support-read-only-company-viewsets`)
-    - [x] Phase 5: station-side viewsets (`add/customer-support-read-only-station-viewsets`)
-    - [ ] **Next:** Phase 6: company/station staff viewsets (`add/customer-support-read-only-staff-viewsets`)
+- [x] **Customer support role: view only (no create / update / delete)**
+  - Done in six PRs, merged in order: `add/customer-support-model`, `add/customer-support-read-only-car-operations`, `add/customer-support-read-only-transactions`, `add/customer-support-read-only-company-viewsets`, `add/customer-support-read-only-station-viewsets`, `add/customer-support-read-only-staff-viewsets`. See "Customer support" in [AGENTS.md](AGENTS.md).
   - The role already exists (`User.UserRoles.CustomerSupport` in [apps/users/models.py](apps/users/models.py)) and is in `DASHBOARD_ROLES` in [apps/shared/constants.py](apps/shared/constants.py), so today it passes `DashboardPermission` and can **write** everywhere an admin can.
   - Rules for the whole task:
     - Block writes with a permission class, not by overriding `create` / `update` / `destroy` in the views. Only override a view method if the permission approach really doesn't work for that endpoint.
@@ -96,3 +90,15 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
     14. **AI operation check**: completed operation → `manage.py process_ai_operations` with the OpenAI client and `requests.get` mocked → one `AIApiResponse` per operation, max 100 per branch.
   - Celery: once the `use-celery` branch is merged, keep `CELERY_TASK_ALWAYS_EAGER` on in [config/settings_test.py](config/settings_test.py) so notification / SMS tasks still run inside the test.
   - Done when: `venv/bin/python -m pytest -m feature` passes, the full suite still passes, `make check` is clean, and AGENTS.md says where feature tests live and how to add one.
+
+- [ ] **Generic Users admin turns dashboard users into superusers**
+  - `CustomUserChangeForm.save()` in [apps/users/admin.py](apps/users/admin.py) always sets `role = Admin`, `is_staff` and `is_superuser`, and `CustomUserAdmin` lists every `DASHBOARD_ROLES` user. Saving a finance or customer-support user on that page promotes them to admin.
+  - Keep the existing role on edit, or limit that page to admins now that customer support has its own admin page.
+  - Tests: editing a finance / customer-support user there keeps the role and leaves `is_superuser` false.
+
+- [ ] **Get `staging` green again**
+  - On `staging` (`20ce1d5`) the suite gives 31 failed and 125 errors, all from before the customer-support work:
+    - Most feature tests error in setup: they patch `apps.companies.helper.send_sms`, which the Celery merge moved away.
+    - Gas-operation completion tests hit `decimal.InvalidOperation` in `deduct_balance` ([apps/companies/models/company_models.py](apps/companies/models/company_models.py)); several other-operation completion tests fail on balances.
+    - `apps/shared/tests/test_send_sms.py` expects the gateway call without the new `timeout=10`.
+  - `make check` fails on an unused import in `apps/companies/tests/test_car_views.py`, and `makemigrations --check` wants a `companies` migration for the `CompanyOperationReport` / `MonthlyInventory` proxy models.

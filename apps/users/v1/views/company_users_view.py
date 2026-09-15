@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
     CompanyPermission,
+    CustomerSupportReadOnlyPermission,
     DashboardPermission,
     EitherPermission,
 )
@@ -37,6 +38,7 @@ class CompanyOwnerViewSet(viewsets.ModelViewSet):
         return [
             IsAuthenticated(),
             EitherPermission([DashboardPermission]),
+            CustomerSupportReadOnlyPermission(),
         ]
 
 
@@ -69,4 +71,5 @@ class CompanyBranchManagerViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return [
             IsAuthenticated(),
             EitherPermission([CompanyPermission, DashboardPermission]),
+            CustomerSupportReadOnlyPermission(),
         ]
