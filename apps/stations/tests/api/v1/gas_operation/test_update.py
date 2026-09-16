@@ -3,6 +3,7 @@ from decimal import Decimal
 from functools import partial
 
 import pytest
+from django.core.files.storage import default_storage
 from django.utils import timezone
 from rest_framework import status
 
@@ -164,6 +165,25 @@ class TestStationGasOperationUpdate:
         assert gas_operation.status == CarOperation.OperationStatus.IN_PROGRESS
         assert gas_operation.car_meter == Decimal("10000.00")
         assert gas_operation.motor_image
+
+    def test_patch_motor_image_saved_to_configured_storage_success(
+        self, settings, gas_operation
+    ):
+        settings.STORAGES = {
+            **settings.STORAGES,
+            "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+        }
+
+        response = self.client.patch(
+            gas_url(gas_operation.id),
+            {"car_meter": "10000", "motor_image": image_file("motor.png")},
+            format="multipart",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        gas_operation.refresh_from_db()
+        assert gas_operation.motor_image.name.startswith("motor_images/motor")
+        assert default_storage.exists(gas_operation.motor_image.name)
 
     def test_patch_car_meter_without_odometer_below_last_meter_success(
         self, gas_operation, car

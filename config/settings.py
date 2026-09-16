@@ -289,6 +289,24 @@ else:
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
+# Uploaded files stay on the server's disk unless Google Drive is turned on.
+# The folder must live in a Shared Drive the service account is a member of.
+GOOGLE_DRIVE_STORAGE_ENABLED = env.bool("GOOGLE_DRIVE_STORAGE_ENABLED", default=False)
+GOOGLE_DRIVE_STORAGE_OPTIONS = {
+    "credentials": env("GOOGLE_DRIVE_CREDENTIALS", default=None),
+    "folder_id": env("GOOGLE_DRIVE_FOLDER_ID", default=None),
+    "public": env.bool("GOOGLE_DRIVE_PUBLIC", default=True),
+    "url_template": env("GOOGLE_DRIVE_URL_TEMPLATE", default=None),
+}
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+    },
+}
+if GOOGLE_DRIVE_STORAGE_ENABLED:
+    STORAGES["default"] = {"BACKEND": "apps.shared.storages.GoogleDriveStorage"}
+
 if not ENVIRONMENT == "local":
     print("############################ Sentry Init ############################")
     sentry_sdk.init(

@@ -97,7 +97,9 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
   - Celery: once the `use-celery` branch is merged, keep `CELERY_TASK_ALWAYS_EAGER` on in [config/settings_test.py](config/settings_test.py) so notification / SMS tasks still run inside the test.
   - Done when: `venv/bin/python -m pytest -m feature` passes, the full suite still passes, `make check` is clean, and AGENTS.md says where feature tests live and how to add one.
 
-- [ ] **Store uploaded files on Google Drive**
+- [x] **Store uploaded files on Google Drive** (`add/google-drive-storage`)
+  - Done: `GoogleDriveStorage` in [apps/shared/storages.py](apps/shared/storages.py), turned on with `GOOGLE_DRIVE_STORAGE_ENABLED` (off by default, so files stay on disk). Service account + Shared Drive folder; each upload shared "anyone with the link"; the stored name is kept in Drive `appProperties` (no table). Excel export/download go through `default_storage`. `manage.py upload_media_to_drive [--dry-run]` copies `media/`.
+  - Still open: set up the Shared Drive and service account, run `upload_media_to_drive`, then enable. Check the `drive.google.com/uc` links render in the dashboard/mobile `<img>` (else set `GOOGLE_DRIVE_URL_TEMPLATE`). Upload latency on the gas PATCH is not measured yet.
   - Today every file sits on the server's disk: `MEDIA_ROOT = BASE_DIR / "media"` in [config/settings.py](config/settings.py#L289), served through `static(settings.MEDIA_URL, …)` in [config/urls.py](config/urls.py) (Django only serves that with `DEBUG=True`). `django-storages` is not installed, and the `DEFAULT_FILE_STORAGE` / `AWS_*` (DigitalOcean Spaces) lines in [.env_example](.env_example) are not read by the settings.
   - Files that would move:
     - `CarOperation.motor_image`, `fuel_image`, `car_image` in [apps/companies/models/operation_model.py](apps/companies/models/operation_model.py).
