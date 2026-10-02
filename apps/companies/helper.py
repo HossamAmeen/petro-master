@@ -1,7 +1,8 @@
 import logging
-import os
+from io import BytesIO
 
-from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.utils import timezone
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -12,6 +13,8 @@ from apps.companies.models.operation_model import Car, CarOperation
 from apps.notifications.tasks import send_sms_task
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.task_runner import run_task
+
+EXCEL_EXPORTS_DIR = "excel_exports"
 
 logger = logging.getLogger(__name__)
 
@@ -232,10 +235,11 @@ def export_car_operations(*args, **kwargs):
     # Generate filename with timestamp
     timestamp = timezone.localtime().strftime("%Y%m%d_%H%M%S")
     filename = f"export_{timestamp}.xlsx"
-    excel_dir = os.path.join(settings.MEDIA_ROOT, "excel_exports")
-    os.makedirs(excel_dir, exist_ok=True)
-    filepath = os.path.join(excel_dir, filename)
 
-    # Save workbook
-    wb.save(filepath)
-    return filename
+    # Save workbook through the configured storage (disk or Google Drive)
+    buffer = BytesIO()
+    wb.save(buffer)
+    saved_name = default_storage.save(
+        f"{EXCEL_EXPORTS_DIR}/{filename}", ContentFile(buffer.getvalue())
+    )
+    return saved_name.rsplit("/", 1)[-1]

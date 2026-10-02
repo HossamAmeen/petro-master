@@ -15,3 +15,10 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 # would (retries included, errors kept out of the caller).
 USE_CELERY = False
 CELERY_TASK_ALWAYS_EAGER = True
+
+# Uploads never reach Google Drive from the suite, whatever .env says.
+GOOGLE_DRIVE_STORAGE_ENABLED = False
+STORAGES = {
+    **STORAGES,  # noqa: F405
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+}

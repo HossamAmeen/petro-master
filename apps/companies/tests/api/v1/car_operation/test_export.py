@@ -3,6 +3,7 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 from django.conf import settings
+from django.core.files.storage import default_storage
 from rest_framework import status
 
 from apps.companies.models.operation_model import CarOperation
@@ -229,4 +230,39 @@ class TestCarOperationExport:
 
         assert response.status_code == status.HTTP_200_OK
         assert response["Content-Disposition"] == f'attachment; filename="{filename}"'
+        assert response.getvalue()
+
+    def test_download_excel_path_outside_exports_fail(
+        self, auth_client, company_owner, company, export_media_root
+    ):
+        (export_media_root / "secret.xlsx").write_bytes(b"secret")
+
+        response = auth_client(company_owner, company_id=company.id).get(
+            operation_download_url(),
+            {"file": "../secret.xlsx"},
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_export_and_download_use_configured_storage_success(
+        self, settings, auth_client, company_owner, company, car_operation_factory
+    ):
+        settings.STORAGES = {
+            **settings.STORAGES,
+            "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+        }
+        car_operation_factory(status=CarOperation.OperationStatus.COMPLETED)
+        client = auth_client(company_owner, company_id=company.id)
+
+        export_response = client.get(operation_export_url())
+        filename = parse_qs(urlparse(export_response.data["download_url"]).query)[
+            "file"
+        ][0]
+
+        assert default_storage.exists(f"excel_exports/{filename}")
+        assert not os.path.exists(
+            os.path.join(settings.MEDIA_ROOT, "excel_exports", filename)
+        )
+        response = client.get(operation_download_url(), {"file": filename})
+        assert response.status_code == status.HTTP_200_OK
         assert response.getvalue()

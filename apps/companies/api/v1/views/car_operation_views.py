@@ -1,6 +1,6 @@
 import os
 
-from django.conf import settings
+from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import (
@@ -23,7 +23,11 @@ from apps.companies.api.v1.serializers.car_operation_serializer import (
     SingleCarOperationSerializer,
     UpdateCarOperationSerializer,
 )
-from apps.companies.helper import export_car_operations, get_car_operations_data
+from apps.companies.helper import (
+    EXCEL_EXPORTS_DIR,
+    export_car_operations,
+    get_car_operations_data,
+)
 from apps.companies.models.company_models import CompanyBranch
 from apps.companies.models.operation_model import CarOperation
 from apps.notifications.models import Notification
@@ -239,11 +243,14 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if not filename:
             raise Http404("File not specified")
 
-        filepath = os.path.join(settings.MEDIA_ROOT, "excel_exports", filename)
-
-        if not os.path.exists(filepath):
+        # Only a bare export name; never a path into other stored files.
+        if os.path.basename(filename) != filename:
             raise Http404("File not found")
 
-        response = FileResponse(open(filepath, "rb"))
+        filepath = f"{EXCEL_EXPORTS_DIR}/{filename}"
+        if not default_storage.exists(filepath):
+            raise Http404("File not found")
+
+        response = FileResponse(default_storage.open(filepath, "rb"))
         response["Content-Disposition"] = f'attachment; filename="{filename}"'  # noqa
         return response

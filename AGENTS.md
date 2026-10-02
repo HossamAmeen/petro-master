@@ -38,6 +38,12 @@
 - Gas PATCH is authenticated (not worker-scoped): `start_time`, then `car_meter`+`motor_image`, then `amount`+`fuel_image` within 60s. Assert car and station-branch balance deductions, khazna rows, oil-change GENERAL recipients, and MONEY recipients (station owners + actor; car-branch company managers + actor). Other-op PATCH is the assigned worker only; company MONEY goes to every `CompanyUser` for that company plus the worker.
 - Also cover empty/invalid payloads, meter-vs-amount precedence, the 60s window, zero fees, exact oil-change km, diesel vs wash/other types, exact car-balance completion, dashboard/station role retrieve-update, branch city/landing-page filters, operations petrol/diesel totals, and reports `date_to` / time windows.
 
+## File storage
+
+- Uploads use `STORAGES["default"]`: `FileSystemStorage` (`media/`) unless `GOOGLE_DRIVE_STORAGE_ENABLED=true`, which switches to `GoogleDriveStorage` in `apps/shared/storages.py` (env vars in `.env_example`). `config/settings_test.py` always keeps `FileSystemStorage`.
+- Read and write files through `default_storage` / the model field, never `os.path` under `MEDIA_ROOT`, so both backends work (see the Excel export in `apps/companies/helper.py`).
+- Test storage code with the Drive client mocked (`service=` argument), and route-through-storage tests by overriding `settings.STORAGES` with `InMemoryStorage`.
+
 ## API conventions
 
 - Tests target the versioned `/api/v1/` endpoints and use DRF's `APIClient`.
