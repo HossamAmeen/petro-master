@@ -141,3 +141,22 @@ class TestStationKhaznaTransactionCreate:
         assert response.status_code == status.HTTP_201_CREATED
         self.branch.refresh_from_db()
         assert self.branch.balance == Decimal("130.00")
+
+    def test_create_finance_success(self, finance_user):
+        response = self.create(client=self.auth_client(finance_user))
+
+        assert response.status_code == status.HTTP_201_CREATED
+        tx = StationKhaznaTransaction.objects.get(id=response.data["id"])
+        assert tx.created_by_id == finance_user.id
+
+    def test_create_customer_support_fail(self, customer_support_user):
+        self.set_branch_balance("100.00")
+        client = self.auth_client(customer_support_user)
+
+        response = self.create(client=client, status="approved", amount="40.00")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not StationKhaznaTransaction.objects.exists()
+        self.branch.refresh_from_db()
+        assert self.branch.balance == Decimal("100.00")
+        assert not Notification.objects.exists()

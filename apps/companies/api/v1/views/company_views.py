@@ -49,6 +49,7 @@ from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
     CompanyOwnerPermission,
     CompanyPermission,
+    CustomerSupportReadOnlyPermission,
     DashboardPermission,
     EitherPermission,
 )
@@ -66,6 +67,7 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
         )
         .order_by("-id")
     )
+    permission_classes = [IsAuthenticated, CustomerSupportReadOnlyPermission]
 
     def get_serializer_class(self):
         if self.request.method == "GET":
@@ -104,8 +106,12 @@ class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
         if self.action == "update_balance":
             return [IsAuthenticated(), CompanyOwnerPermission()]
         if self.action == "create":
-            return [IsAuthenticated(), DashboardPermission()]
-        return super().get_permissions()
+            return [
+                IsAuthenticated(),
+                DashboardPermission(),
+                CustomerSupportReadOnlyPermission(),
+            ]
+        return [*super().get_permissions(), CustomerSupportReadOnlyPermission()]
 
     def get_queryset(self):
         if self.request.query_params.get("no_paginate", "").lower() != "true":

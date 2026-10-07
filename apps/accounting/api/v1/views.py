@@ -26,6 +26,7 @@ from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
     CompanyPermission,
+    CustomerSupportReadOnlyPermission,
     DashboardPermission,
     EitherPermission,
     StationPermission,
@@ -36,7 +37,7 @@ from apps.users.models import User
 class KhaznaTransactionViewSet(viewsets.ModelViewSet):
     queryset = KhaznaTransaction.objects.order_by("-id")
     serializer_class = KhaznaTransactionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CustomerSupportReadOnlyPermission]
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.CompanyOwner:
@@ -59,6 +60,7 @@ class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return [
             IsAuthenticated(),
             EitherPermission([CompanyPermission, DashboardPermission]),
+            CustomerSupportReadOnlyPermission(),
         ]
 
     def get_serializer_class(self):
@@ -113,6 +115,7 @@ class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return [
             IsAuthenticated(),
             EitherPermission([StationPermission, DashboardPermission]),
+            CustomerSupportReadOnlyPermission(),
         ]
 
     def get_queryset(self):

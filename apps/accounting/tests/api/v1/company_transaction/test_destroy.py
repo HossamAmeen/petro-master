@@ -97,3 +97,19 @@ class TestCompanyKhaznaTransactionDestroy:
         assert response.status_code == status.HTTP_204_NO_CONTENT
         self.company_branch.refresh_from_db()
         assert self.company_branch.balance == Decimal("50.00")
+
+    def test_destroy_finance_success(self, finance_user):
+        tx = self.own_transaction()
+
+        response = self.destroy(tx.id, client=self.auth_client(finance_user))
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not CompanyKhaznaTransaction.objects.filter(id=tx.id).exists()
+
+    def test_destroy_customer_support_fail(self, customer_support_user):
+        tx = self.own_transaction()
+
+        response = self.destroy(tx.id, client=self.auth_client(customer_support_user))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert CompanyKhaznaTransaction.objects.filter(id=tx.id).exists()

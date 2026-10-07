@@ -220,3 +220,39 @@ class TestCompanyKhaznaTransactionUpdate:
         assert tx.amount == Decimal("999.00")
         assert tx.status == CompanyKhaznaTransaction.TransactionStatus.PENDING
         assert company_branch.balance == Decimal("60.00")
+
+    def test_update_finance_success(self, finance_user):
+        tx = self.own_transaction(status="pending")
+
+        response = self.update(
+            tx.id,
+            self.full_payload("declined"),
+            client=self.auth_client(finance_user),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        tx.refresh_from_db()
+        assert tx.status == CompanyKhaznaTransaction.TransactionStatus.DECLINED
+        assert tx.updated_by_id == finance_user.id
+
+    @pytest.mark.parametrize("method", ["patch", "put"])
+    def test_update_customer_support_fail(self, method, customer_support_user):
+        self.company_branch.balance = Decimal("100.00")
+        self.company_branch.save(update_fields=["balance"])
+        tx = self.own_transaction(
+            status="pending", amount=Decimal("40.00"), is_incoming=True
+        )
+        client = self.auth_client(customer_support_user)
+
+        response = getattr(client, method)(
+            company_transaction_detail_url(tx.id),
+            self.full_payload("approved"),
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        tx.refresh_from_db()
+        self.company_branch.refresh_from_db()
+        assert tx.status == CompanyKhaznaTransaction.TransactionStatus.PENDING
+        assert self.company_branch.balance == Decimal("100.00")
+        assert not Notification.objects.exists()
