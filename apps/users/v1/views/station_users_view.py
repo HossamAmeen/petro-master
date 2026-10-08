@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.permissions import (
+    CustomerSupportReadOnlyPermission,
     DashboardPermission,
     EitherPermission,
     StationPermission,
@@ -35,6 +36,7 @@ class StationOwnerViewSet(viewsets.ModelViewSet):
         return [
             IsAuthenticated(),
             EitherPermission([StationPermission, DashboardPermission]),
+            CustomerSupportReadOnlyPermission(),
         ]
 
     def get_serializer_class(self):
@@ -57,6 +59,7 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
         return [
             IsAuthenticated(),
             EitherPermission([StationPermission, DashboardPermission]),
+            CustomerSupportReadOnlyPermission(),
         ]
 
     def get_queryset(self):
@@ -88,6 +91,7 @@ class WorkerViewSet(viewsets.ModelViewSet):
         return [
             IsAuthenticated(),
             EitherPermission([StationPermission, DashboardPermission]),
+            CustomerSupportReadOnlyPermission(),
         ]
 
     def get_serializer_class(self):
