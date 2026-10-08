@@ -49,3 +49,7 @@ django-redis==6.0.0
 
 # openai
 openai==2.48.0
+
+# google drive (OAuth export upload)
+google-api-python-client==2.199.0
+google-auth==2.58.1

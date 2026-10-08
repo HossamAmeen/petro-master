@@ -309,6 +309,19 @@ if not ENVIRONMENT == "local":
     )
 
 
+# Optional hook run after an Excel export is saved: a dotted path to a function
+# `func(filepath, filename)`, e.g. apps.shared.google_drive_oauth.upload_to_drive.
+# Unset: exports stay in media/ only. This does not change the default storage.
+EXPORT_UPLOAD_FUNCTION = env("EXPORT_UPLOAD_FUNCTION", default=None)
+GOOGLE_DRIVE_OAUTH_OPTIONS = {
+    "client_id": env("GOOGLE_DRIVE_OAUTH_CLIENT_ID", default=None),
+    "client_secret": env("GOOGLE_DRIVE_OAUTH_CLIENT_SECRET", default=None),
+    "refresh_token": env("GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN", default=None),
+    "folder_id": env("GOOGLE_DRIVE_OAUTH_FOLDER_ID", default=None),
+    "public": env.bool("GOOGLE_DRIVE_OAUTH_PUBLIC", default=False),
+    "url_template": env("GOOGLE_DRIVE_OAUTH_URL_TEMPLATE", default=None),
+}
+
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000  # Increase as needed
 
 

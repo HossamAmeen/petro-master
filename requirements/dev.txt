@@ -11,3 +11,6 @@ pytest-django==4.12.0
 pytest-cov==7.1.0
 
 pre-commit==4.2.0
+
+# one-time Drive refresh token script (scripts/get_drive_refresh_token.py)
+google-auth-oauthlib==1.2.2
