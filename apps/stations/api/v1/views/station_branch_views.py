@@ -51,6 +51,7 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     )
     serializer_class = ListStationBranchSerializer
     filterset_class = StationBranchFilter
+    search_fields = ["name", "address", "station__name", "district__name"]
 
     def get_permissions(self):
         if self.action == "list":
