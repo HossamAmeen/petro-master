@@ -3,6 +3,7 @@ import os
 
 from django.conf import settings
 from django.utils import timezone
+from django.utils.module_loading import import_string
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
@@ -238,4 +239,19 @@ def export_car_operations(*args, **kwargs):
 
     # Save workbook
     wb.save(filepath)
+    upload_export(filepath, filename)
     return filename
+
+
+def upload_export(filepath, filename):
+    """Run settings.EXPORT_UPLOAD_FUNCTION, if set. Never breaks the export."""
+    dotted_path = getattr(settings, "EXPORT_UPLOAD_FUNCTION", None)
+    if not dotted_path:
+        return None
+    try:
+        result = import_string(dotted_path)(filepath, filename)
+        logger.info("Export %s uploaded: %s", filename, result)
+        return result
+    except Exception:
+        logger.exception("Export upload failed for %s", filename)
+        return None
