@@ -84,6 +84,24 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
             permissions = super().get_permissions()
         return [*permissions, CustomerSupportReadOnlyPermission()]
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == User.UserRoles.StationOwner:
+            return self.queryset.filter(id=self.request.station_id)
+        if user.role == User.UserRoles.StationBranchManager:
+            return self.queryset.filter(
+                id__in=Station.objects.filter(branches__managers__user=user).values(
+                    "id"
+                )
+            )
+        if user.role == User.UserRoles.StationWorker:
+            return self.queryset.filter(
+                id__in=Station.objects.filter(branches__workers__id=user.id).values(
+                    "id"
+                )
+            )
+        return self.queryset
+
     def perform_destroy(self, instance):
         if CarOperation.objects.filter(station_branch__station=instance).exists():
             raise CustomValidationError(

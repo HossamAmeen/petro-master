@@ -115,7 +115,8 @@ class WorkerWithBranchSerializer(serializers.ModelSerializer):
 class StationOwnerSerializer(serializers.ModelSerializer):
     class Meta:
         model = StationOwner
-        fields = "__all__"
+        exclude = ["reset_password_token", "reset_password_token_created_at"]
+        extra_kwargs = {"password": {"write_only": True}}
 
 
 class ListStationOwnerSerializer(serializers.ModelSerializer):
@@ -123,7 +124,7 @@ class ListStationOwnerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StationOwner
-        fields = "__all__"
+        exclude = ["password", "reset_password_token", "reset_password_token_created_at"]
 
 
 class StationBranchSerializer(serializers.ModelSerializer):
