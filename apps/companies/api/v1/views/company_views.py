@@ -12,6 +12,7 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from rest_framework import viewsets
+from rest_framework.filters import SearchFilter
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView, Response, status
@@ -92,8 +93,9 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
 class CompanyBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = CompanyBranch.objects.order_by("-id")
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = CompanyBranchFilter
+    search_fields = ["name", "address", "company__name", "district__name"]
 
     def get_permissions(self):
         if self.action == "list":
