@@ -84,23 +84,22 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
             permissions = super().get_permissions()
         return [*permissions, CustomerSupportReadOnlyPermission()]
 
+    # How a branch-level role reaches its station. Matched through a subquery so
+    # the join does not multiply the aggregates annotated on `queryset`.
+    BRANCH_STAFF_STATION_LOOKUPS = {
+        User.UserRoles.StationBranchManager: "branches__managers__user_id",
+        User.UserRoles.StationWorker: "branches__workers__id",
+    }
+
     def get_queryset(self):
         user = self.request.user
         if user.role == User.UserRoles.StationOwner:
             return self.queryset.filter(id=self.request.station_id)
-        if user.role == User.UserRoles.StationBranchManager:
-            return self.queryset.filter(
-                id__in=Station.objects.filter(branches__managers__user=user).values(
-                    "id"
-                )
-            )
-        if user.role == User.UserRoles.StationWorker:
-            return self.queryset.filter(
-                id__in=Station.objects.filter(branches__workers__id=user.id).values(
-                    "id"
-                )
-            )
-        return self.queryset
+        lookup = self.BRANCH_STAFF_STATION_LOOKUPS.get(user.role)
+        if lookup is None:
+            return self.queryset
+        own_stations = Station.objects.filter(**{lookup: user.id})
+        return self.queryset.filter(id__in=own_stations.values("id"))
 
     def perform_destroy(self, instance):
         if CarOperation.objects.filter(station_branch__station=instance).exists():
