@@ -85,3 +85,20 @@ class TestCompanyOwnerList:
         ids = returned_ids(response)
         assert company_owner.id in ids
         assert other_company_owner.id not in ids
+
+
+class TestCompanyOwnerListHidesSecrets:
+    def test_list_never_exposes_password_fields_success(
+        self, auth_client, admin_user, company_owner
+    ):
+        response = auth_client(admin_user).get(company_owners_list_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"]
+        for row in response.data["results"]:
+            for field in (
+                "password",
+                "reset_password_token",
+                "reset_password_token_created_at",
+            ):
+                assert field not in row

@@ -93,3 +93,17 @@ class TestStationKhaznaTransactionRetrieve:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == tx.id
+
+    @pytest.mark.parametrize("role_fixture", ["finance_user", "customer_support_user"])
+    def test_retrieve_other_dashboard_roles_success(self, role_fixture, request):
+        tx = self.create_transaction()
+        client = self.auth_client(request.getfixturevalue(role_fixture))
+
+        response = self.retrieve(tx.id, client=client)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["id"] == tx.id
+        assert response.data["station"] == {
+            "id": self.station.id,
+            "name": self.station.name,
+        }

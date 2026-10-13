@@ -40,6 +40,11 @@ class TestStationLogin:
         assert response.data["user_name"] == user.name
         assert response.data["role"] == user.role
         assert response.data["station_id"] == station.id
+        assert response.data["user"] == {
+            "id": user.id,
+            "name": user.name,
+            "role": user.role,
+        }
         assert "company_id" not in response.data
         access = decode_access(response.data["access"])
         refresh = decode_refresh(response.data["refresh"])

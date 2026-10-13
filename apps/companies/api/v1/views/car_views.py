@@ -36,7 +36,10 @@ from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
-from apps.shared.permissions import StationWorkerPermission
+from apps.shared.permissions import (
+    CustomerSupportReadOnlyPermission,
+    StationWorkerPermission,
+)
 from apps.stations.models.service_models import Service
 from apps.users.models import User
 
@@ -46,6 +49,7 @@ class DriverViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = Driver.objects.select_related(
         "branch__district__city", "branch__company", "created_by"
     ).order_by("-id")
+    permission_classes = [IsAuthenticated, CustomerSupportReadOnlyPermission]
     search_fields = [
         "name",
         "branch__name",
@@ -69,6 +73,7 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = Car.objects.select_related(
         "branch__district", "branch__company", "service", "backup_service"
     ).order_by("-id")
+    permission_classes = [IsAuthenticated, CustomerSupportReadOnlyPermission]
     filterset_class = CarFilter
     search_fields = [
         "code",

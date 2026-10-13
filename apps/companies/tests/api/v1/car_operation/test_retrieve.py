@@ -151,6 +151,20 @@ class TestCarOperationRetrieve:
         assert response.data["service_category"] == "خدمات أخرى"
         assert response.data["unit"] == "وحدة"
 
+    @pytest.mark.parametrize(
+        "role_fixture", ["admin_user", "finance_user", "customer_support_user"]
+    )
+    def test_retrieve_as_dashboard_role_success(
+        self, role_fixture, request, auth_client, car_operation_factory
+    ):
+        user = request.getfixturevalue(role_fixture)
+        operation = car_operation_factory()
+
+        response = auth_client(user).get(operation_detail_url(operation.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert_operation_payload(response.data, operation, include_profits=True)
+
     def test_retrieve_unknown_operation_fail(self, auth_client, company_owner, company):
         response = auth_client(company_owner, company_id=company.id).get(
             operation_detail_url(999_999)

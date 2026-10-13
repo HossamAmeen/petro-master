@@ -25,6 +25,7 @@ class UserViewSet(InjectUserMixin, viewsets.ModelViewSet):
     )
     permission_classes = [IsAuthenticated, AdminPermission]
     filterset_class = UserFilter
+    search_fields = ["name", "phone_number", "email"]
 
     def get_serializer_class(self):
         if self.action == "list":

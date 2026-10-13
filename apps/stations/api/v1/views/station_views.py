@@ -24,6 +24,7 @@ from apps.companies.models.operation_model import CarOperation
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
+    CustomerSupportReadOnlyPermission,
     DashboardPermission,
     EitherPermission,
     StationPermission,
@@ -73,13 +74,32 @@ class StationViewSet(InjectUserMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ["create", "list"]:
-            return [IsAuthenticated(), DashboardPermission()]
-        if self.action in ["partial_update", "retrieve"]:
-            return [
+            permissions = [IsAuthenticated(), DashboardPermission()]
+        elif self.action in ["partial_update", "retrieve"]:
+            permissions = [
                 IsAuthenticated(),
                 EitherPermission([DashboardPermission, StationPermission]),
             ]
-        return super().get_permissions()
+        else:
+            permissions = super().get_permissions()
+        return [*permissions, CustomerSupportReadOnlyPermission()]
+
+    # How a branch-level role reaches its station. Matched through a subquery so
+    # the join does not multiply the aggregates annotated on `queryset`.
+    BRANCH_STAFF_STATION_LOOKUPS = {
+        User.UserRoles.StationBranchManager: "branches__managers__user_id",
+        User.UserRoles.StationWorker: "branches__workers__id",
+    }
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == User.UserRoles.StationOwner:
+            return self.queryset.filter(id=self.request.station_id)
+        lookup = self.BRANCH_STAFF_STATION_LOOKUPS.get(user.role)
+        if lookup is None:
+            return self.queryset
+        own_stations = Station.objects.filter(**{lookup: user.id})
+        return self.queryset.filter(id__in=own_stations.values("id"))
 
     def perform_destroy(self, instance):
         if CarOperation.objects.filter(station_branch__station=instance).exists():
@@ -192,6 +212,7 @@ class StationHomeAPIView(APIView):
 
 
 class StationOperationsAPIView(ListAPIView):
+    permission_classes = [IsAuthenticated, StationPermission]
     queryset = CarOperation.objects.select_related(
         "car__branch", "driver", "station_branch", "worker__station_branch", "service"
     ).order_by("-id")

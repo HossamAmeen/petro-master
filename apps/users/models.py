@@ -75,6 +75,24 @@ class User(AbstractUser, TimeStampedModel):
         return self.name
 
 
+class CustomerSupportManager(CustomUserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(role=User.UserRoles.CustomerSupport)
+
+
+class CustomerSupport(User):
+    objects = CustomerSupportManager()
+
+    def save(self, *args, **kwargs):
+        self.role = User.UserRoles.CustomerSupport
+        super().save(*args, **kwargs)
+
+    class Meta:
+        proxy = True
+        verbose_name = "Customer Support"
+        verbose_name_plural = "Customer Support"
+
+
 class FirebaseToken(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="firebase_tokens"

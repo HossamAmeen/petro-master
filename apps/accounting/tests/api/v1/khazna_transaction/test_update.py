@@ -66,3 +66,20 @@ class TestKhaznaTransactionUpdate:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["errors"][0]["field"] == "reference_code"
+
+    @pytest.mark.parametrize("method", ["patch", "put"])
+    def test_update_customer_support_fail(
+        self, method, auth_client, customer_support_user
+    ):
+        tx = self.create_transaction(status=KhaznaTransaction.TransactionStatus.PENDING)
+        client = auth_client(customer_support_user)
+
+        response = getattr(client, method)(
+            transaction_detail_url(tx.id),
+            {"amount": tx.amount, "created_by": tx.created_by_id, "status": "approved"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        tx.refresh_from_db()
+        assert tx.status == KhaznaTransaction.TransactionStatus.PENDING

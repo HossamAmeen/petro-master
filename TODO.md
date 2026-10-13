@@ -28,6 +28,13 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
   - Then run the formatters across the whole repo once and commit the reformat on its own, so it doesn't get mixed into feature diffs.
 
 - [ ] **Customer support role: view only (no create / update / delete)**
+  - Progress: one PR per phase. Each branch is cut from the previous one, so merge them in order.
+    - [x] Phase 1: model, viewset, admin (`add/customer-support-model`)
+    - [x] Phase 2: car operations (`add/customer-support-read-only-car-operations`)
+    - [x] Phase 3: transactions (`add/customer-support-read-only-transactions`)
+    - [x] Phase 4: company-side viewsets (`add/customer-support-read-only-company-viewsets`)
+    - [ ] **Next:** Phase 5: station-side viewsets (`add/customer-support-read-only-station-viewsets`)
+    - [ ] Phase 6: company/station staff viewsets (`add/customer-support-read-only-staff-viewsets`)
   - The role already exists (`User.UserRoles.CustomerSupport` in [apps/users/models.py](apps/users/models.py)) and is in `DASHBOARD_ROLES` in [apps/shared/constants.py](apps/shared/constants.py), so today it passes `DashboardPermission` and can **write** everywhere an admin can.
   - Rules for the whole task:
     - Block writes with a permission class, not by overriding `create` / `update` / `destroy` in the views. Only override a view method if the permission approach really doesn't work for that endpoint.
@@ -40,12 +47,24 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
     - Tests: CRUD by admin, and no other role can create customer-support users.
   - **Phase 2 — view only on `CarOperationViewSet`**
     - [apps/companies/api/v1/views/car_operation_views.py](apps/companies/api/v1/views/car_operation_views.py): `list` / `retrieve` stay open to customer support; `create` / `partial_update` (which use `DashboardPermission`) must reject it.
-    - Proposed solution: add a reusable permission in [apps/shared/permissions.py](apps/shared/permissions.py) (e.g. `CustomerSupportReadOnlyPermission`) that allows customer support only on `SAFE_METHODS`. Use it in `get_permissions` next to the existing classes. Once it works here, reuse it for the other `DashboardPermission` viewsets (company, station, users, station branches).
+    - Proposed solution: add a reusable permission in [apps/shared/permissions.py](apps/shared/permissions.py) (e.g. `CustomerSupportReadOnlyPermission`) that allows customer support only on `SAFE_METHODS`. Use it in `get_permissions` next to the existing classes. The other viewsets follow in phases 4 to 6.
     - Tests: customer support gets 200 on list/retrieve and 403 on create/patch; admin and finance behave as before.
   - **Phase 3 — view only on transaction viewsets (company, station)**
     - [apps/accounting/api/v1/views.py](apps/accounting/api/v1/views.py): `CompanyKhaznaTransactionViewSet` and `StationKhaznaTransactionViewSet`. Apply the same permission from phase 2.
     - Also check `KhaznaTransactionViewSet`: it only has `IsAuthenticated`, so any role (customer support included) can write there right now.
     - Tests: same matrix as phase 2 for both company and station transactions.
+  - **Phase 4 — view only on the other company-side viewsets**
+    - `CompanyViewSet` and `CompanyBranchViewSet` in [apps/companies/api/v1/views/company_views.py](apps/companies/api/v1/views/company_views.py), `CarViewSet` (including `update-balance`) and `DriverViewSet` in [apps/companies/api/v1/views/car_views.py](apps/companies/api/v1/views/car_views.py), and `CompanyCashRequestViewSet` in [apps/companies/api/v1/views/company_cash_request_views.py](apps/companies/api/v1/views/company_cash_request_views.py).
+    - Cars and drivers have no role check at all, and cash-request POST / DELETE move money for every dashboard role.
+    - Cover the `super().get_permissions()` fallback too: branch retrieve / update / delete only need authentication.
+    - Tests: read-200 / write-403 matrix in `apps/companies/tests/api/v1/test_customer_support_read_only.py` that also asserts the database is unchanged.
+  - **Phase 5 — view only on the station-side viewsets**
+    - `StationViewSet` and `StationBranchViewSet` (including `assign-services`, `add-service`, `delete-service`, `assign-managers`) in [apps/stations/api/v1/views/](apps/stations/api/v1/views/), `ServiceViewSet`, and the `StationGasOperationAPIView` PATCH (authenticated only, completes a fueling).
+    - Tests: same matrix in `apps/stations/tests/api/v1/test_customer_support_read_only.py`.
+  - **Phase 6 — view only on the company / station staff viewsets**
+    - `CompanyOwnerViewSet` and `CompanyBranchManagerViewSet` in [apps/users/v1/views/company_users_view.py](apps/users/v1/views/company_users_view.py); `StationOwnerViewSet`, `StationBranchManagerViewSet` and `WorkerViewSet` in [apps/users/v1/views/station_users_view.py](apps/users/v1/views/station_users_view.py).
+    - The user's own account stays writable: profile, notification `is_read`, firebase tokens.
+    - Tests: same matrix in `apps/users/tests/api/v1/test_customer_support_read_only.py`.
 
 - [x] **Feature tests: every business scenario end to end**
   - Done: `tests/features/` (14 modules, 125 tests, `-m feature`). See the "Feature tests" section in [AGENTS.md](AGENTS.md).
@@ -77,3 +96,23 @@ Running list of things to implement. Newest ideas at the bottom, finished items 
     14. **AI operation check**: completed operation → `manage.py process_ai_operations` with the OpenAI client and `requests.get` mocked → one `AIApiResponse` per operation, max 100 per branch.
   - Celery: once the `use-celery` branch is merged, keep `CELERY_TASK_ALWAYS_EAGER` on in [config/settings_test.py](config/settings_test.py) so notification / SMS tasks still run inside the test.
   - Done when: `venv/bin/python -m pytest -m feature` passes, the full suite still passes, `make check` is clean, and AGENTS.md says where feature tests live and how to add one.
+
+- [ ] **Store uploaded files on Google Drive**
+  - Today every file sits on the server's disk: `MEDIA_ROOT = BASE_DIR / "media"` in [config/settings.py](config/settings.py#L289), served through `static(settings.MEDIA_URL, …)` in [config/urls.py](config/urls.py) (Django only serves that with `DEBUG=True`). `django-storages` is not installed, and the `DEFAULT_FILE_STORAGE` / `AWS_*` (DigitalOcean Spaces) lines in [.env_example](.env_example) are not read by the settings.
+  - Files that would move:
+    - `CarOperation.motor_image`, `fuel_image`, `car_image` in [apps/companies/models/operation_model.py](apps/companies/models/operation_model.py).
+    - `KhaznaTransaction.photo` in [apps/accounting/models.py](apps/accounting/models.py).
+    - `Service.image` in [apps/stations/models/service_models.py](apps/stations/models/service_models.py).
+    - `Slider.image` in [configrations/models.py](configrations/models.py).
+    - Excel exports: `export_car_operations` in [apps/companies/helper.py](apps/companies/helper.py) writes into `MEDIA_ROOT/excel_exports` with `os.path`, and `download_excel` in [car_operation_views.py](apps/companies/api/v1/views/car_operation_views.py) opens that path directly. Both bypass Django's storage, so move them to `default_storage` first.
+  - Decide before building:
+    - **URLs.** Drive has no plain public file URL. The Django admin `<img>` previews (`image_preview` in [apps/companies/admin.py](apps/companies/admin.py)), the dashboard / mobile apps, and `process_ai_operations` (which downloads `image_file.url` with `requests.get`) all need a URL they can open. Either share each file as "anyone with the link" and return a direct-download link, or stream files through an authenticated backend endpoint.
+    - **Account.** A service account has no Drive storage quota of its own, so uploads must go to a Shared Drive (Google Workspace) or be made as a real user through OAuth.
+    - **Speed and quotas.** Drive API rate limits, and upload latency inside requests: the gas-operation PATCH uploads two images while the worker waits.
+    - **Alternative.** Compare with the object storage already sketched in `.env_example` (DigitalOcean Spaces / S3 through `django-storages`), which serves public URLs directly.
+  - How:
+    - A storage class implementing Django's `Storage` API (`_save`, `_open`, `exists`, `delete`, `url`, `size`) on the Drive API (`google-api-python-client`), or an existing package once you've checked it is maintained and works with Django 4.2. Drive addresses files by id, not path, so keep a name → file id mapping (a small table or Drive `appProperties`) so lookups by the stored name keep working.
+    - Configure it in `STORAGES["default"]` (Django 4.2) with the credentials and the Shared Drive / folder id from env, and add those variables to `.env_example`.
+    - Keep `FileSystemStorage` in [config/settings_test.py](config/settings_test.py).
+    - Management command to upload the existing `media/` files under the same names, so the paths already stored in the database still resolve.
+  - Tests: storage class with the Drive client mocked (save returns the name, `exists`, `open`, `url`, `delete`); an image sent to the gas-operation PATCH lands in the storage; export → `download-excel` goes through the storage.

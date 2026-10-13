@@ -105,7 +105,9 @@ class TestCarOperationUpdate:
         assert company_owner.id in money_user_ids
         assert company_branch_manager.id in money_user_ids
 
-    @pytest.mark.parametrize("role_fixture", ["company_owner", "admin_user"])
+    @pytest.mark.parametrize(
+        "role_fixture", ["company_owner", "admin_user", "finance_user"]
+    )
     def test_partial_update_complete_allowed_roles_success(
         self,
         role_fixture,
@@ -139,6 +141,32 @@ class TestCarOperationUpdate:
         assert operation.status == CarOperation.OperationStatus.COMPLETED
         assert StationKhaznaTransaction.objects.count() == 1
         assert CompanyKhaznaTransaction.objects.count() == 1
+
+    @pytest.mark.parametrize("method", ["patch", "put"])
+    def test_update_as_customer_support_fail(
+        self, method, auth_client, customer_support_user, car_operation_factory, branch
+    ):
+        set_balance(branch, "200.00")
+        operation = car_operation_factory(
+            status=CarOperation.OperationStatus.IN_PROGRESS,
+            company_cost=Decimal("50.00"),
+            station_cost=Decimal("40.00"),
+        )
+        client = auth_client(customer_support_user)
+
+        response = getattr(client, method)(
+            operation_detail_url(operation.id),
+            update_payload(operation),
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        operation.refresh_from_db()
+        assert operation.status == CarOperation.OperationStatus.IN_PROGRESS
+        branch.refresh_from_db()
+        assert branch.balance == Decimal("200.00")
+        assert StationKhaznaTransaction.objects.count() == 0
+        assert CompanyKhaznaTransaction.objects.count() == 0
 
     def test_partial_update_cancel_does_not_create_transactions_success(
         self,

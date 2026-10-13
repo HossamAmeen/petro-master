@@ -219,16 +219,21 @@ class TestCarOperationCreate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert CarOperation.objects.count() == 0
 
-    @pytest.mark.parametrize("role_fixture", ["finance_user", "customer_support_user"])
-    def test_create_as_dashboard_role_success(self, role_fixture, request, auth_client):
-        user = request.getfixturevalue(role_fixture)
-
-        response = self.create(client=auth_client(user))
+    def test_create_as_finance_success(self, auth_client, finance_user):
+        response = self.create(client=auth_client(finance_user))
 
         assert response.status_code == status.HTTP_201_CREATED, response.data
         created = CarOperation.objects.get()
-        assert created.created_by_id == user.id
+        assert created.created_by_id == finance_user.id
         assert created.amount == Decimal("10.00")
+
+    def test_create_as_customer_support_fail(self, auth_client, customer_support_user):
+        response = self.create(client=auth_client(customer_support_user))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert CarOperation.objects.count() == 0
+        self.car.refresh_from_db()
+        assert self.car.balance == Decimal("1000.00")
 
     @pytest.mark.parametrize(
         "payload",

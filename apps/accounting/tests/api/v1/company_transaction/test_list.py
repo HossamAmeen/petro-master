@@ -177,3 +177,13 @@ class TestCompanyKhaznaTransactionList:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["results"] == []
+
+    @pytest.mark.parametrize("role_fixture", ["finance_user", "customer_support_user"])
+    def test_list_other_dashboard_roles_success(self, role_fixture, request):
+        tx = self.own_transaction()
+        client = self.auth_client(request.getfixturevalue(role_fixture))
+
+        response = self.list(client=client)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert returned_ids(response) == {tx.id}

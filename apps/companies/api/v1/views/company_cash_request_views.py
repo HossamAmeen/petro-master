@@ -29,6 +29,7 @@ from apps.companies.models.company_models import Company, CompanyBranch
 from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectCompanyUserMixin
+from apps.shared.permissions import CustomerSupportReadOnlyPermission
 from apps.stations.models.stations_models import StationBranch
 from apps.users.models import (
     CompanyBranchManager,
@@ -54,7 +55,11 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete"]
 
     def get_permissions(self):
-        return [IsAuthenticated(), CashRequestPermission()]
+        return [
+            IsAuthenticated(),
+            CashRequestPermission(),
+            CustomerSupportReadOnlyPermission(),
+        ]
 
     def get_serializer_class(self):
         if self.request.method == "GET":

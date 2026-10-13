@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 
+from apps.shared.permissions import CustomerSupportReadOnlyPermission
 from apps.stations.api.v1.serializers import ListServiceSerializer
 from apps.stations.filters import ServiceFilter
 from apps.stations.models.service_models import Service
@@ -10,6 +11,9 @@ class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.order_by("-id")
     serializer_class = ListServiceSerializer
     filterset_class = ServiceFilter
+
+    def get_permissions(self):
+        return [*super().get_permissions(), CustomerSupportReadOnlyPermission()]
 
     def get_queryset(self):
         if self.request.user.role == User.UserRoles.StationOwner:
