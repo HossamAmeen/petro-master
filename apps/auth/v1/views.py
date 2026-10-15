@@ -14,6 +14,7 @@ from apps.auth.tasks import send_password_reset_email_task
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import DASHBOARD_ROLES
 from apps.shared.task_runner import run_task
+from apps.shared.throttles import LoginRateThrottle
 from apps.users.models import User
 from apps.utilities.serializers import MessageErrorsSerializer
 
@@ -33,6 +34,7 @@ class CustomTokenRefreshView(TokenRefreshView):
 class CompanyLoginAPIView(APIView):
     authentication_classes = []
     permission_classes = []
+    throttle_classes = [LoginRateThrottle]
 
     @extend_schema(
         request=LoginSerializer,
@@ -111,6 +113,7 @@ class CompanyLoginAPIView(APIView):
 class StationLoginAPIView(APIView):
     authentication_classes = []
     permission_classes = []
+    throttle_classes = [LoginRateThrottle]
 
     @extend_schema(
         request=LoginSerializer,
@@ -307,6 +310,7 @@ class PasswordResetConfirmAPIView(APIView):
 class DashboardLoginAPIView(APIView):
     authentication_classes = []
     permission_classes = []
+    throttle_classes = [LoginRateThrottle]
     serializer_class = LoginSerializer
 
     @extend_schema(
