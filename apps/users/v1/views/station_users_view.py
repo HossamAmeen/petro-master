@@ -10,7 +10,11 @@ from apps.shared.permissions import (
     StationPermission,
 )
 from apps.users.models import StationOwner, User, Worker
-from apps.users.v1.filters import StationBranchManagerFilter, StationOwnerFilter
+from apps.users.v1.filters import (
+    StationBranchManagerFilter,
+    StationOwnerFilter,
+    WorkerFilter,
+)
 from apps.users.v1.serializers.station_serializer import (
     CreateWorkerSerializer,
     ListStationBranchManagerSerializer,
@@ -84,7 +88,7 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
 class WorkerViewSet(viewsets.ModelViewSet):
     queryset = Worker.objects.select_related("station_branch").order_by("-id")
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ["station_branch"]
+    filterset_class = WorkerFilter
     search_fields = ["name", "phone_number", "email"]
 
     def get_permissions(self):

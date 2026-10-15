@@ -10,7 +10,7 @@ from apps.shared.permissions import (
     EitherPermission,
 )
 from apps.users.models import CompanyUser, User
-from apps.users.v1.filters import CompanyBranchManagerFilter
+from apps.users.v1.filters import CompanyBranchManagerFilter, CompanyOwnerFilter
 from apps.users.v1.serializers.company_user_serializer import (
     CompanyBranchManagerSerializer,
     CreateCompanyOwnerSerializer,
@@ -28,6 +28,7 @@ class CompanyOwnerViewSet(viewsets.ModelViewSet):
     )
     search_fields = ["name", "phone_number", "email"]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = CompanyOwnerFilter
 
     def get_serializer_class(self):
         if self.request.method == "GET":
