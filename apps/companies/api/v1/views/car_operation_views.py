@@ -155,6 +155,12 @@ class CarOperationViewSet(InjectUserMixin, viewsets.ModelViewSet):
     def export(self, request, *args, **kwargs):
         date_from = request.query_params.get("date_from")
         date_to = request.query_params.get("date_to")
+        if not date_from and not date_to:
+            raise CustomValidationError(
+                message="يجب تحديد تاريخ البداية أو تاريخ النهاية على الأقل للاستخراج",
+                code="date_range_required",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
         branches = []
         if request.user.role == User.UserRoles.CompanyOwner:
