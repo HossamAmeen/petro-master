@@ -15,3 +15,11 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 # would (retries included, errors kept out of the caller).
 USE_CELERY = False
 CELERY_TASK_ALWAYS_EAGER = True
+
+# Throttle state must not leak between tests, and the suite logs in far more
+# often than the production login limit allows.
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,  # noqa: F405
+    "DEFAULT_THROTTLE_RATES": {"login": "10000/min"},
+}

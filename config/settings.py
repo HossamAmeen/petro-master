@@ -191,6 +191,10 @@ REST_FRAMEWORK = {
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        "login": env("LOGIN_THROTTLE_RATE", default="10/min"),
+    },
+    "NUM_PROXIES": env("NUM_PROXIES", default=None, cast=int),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "TIME_ZONE": "Africa/Cairo",
     "USE_TZ": True,
