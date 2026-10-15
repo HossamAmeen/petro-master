@@ -200,6 +200,15 @@ REST_FRAMEWORK = {
     "USE_TZ": True,
 }
 
+# HSTS is sent by SecurityMiddleware on HTTPS requests only. Behind a TLS
+# terminating proxy, set TRUST_X_FORWARDED_PROTO=true (the proxy must overwrite
+# X-Forwarded-Proto) so Django sees the request as secure, then set
+# SECURE_HSTS_SECONDS (for example 31536000). The default 0 leaves it off.
+SECURE_HSTS_SECONDS = env("SECURE_HSTS_SECONDS", default=0, cast=int)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False, cast=bool)
+if env("TRUST_X_FORWARDED_PROTO", default=False, cast=bool):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 CORS_ALLOW_ALL_ORIGINS = True
 
 # API needs credentials like cookies or authorization headers
