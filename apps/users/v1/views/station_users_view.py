@@ -3,6 +3,7 @@ from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticated
 
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import STATION_ROLES
 from apps.shared.permissions import (
     CustomerSupportReadOnlyPermission,
     DashboardPermission,
@@ -38,6 +39,11 @@ class StationOwnerViewSet(viewsets.ModelViewSet):
             EitherPermission([StationPermission, DashboardPermission]),
             CustomerSupportReadOnlyPermission(),
         ]
+
+    def get_queryset(self):
+        if self.request.user.role in STATION_ROLES:
+            return self.queryset.filter(station=self.request.station_id)
+        return self.queryset
 
     def get_serializer_class(self):
         if self.request.method == "GET":
