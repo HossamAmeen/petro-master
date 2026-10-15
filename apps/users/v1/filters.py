@@ -12,7 +12,6 @@ class UserFilter(django_filters.FilterSet):
 
 class CompanyBranchManagerFilter(django_filters.FilterSet):
     company = django_filters.NumberFilter(field_name="company")
-    company_id = django_filters.NumberFilter(field_name="company")
     branch = django_filters.NumberFilter(
         field_name="company_branch_managers__company_branch"
     )
@@ -22,16 +21,15 @@ class CompanyBranchManagerFilter(django_filters.FilterSet):
 
     class Meta:
         model = CompanyUser
-        fields = ["company", "company_id", "branch", "city"]
+        fields = ["company", "branch", "city"]
 
 
 class CompanyOwnerFilter(django_filters.FilterSet):
     company = django_filters.NumberFilter(field_name="company")
-    company_id = django_filters.NumberFilter(field_name="company")
 
     class Meta:
         model = CompanyUser
-        fields = ["company", "company_id"]
+        fields = ["company"]
 
 
 class WorkerFilter(django_filters.FilterSet):
