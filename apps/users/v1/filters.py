@@ -1,6 +1,6 @@
 from django_filters import rest_framework as django_filters
 
-from apps.users.models import CompanyUser, StationOwner, User
+from apps.users.models import CompanyUser, StationOwner, User, Worker
 
 
 class UserFilter(django_filters.FilterSet):
@@ -11,6 +11,8 @@ class UserFilter(django_filters.FilterSet):
 
 
 class CompanyBranchManagerFilter(django_filters.FilterSet):
+    company = django_filters.NumberFilter(field_name="company")
+    company_id = django_filters.NumberFilter(field_name="company")
     branch = django_filters.NumberFilter(
         field_name="company_branch_managers__company_branch"
     )
@@ -20,7 +22,25 @@ class CompanyBranchManagerFilter(django_filters.FilterSet):
 
     class Meta:
         model = CompanyUser
-        fields = ["branch", "city"]
+        fields = ["company", "company_id", "branch", "city"]
+
+
+class CompanyOwnerFilter(django_filters.FilterSet):
+    company = django_filters.NumberFilter(field_name="company")
+    company_id = django_filters.NumberFilter(field_name="company")
+
+    class Meta:
+        model = CompanyUser
+        fields = ["company", "company_id"]
+
+
+class WorkerFilter(django_filters.FilterSet):
+    branch = django_filters.NumberFilter(field_name="station_branch")
+    station = django_filters.NumberFilter(field_name="station_branch__station")
+
+    class Meta:
+        model = Worker
+        fields = ["station_branch", "branch", "station"]
 
 
 class StationOwnerFilter(django_filters.FilterSet):
