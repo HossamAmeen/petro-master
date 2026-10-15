@@ -32,6 +32,23 @@ class TestCustomExceptionHandler:
             "errors": [{"field": "name", "message": "This field is required."}],
         }
 
+    def test_validation_error_plain_list_is_formatted_success(self):
+        exc = ValidationError(["Null characters are not allowed."])
+
+        response = custom_exception_handler(exc, {})
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data == {
+            "code": "validation_error",
+            "message": "Validation failed",
+            "errors": [
+                {
+                    "field": "non_field_errors",
+                    "message": "Null characters are not allowed.",
+                }
+            ],
+        }
+
     def test_validation_error_nested_dict_messages_are_flattened_success(self):
         exc = ValidationError({"address": {"city": "Required.", "street": "Too long."}})
 

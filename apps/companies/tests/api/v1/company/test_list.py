@@ -157,6 +157,15 @@ class TestCompanyList:
         assert returned_ids(response) == {matching.id}
         assert non_matching.id not in returned_ids(response)
 
+    def test_list_search_with_null_byte_fail(self, auth_client, admin_user):
+        response = auth_client(admin_user).get(
+            reverse("companies-list"),
+            {"search": "\x00"},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["code"] == "validation_error"
+
     def test_list_search_by_phone_number_success(
         self, auth_client, admin_user, company_factory
     ):

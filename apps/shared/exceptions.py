@@ -14,7 +14,12 @@ def custom_exception_handler(exc, context):
     if response is not None and isinstance(exc, ValidationError):
         # Format other validation errors
         formatted_errors = []
-        for field, errors in response.data.items():
+        data = response.data
+        if not isinstance(data, dict):
+            # Errors raised outside a serializer field (for example a query
+            # parameter rejected by a filter) arrive as a plain list.
+            data = {"non_field_errors": data}
+        for field, errors in data.items():
             if isinstance(errors, dict):
                 errors = errors.values()
 
