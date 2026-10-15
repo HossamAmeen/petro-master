@@ -39,6 +39,15 @@ class StationPermission(BasePermission):
         return request.user.role in STATION_ROLES
 
 
+class CompanyOrDashboardPermission(BasePermission):
+    """Company roles and dashboard roles only; every other role is refused."""
+
+    def has_permission(self, request, view):
+        return (
+            request.user.role in COMPANY_ROLES or request.user.role in DASHBOARD_ROLES
+        )
+
+
 class DashboardPermission(BasePermission):
     def has_permission(self, request, view):
         return request.user.role in DASHBOARD_ROLES

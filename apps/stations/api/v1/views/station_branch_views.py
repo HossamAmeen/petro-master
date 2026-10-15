@@ -217,9 +217,11 @@ class StationBranchViewSet(InjectUserMixin, viewsets.ModelViewSet):
             services = services.filter(
                 station_branch_services__station_branch__managers__user=self.request.user,
             )
-        if request.query_params.get("types"):
-            types = request.query_params.get("types").split(",")
-            services = services.filter(type__in=types)
+        types = request.query_params.get("types") or request.query_params.get("type")
+        if types:
+            services = services.filter(type__in=types.split(","))
+        if request.query_params.get("unit"):
+            services = services.filter(unit=request.query_params.get("unit"))
         if request.query_params.get("search"):
             search = request.query_params.get("search")
             services = services.filter(name__icontains=search)

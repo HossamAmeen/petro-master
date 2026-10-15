@@ -25,8 +25,6 @@ class TestCompanyList:
             "finance_user",
             "company_owner",
             "company_branch_manager",
-            "station_owner",
-            "station_worker",
         ],
     )
     def test_list_authenticated_role_success(
@@ -141,6 +139,21 @@ class TestCompanyList:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.parametrize(
+        "role_fixture",
+        ["station_owner", "branch_manager", "station_worker"],
+    )
+    def test_list_as_station_role_fail(
+        self, role_fixture, request, auth_client, company, station
+    ):
+        user = request.getfixturevalue(role_fixture)
+
+        response = auth_client(user, station_id=station.id).get(
+            reverse("companies-list")
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_list_search_by_name_success(
         self, auth_client, admin_user, company_factory

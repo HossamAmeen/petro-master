@@ -12,8 +12,8 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from rest_framework import viewsets
-from rest_framework.filters import SearchFilter
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView, Response, status
 
@@ -48,6 +48,7 @@ from apps.notifications.models import Notification
 from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
+    CompanyOrDashboardPermission,
     CompanyOwnerPermission,
     CompanyPermission,
     CustomerSupportReadOnlyPermission,
@@ -68,7 +69,11 @@ class CompanyViewSet(InjectUserMixin, viewsets.ModelViewSet):
         )
         .order_by("-id")
     )
-    permission_classes = [IsAuthenticated, CustomerSupportReadOnlyPermission]
+    permission_classes = [
+        IsAuthenticated,
+        CompanyOrDashboardPermission,
+        CustomerSupportReadOnlyPermission,
+    ]
 
     def get_serializer_class(self):
         if self.request.method == "GET":
