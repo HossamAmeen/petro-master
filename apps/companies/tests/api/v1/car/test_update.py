@@ -169,19 +169,13 @@ class TestCarUpdate:
         self.car.refresh_from_db()
         assert self.car.balance_source == Car.BalanceSource.CAR
 
-    def test_partial_update_as_station_worker_can_rewrite_balance_success(
+    def test_partial_update_as_station_worker_fail(
         self, auth_client, station_worker, station
     ):
-        """Documents actual (buggy) behavior: `CarViewSet` sets no permission
-        classes, so any authenticated user passes. A station worker's PATCH falls
-        through `get_serializer_class` to the full `CarSerializer`, and the
-        dashboard-style queryset lets them edit any company's car, including its
-        balance."""
         client = auth_client(station_worker, station_id=station.id)
 
         response = client.patch(self.url, {"balance": "777.00"}, format="json")
 
-        assert response.status_code == status.HTTP_200_OK, response.data
+        assert response.status_code == status.HTTP_403_FORBIDDEN
         self.car.refresh_from_db()
-        assert self.car.balance == Decimal("777.00")
-        assert self.car.updated_by_id == station_worker.id
+        assert self.car.balance != Decimal("777.00")

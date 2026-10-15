@@ -26,11 +26,22 @@ class TestStationOwnerList:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_list_as_admin_sees_all_owners_success(
+        self, auth_client, admin_user, station_owner, other_station_owner
+    ):
+        response = auth_client(admin_user).get(
+            station_owners_list_url(no_paginate="true")
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert {station_owner.id, other_station_owner.id}.issubset(
+            returned_ids(response)
+        )
+
     @pytest.mark.parametrize(
-        "role_fixture",
-        ["admin_user", "station_owner", "branch_manager", "station_worker"],
+        "role_fixture", ["station_owner", "branch_manager", "station_worker"]
     )
-    def test_list_allowed_roles_see_all_owners_success(
+    def test_list_station_roles_see_only_their_station_success(
         self,
         role_fixture,
         request,
@@ -40,17 +51,15 @@ class TestStationOwnerList:
         other_station_owner,
     ):
         user = request.getfixturevalue(role_fixture)
-        client_kwargs = {}
-        if role_fixture in {"station_owner", "branch_manager", "station_worker"}:
-            client_kwargs["station_id"] = station.id
 
-        response = auth_client(user, **client_kwargs).get(
+        response = auth_client(user, station_id=station.id).get(
             station_owners_list_url(no_paginate="true")
         )
 
         assert response.status_code == status.HTTP_200_OK
         ids = returned_ids(response)
-        assert {station_owner.id, other_station_owner.id}.issubset(ids)
+        assert station_owner.id in ids
+        assert other_station_owner.id not in ids
 
     def test_list_filter_by_station_success(
         self, auth_client, admin_user, station, station_owner, other_station_owner

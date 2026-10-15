@@ -32,7 +32,6 @@ class TestCompanyCreate:
             "admin_user",
             "finance_user",
             "company_owner",
-            "station_worker",
         ],
     )
     def test_create_company_success(
@@ -49,8 +48,6 @@ class TestCompanyCreate:
         client_kwargs = {}
         if role_fixture == "company_owner":
             client_kwargs["company_id"] = request.getfixturevalue("company").id
-        if role_fixture == "station_worker":
-            client_kwargs["station_id"] = station.id
 
         response = auth_client(user, **client_kwargs).post(
             reverse("companies-list"),
@@ -67,6 +64,16 @@ class TestCompanyCreate:
         assert created_company.is_active is True
         assert created_company.balance == Decimal("0.00")
         assert created_company.created_by_id == user.id
+
+    def test_create_as_station_worker_fail(
+        self, auth_client, station_worker, station, company_payload_factory
+    ):
+        response = auth_client(station_worker, station_id=station.id).post(
+            reverse("companies-list"), company_payload_factory(), format="json"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Company.objects.count() == 0
 
     def test_create_without_optional_fields_success(
         self, auth_client, admin_user, company_payload_factory
