@@ -124,7 +124,11 @@ class ListStationOwnerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StationOwner
-        exclude = ["password", "reset_password_token", "reset_password_token_created_at"]
+        exclude = [
+            "password",
+            "reset_password_token",
+            "reset_password_token_created_at",
+        ]
 
 
 class StationBranchSerializer(serializers.ModelSerializer):
