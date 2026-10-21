@@ -2,7 +2,7 @@ from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
 from apps.shared.base_exception_class import CustomValidationError
-from apps.users.models import CustomerSupport, FirebaseToken, User
+from apps.users.models import CustomerSupport, Finance, FirebaseToken, User
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -98,6 +98,26 @@ class CreateCustomerSupportSerializer(CreateUserSerializer):
 class ListCustomerSupportSerializer(ListUserSerializer):
     class Meta(ListUserSerializer.Meta):
         model = CustomerSupport
+
+
+class CreateFinanceSerializer(CreateUserSerializer):
+    class Meta(CreateUserSerializer.Meta):
+        model = Finance
+        fields = [
+            "id",
+            "name",
+            "email",
+            "phone_number",
+            "is_active",
+            "password",
+            "confirm_password",
+        ]
+        read_only_fields = ["id"]
+
+
+class ListFinanceSerializer(ListUserSerializer):
+    class Meta(ListUserSerializer.Meta):
+        model = Finance
 
 
 class FirebaseTokenSerializer(serializers.ModelSerializer):

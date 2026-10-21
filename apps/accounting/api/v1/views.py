@@ -29,6 +29,7 @@ from apps.shared.permissions import (
     CustomerSupportReadOnlyPermission,
     DashboardPermission,
     EitherPermission,
+    KhaznaTransactionWritePermission,
     StationPermission,
 )
 from apps.users.models import User
@@ -60,7 +61,7 @@ class CompanyKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return [
             IsAuthenticated(),
             EitherPermission([CompanyPermission, DashboardPermission]),
-            CustomerSupportReadOnlyPermission(),
+            KhaznaTransactionWritePermission(),
         ]
 
     def get_serializer_class(self):
@@ -115,7 +116,7 @@ class StationKhaznaTransactionViewSet(InjectUserMixin, viewsets.ModelViewSet):
         return [
             IsAuthenticated(),
             EitherPermission([StationPermission, DashboardPermission]),
-            CustomerSupportReadOnlyPermission(),
+            KhaznaTransactionWritePermission(),
         ]
 
     def get_queryset(self):

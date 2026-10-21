@@ -17,9 +17,9 @@ LIST_URLS = [
 
 
 class TestCustomerSupportReadOnly:
-    @pytest.fixture(autouse=True)
-    def setup(self, auth_client, customer_support_user):
-        self.client = auth_client(customer_support_user)
+    @pytest.fixture(autouse=True, params=["customer_support_user", "finance_user"])
+    def setup(self, request, auth_client):
+        self.client = auth_client(request.getfixturevalue(request.param))
 
     @pytest.mark.parametrize("url_name", LIST_URLS)
     def test_list_success(self, url_name):

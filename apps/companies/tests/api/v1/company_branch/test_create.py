@@ -28,7 +28,7 @@ class TestCompanyBranchCreate:
 
     @pytest.mark.parametrize(
         "role_fixture",
-        ["company_owner", "company_branch_manager", "station_worker"],
+        ["company_owner", "company_branch_manager", "station_worker", "finance_user"],
     )
     def test_create_forbidden_role_fail(
         self,
@@ -57,7 +57,7 @@ class TestCompanyBranchCreate:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert set(CompanyBranch.objects.values_list("id", flat=True)) == existing_ids
 
-    @pytest.mark.parametrize("role_fixture", ["admin_user", "finance_user"])
+    @pytest.mark.parametrize("role_fixture", ["admin_user"])
     def test_create_branch_success(
         self,
         role_fixture,

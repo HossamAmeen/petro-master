@@ -35,12 +35,26 @@ class TestCompanyOwnerCreate:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert CompanyUser.objects.count() == before
 
-    def test_create_as_dashboard_success(
+    def test_create_as_finance_fail(
         self, auth_client, finance_user, company, company_owner_payload_factory
+    ):
+        before = CompanyUser.objects.count()
+
+        response = auth_client(finance_user).post(
+            company_owners_list_url(),
+            company_owner_payload_factory(),
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert CompanyUser.objects.count() == before
+
+    def test_create_as_dashboard_success(
+        self, auth_client, admin_user, company, company_owner_payload_factory
     ):
         payload = company_owner_payload_factory()
 
-        response = auth_client(finance_user).post(
+        response = auth_client(admin_user).post(
             company_owners_list_url(),
             payload,
             format="json",

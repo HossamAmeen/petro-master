@@ -114,3 +114,11 @@ def user_ref(user):
         "phone_number": user.phone_number,
         "role": user.role,
     }
+
+
+def finance_list_url(**params):
+    return with_query(reverse("finance-list"), **params)
+
+
+def finance_detail_url(user_id, **params):
+    return with_query(reverse("finance-detail", kwargs={"pk": user_id}), **params)

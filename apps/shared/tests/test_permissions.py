@@ -10,6 +10,7 @@ from apps.shared.permissions import (
     CustomerSupportReadOnlyPermission,
     DashboardPermission,
     EitherPermission,
+    KhaznaTransactionWritePermission,
     StationBranchManagerPermission,
     StationOwnerPermission,
     StationPermission,
@@ -74,9 +75,48 @@ def test_customer_support_read_only_blocks_customer_support_writes(method):
     assert CustomerSupportReadOnlyPermission().has_permission(request, None) is False
 
 
-@pytest.mark.parametrize("role", [Roles.Admin, Roles.Finance, Roles.CompanyOwner])
+@pytest.mark.parametrize("role", [Roles.Admin, Roles.CompanyOwner])
 @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
 def test_customer_support_read_only_leaves_other_roles_alone(role, method):
     request = request_for(role, method)
 
     assert CustomerSupportReadOnlyPermission().has_permission(request, None) is True
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+def test_customer_support_read_only_blocks_finance_writes(method):
+    request = request_for(Roles.Finance, method)
+
+    assert CustomerSupportReadOnlyPermission().has_permission(request, None) is False
+
+
+@pytest.mark.parametrize("role", [Roles.Admin, Roles.Finance, Roles.CustomerSupport])
+def test_khazna_transaction_write_allows_reads(role):
+    request = request_for(role)
+
+    assert KhaznaTransactionWritePermission().has_permission(request, None) is True
+
+
+@pytest.mark.parametrize(
+    "method, allowed",
+    [("POST", True), ("PATCH", True), ("PUT", False), ("DELETE", False)],
+)
+def test_khazna_transaction_write_limits_finance(method, allowed):
+    request = request_for(Roles.Finance, method)
+
+    permission = KhaznaTransactionWritePermission()
+    assert permission.has_permission(request, None) is allowed
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+def test_khazna_transaction_write_blocks_customer_support(method):
+    request = request_for(Roles.CustomerSupport, method)
+
+    assert KhaznaTransactionWritePermission().has_permission(request, None) is False
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+def test_khazna_transaction_write_leaves_other_roles_alone(method):
+    request = request_for(Roles.Admin, method)
+
+    assert KhaznaTransactionWritePermission().has_permission(request, None) is True

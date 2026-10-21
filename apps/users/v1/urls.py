@@ -4,6 +4,7 @@ from apps.users.v1.views.agent_views import SupervisorViewSet
 
 from .views.company_users_view import CompanyBranchManagerViewSet, CompanyOwnerViewSet
 from .views.customer_support_views import CustomerSupportViewSet
+from .views.finance_views import FinanceViewSet
 from .views.station_users_view import (
     StationBranchManagerViewSet,
     StationOwnerViewSet,
@@ -14,6 +15,7 @@ from .views.users_view import FirebaseTokenViewSet, UserViewSet
 router = DefaultRouter()
 router.register("users", UserViewSet, basename="users")
 router.register("customer-support", CustomerSupportViewSet, basename="customer-support")
+router.register("finance", FinanceViewSet, basename="finance")
 router.register("supervisors", SupervisorViewSet, basename="supervisors")
 # router.register("agents", AgentViewSet, basename="agents")
 router.register("company-owners", CompanyOwnerViewSet, basename="company-owners")

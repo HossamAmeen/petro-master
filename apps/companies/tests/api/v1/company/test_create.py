@@ -30,7 +30,6 @@ class TestCompanyCreate:
         "role_fixture",
         [
             "admin_user",
-            "finance_user",
             "company_owner",
         ],
     )
