@@ -6,7 +6,11 @@ from apps.users.tests.helpers import station_owners_list_url
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
-SENSITIVE_FIELDS = ["password", "reset_password_token", "reset_password_token_created_at"]
+SENSITIVE_FIELDS = [
+    "password",
+    "reset_password_token",
+    "reset_password_token_created_at",
+]
 
 
 class TestStationTenantIsolation:
@@ -33,7 +37,9 @@ class TestStationTenantIsolation:
     ):
         other = station_factory()
 
-        response = auth_client(station_owner, station_id=station_owner.station_id).patch(
+        response = auth_client(
+            station_owner, station_id=station_owner.station_id
+        ).patch(
             reverse("stations-detail", args=[other.id]), {"name": "x"}, format="json"
         )
 

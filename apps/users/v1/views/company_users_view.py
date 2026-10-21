@@ -4,8 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
-    CustomerSupportReadOnlyPermission,
     CompanyPermission,
+    CustomerSupportReadOnlyPermission,
     DashboardPermission,
     EitherPermission,
 )
