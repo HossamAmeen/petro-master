@@ -10,6 +10,7 @@ from .models import (
     CompanyBranchManager,
     CompanyUser,
     CustomerSupport,
+    Finance,
     FirebaseToken,
     StationBranchManager,
     StationOwner,
@@ -145,6 +146,62 @@ class CustomerSupportForm(forms.ModelForm):
 @admin.register(CustomerSupport)
 class CustomerSupportInterface(admin.ModelAdmin):
     form = CustomerSupportForm
+    list_display = ("id", "name", "email", "phone_number", "is_active", "created")
+    search_fields = ("name", "email", "phone_number")
+    list_filter = ("is_active",)
+    fields = ("name", "email", "phone_number", "password1", "password2", "is_active")
+    ordering = ("-created",)
+    list_per_page = 10
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        obj.save()
+
+
+class FinanceForm(forms.ModelForm):
+    password1 = forms.CharField(
+        label=_("Password"),
+        widget=forms.PasswordInput,
+        required=False,
+        help_text=_("Leave empty to keep the current password."),
+    )
+    password2 = forms.CharField(
+        label=_("Confirm Password"), widget=forms.PasswordInput, required=False
+    )
+
+    class Meta:
+        model = Finance
+        fields = ("name", "email", "phone_number", "is_active")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if not self.instance.pk and not password1:
+            raise forms.ValidationError("Password is required.")
+        if password1 != password2:
+            raise forms.ValidationError("Passwords don't match.")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if self.cleaned_data["password1"]:
+            user.set_password(self.cleaned_data["password1"])
+        if commit:
+            user.save()
+        return user
+
+
+@admin.register(Finance)
+class FinanceInterface(admin.ModelAdmin):
+    form = FinanceForm
     list_display = ("id", "name", "email", "phone_number", "is_active", "created")
     search_fields = ("name", "email", "phone_number")
     list_filter = ("is_active",)
