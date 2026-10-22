@@ -6,7 +6,9 @@ pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
 
 class TestDashboardUserSearch:
-    def test_search_without_match_returns_nothing_success(self, auth_client, admin_user):
+    def test_search_without_match_returns_nothing_success(
+        self, auth_client, admin_user
+    ):
         response = auth_client(admin_user).get(
             reverse("users-list"), {"search": "zzz-no-such-record"}
         )

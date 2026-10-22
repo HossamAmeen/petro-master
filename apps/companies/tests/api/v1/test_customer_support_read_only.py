@@ -27,22 +27,23 @@ TRACKED_MODELS = [
 
 class TestCustomerSupportReadOnlyCompanies:
     """
-    Customer support sees what the dashboard sees on the company-side
-    viewsets but every write is rejected (403) before it reaches the database.
+    Customer support and finance see what the dashboard sees on the
+    company-side viewsets but every write is rejected (403) before it reaches
+    the database.
     """
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture(autouse=True, params=["customer_support_user", "finance_user"])
     def setup(
         self,
+        request,
         auth_client,
-        customer_support_user,
         company,
         company_branch,
         company_car,
         company_driver,
         cash_request_factory,
     ):
-        self.client = auth_client(customer_support_user)
+        self.client = auth_client(request.getfixturevalue(request.param))
         self.objects = {
             "companies": company,
             "company-branches": company_branch,

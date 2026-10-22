@@ -105,9 +105,7 @@ class TestCarOperationUpdate:
         assert company_owner.id in money_user_ids
         assert company_branch_manager.id in money_user_ids
 
-    @pytest.mark.parametrize(
-        "role_fixture", ["company_owner", "admin_user", "finance_user"]
-    )
+    @pytest.mark.parametrize("role_fixture", ["company_owner", "admin_user"])
     def test_partial_update_complete_allowed_roles_success(
         self,
         role_fixture,

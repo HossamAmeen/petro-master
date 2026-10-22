@@ -14,6 +14,8 @@ from apps.notifications.models import Notification
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
+DATE_RANGE = {"date_from": "2000-01-01", "date_to": "2100-01-01"}
+
 
 @pytest.fixture
 def export_media_root(settings, tmp_path):
@@ -50,11 +52,11 @@ class TestCarOperationExport:
         car_operation_factory(status=CarOperation.OperationStatus.PENDING)
 
         response = auth_client(company_owner, company_id=company.id).get(
-            operation_export_url()
+            operation_export_url(), DATE_RANGE
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["message"] == "لا توجد بيانات للاستخراج"
+        assert "لا توجد بيانات للاستخراج" in response.data["message"]
 
     def test_export_as_company_owner_success(
         self,
@@ -67,7 +69,7 @@ class TestCarOperationExport:
         operation = car_operation_factory(status=CarOperation.OperationStatus.COMPLETED)
 
         response = auth_client(company_owner, company_id=company.id).get(
-            operation_export_url()
+            operation_export_url(), DATE_RANGE
         )
 
         assert response.status_code == status.HTTP_200_OK, response.data
@@ -76,8 +78,8 @@ class TestCarOperationExport:
         )
         assert response.data["query_param"] == {
             "car": None,
-            "date_from": None,
-            "date_to": None,
+            "date_from": DATE_RANGE["date_from"],
+            "date_to": DATE_RANGE["date_to"],
         }
         download_url = response.data["download_url"]
         assert "/api/v1/companies/car-operations/download-excel/?file=" in download_url
@@ -111,7 +113,7 @@ class TestCarOperationExport:
         )
 
         response = auth_client(company_branch_manager, company_id=company.id).get(
-            operation_export_url()
+            operation_export_url(), DATE_RANGE
         )
 
         assert response.status_code == status.HTTP_200_OK, response.data
@@ -137,7 +139,7 @@ class TestCarOperationExport:
 
         response = auth_client(company_owner, company_id=company.id).get(
             operation_export_url(),
-            {"car": matching.car_id},
+            {**DATE_RANGE, "car": matching.car_id},
         )
 
         assert response.status_code == status.HTTP_200_OK, response.data
@@ -150,7 +152,7 @@ class TestCarOperationExport:
 
         response = auth_client(company_owner, company_id=company.id).get(
             operation_export_url(),
-            {"date_from": "26-08-2026"},
+            {"date_from": "26-08-2026", "date_to": "2026-08-27"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -170,7 +172,7 @@ class TestCarOperationExport:
         assert "لا توجد بيانات للاستخراج" in response.data["message"]
 
     def test_export_without_company_claim_fail(self, auth_client, company_owner):
-        response = auth_client(company_owner).get(operation_export_url())
+        response = auth_client(company_owner).get(operation_export_url(), DATE_RANGE)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Branches are required" in response.data["message"]
@@ -216,7 +218,7 @@ class TestCarOperationExport:
     ):
         car_operation_factory(status=CarOperation.OperationStatus.COMPLETED)
         export_response = auth_client(company_owner, company_id=company.id).get(
-            operation_export_url()
+            operation_export_url(), DATE_RANGE
         )
         filename = parse_qs(urlparse(export_response.data["download_url"]).query)[
             "file"
@@ -230,3 +232,50 @@ class TestCarOperationExport:
         assert response.status_code == status.HTTP_200_OK
         assert response["Content-Disposition"] == f'attachment; filename="{filename}"'
         assert response.getvalue()
+
+
+class TestCarOperationExportDateRange:
+    @pytest.mark.parametrize(
+        "params",
+        [{}, {"date_from": "", "date_to": ""}],
+    )
+    def test_export_without_any_date_fail(
+        self,
+        params,
+        auth_client,
+        company_owner,
+        company,
+        car_operation_factory,
+        export_media_root,
+    ):
+        car_operation_factory(status=CarOperation.OperationStatus.COMPLETED)
+
+        response = auth_client(company_owner, company_id=company.id).get(
+            operation_export_url(), params
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["code"] == "date_range_required"
+        assert not Notification.objects.filter(user_id=company_owner.id).exists()
+        assert not os.path.exists(os.path.join(settings.MEDIA_ROOT, "excel_exports"))
+
+    @pytest.mark.parametrize(
+        "params",
+        [{"date_from": "2000-01-01"}, {"date_to": "2100-01-01"}],
+    )
+    def test_export_with_one_sided_date_range_success(
+        self,
+        params,
+        auth_client,
+        company_owner,
+        company,
+        car_operation_factory,
+        export_media_root,
+    ):
+        car_operation_factory(status=CarOperation.OperationStatus.COMPLETED)
+
+        response = auth_client(company_owner, company_id=company.id).get(
+            operation_export_url(), params
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.data

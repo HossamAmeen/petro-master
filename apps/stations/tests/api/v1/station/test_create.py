@@ -52,15 +52,13 @@ class TestStationCreate:
         assert created.balance == 0
         assert created.created_by_id == admin_user.id
 
-    def test_create_as_finance_success(self, finance_user):
+    def test_create_as_finance_forbidden_fail(self, finance_user):
         payload = self.payload_factory()
 
-        response = self.auth_client(finance_user).post(
-            self.url, payload, format="json"
-        )
+        response = self.auth_client(finance_user).post(self.url, payload, format="json")
 
-        assert response.status_code == status.HTTP_201_CREATED, response.data
-        assert Station.objects.filter(name=payload["name"]).exists()
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not Station.objects.filter(name=payload["name"]).exists()
 
     def test_create_as_customer_support_forbidden_fail(self, customer_support_user):
         payload = self.payload_factory()
