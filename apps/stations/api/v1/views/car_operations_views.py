@@ -137,8 +137,13 @@ class StationGasOperationAPIView(APIView):
 
                 car.is_blocked_balance_update = False
                 car.last_meter = car_opertion.car_meter
-                car.balance = F("balance") - company_cost
-                car.save()
+                car.save(
+                    update_fields=[
+                        "is_blocked_balance_update",
+                        "last_meter",
+                        "fuel_consumption_rate",
+                    ]
+                )
                 car.deduct_balance(company_cost)
 
                 company_id = car.branch.company_id
@@ -321,8 +326,7 @@ class StationOtherOperationAPIView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
             car.is_blocked_balance_update = False
-            car.balance = F("balance") - company_cost
-            car.save()
+            car.save(update_fields=["is_blocked_balance_update"])
             car.deduct_balance(company_cost)
 
             station_cost = serializer.validated_data["cost"] - (

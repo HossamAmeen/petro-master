@@ -8,7 +8,6 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from apps.companies.models.company_models import Car, Company, CompanyBranch
 from apps.geo.models import City, Country, District
-from apps.shared.base_exception_class import CustomValidationError
 from apps.users.models import CompanyUser, User
 
 

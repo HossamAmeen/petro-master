@@ -81,3 +81,22 @@ class TestStationOwnerCreate:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert StationOwner.objects.count() == before
+
+    def test_create_hashes_password_and_allows_login_success(
+        self,
+        api_client,
+        auth_client,
+        admin_user,
+        station,
+        station_owner_payload_factory,
+    ):
+        payload = station_owner_payload_factory()
+
+        response = auth_client(admin_user).post(
+            station_owners_list_url(), payload, format="json"
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED, response.data
+        created = StationOwner.objects.get(phone_number=payload["phone_number"])
+        assert created.password != payload["password"]
+        assert created.check_password(payload["password"])

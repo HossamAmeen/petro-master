@@ -124,9 +124,9 @@ class TestStationOnboarding:
         assert manager_home.data["workers_count"] == 1
         assert service_ids(branch_services) == {item.id for item in self.services}
 
-    def test_api_created_station_owner_cannot_log_in_fail(self):
-        """Open issue: `StationOwnerSerializer` is a plain `fields="__all__"`
-        ModelSerializer and never hashes, so the password is stored as typed."""
+    def test_api_created_station_owner_can_log_in_success(self):
+        """`StationOwnerSerializer` hashes the password, so an owner created
+        through the API can sign in with it."""
         # Given an owner created through the API
         _, station = self.create_station(self.admin)
         created = self.admin.post(
@@ -146,10 +146,11 @@ class TestStationOnboarding:
         # When that owner tries to log in
         response = login("station", owner)
 
-        # Then login fails because the password was stored unhashed
+        # Then the password is stored hashed and the login succeeds
         assert created.status_code == status.HTTP_201_CREATED, created.data
-        assert owner.password == PASSWORD
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert owner.password != PASSWORD
+        assert owner.check_password(PASSWORD)
+        assert response.status_code == status.HTTP_200_OK
 
     def test_owner_staffs_their_own_station_success(
         self, station, branch, station_owner

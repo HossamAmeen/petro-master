@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import transaction
 from django.db.models import F
 from django_filters.rest_framework import DjangoFilterBackend
@@ -181,7 +182,11 @@ class CompanyCashRequestViewSet(InjectCompanyUserMixin, viewsets.ModelViewSet):
                 description=f"تم ارسال طلب نقدي الي السائق {cash_request.driver.name} ورمز التفعيل {cash_request.otp}",
                 type=Notification.NotificationType.GENERAL,
             )
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        data = dict(serializer.data)
+        if settings.MOCK_CASH_OTP:
+            data["id"] = cash_request.id
+            data["otp"] = cash_request.otp
+        return Response(data, status=status.HTTP_201_CREATED)
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):

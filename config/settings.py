@@ -117,6 +117,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 ENVIRONMENT = env("ENVIRONMENT", default="local")
+# Test environments only: skip the cash-request OTP SMS and return the OTP in the
+# create response. Ignored (always off) when ENVIRONMENT is production.
+MOCK_CASH_OTP = (
+    env.bool("MOCK_CASH_OTP", default=False)
+    and ENVIRONMENT.lower() not in ("production", "prod")
+)
 print(
     f"############################ ENVIRONMENT {ENVIRONMENT} ############################"
 )

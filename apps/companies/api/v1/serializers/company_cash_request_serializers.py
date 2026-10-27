@@ -58,6 +58,8 @@ class ListCompanyCashRequestSerializer(serializers.ModelSerializer):
             data["amount"] = str(instance.company_cost)
         elif self.user_role in STATION_ROLES:
             data["amount"] = str(instance.station_cost)
+            # The OTP is the driver's proof; the approving worker must not see it.
+            data.pop("otp", None)
         return data
 
 
