@@ -178,3 +178,6 @@ firebase_encoded.txt
 server_db.sqlite3
 
 media/*
+
+# Database backups
+backups/
