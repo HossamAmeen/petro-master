@@ -3,6 +3,7 @@ from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticated
 
 from apps.shared.base_exception_class import CustomValidationError
+from apps.shared.constants import STATION_ROLES
 from apps.shared.permissions import (
     CustomerSupportReadOnlyPermission,
     DashboardPermission,
@@ -10,7 +11,11 @@ from apps.shared.permissions import (
     StationPermission,
 )
 from apps.users.models import StationOwner, User, Worker
-from apps.users.v1.filters import StationBranchManagerFilter, StationOwnerFilter
+from apps.users.v1.filters import (
+    StationBranchManagerFilter,
+    StationOwnerFilter,
+    WorkerFilter,
+)
 from apps.users.v1.serializers.station_serializer import (
     CreateWorkerSerializer,
     ListStationBranchManagerSerializer,
@@ -38,6 +43,11 @@ class StationOwnerViewSet(viewsets.ModelViewSet):
             EitherPermission([StationPermission, DashboardPermission]),
             CustomerSupportReadOnlyPermission(),
         ]
+
+    def get_queryset(self):
+        if self.request.user.role in STATION_ROLES:
+            return self.queryset.filter(station=self.request.station_id)
+        return self.queryset
 
     def get_serializer_class(self):
         if self.request.method == "GET":
@@ -84,7 +94,7 @@ class StationBranchManagerViewSet(viewsets.ModelViewSet):
 class WorkerViewSet(viewsets.ModelViewSet):
     queryset = Worker.objects.select_related("station_branch").order_by("-id")
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ["station_branch"]
+    filterset_class = WorkerFilter
     search_fields = ["name", "phone_number", "email"]
 
     def get_permissions(self):

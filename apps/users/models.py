@@ -93,6 +93,24 @@ class CustomerSupport(User):
         verbose_name_plural = "Customer Support"
 
 
+class FinanceManager(CustomUserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(role=User.UserRoles.Finance)
+
+
+class Finance(User):
+    objects = FinanceManager()
+
+    def save(self, *args, **kwargs):
+        self.role = User.UserRoles.Finance
+        super().save(*args, **kwargs)
+
+    class Meta:
+        proxy = True
+        verbose_name = "Finance"
+        verbose_name_plural = "Finance"
+
+
 class FirebaseToken(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="firebase_tokens"

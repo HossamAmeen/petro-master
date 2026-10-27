@@ -772,3 +772,49 @@ class TestStationBranchCRUD:
         assert diesel_service.id in returned_ids(category)
         assert other_service.id not in returned_ids(category)
         assert service.id not in returned_ids(category)
+
+    @pytest.mark.parametrize("param", ["type", "types"])
+    def test_list_branch_services_filter_by_type_success(
+        self,
+        param,
+        auth_client,
+        admin_user,
+        branch,
+        service,
+        other_service,
+        branch_petrol_service,
+    ):
+        StationBranchService.objects.create(
+            station_branch=branch, service=other_service, created_by=admin_user
+        )
+
+        response = auth_client(admin_user).get(
+            services_url(branch.id, no_paginate="true", **{param: "petrol"})
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        ids = returned_ids(response)
+        assert service.id in ids
+        assert other_service.id not in ids
+
+    def test_list_branch_services_filter_by_unit_success(
+        self,
+        auth_client,
+        admin_user,
+        branch,
+        service,
+        other_service,
+        branch_petrol_service,
+    ):
+        StationBranchService.objects.create(
+            station_branch=branch, service=other_service, created_by=admin_user
+        )
+
+        response = auth_client(admin_user).get(
+            services_url(branch.id, no_paginate="true", unit="unit")
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        ids = returned_ids(response)
+        assert other_service.id in ids
+        assert service.id not in ids

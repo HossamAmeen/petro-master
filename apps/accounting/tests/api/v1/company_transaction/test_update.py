@@ -235,6 +235,33 @@ class TestCompanyKhaznaTransactionUpdate:
         assert tx.status == CompanyKhaznaTransaction.TransactionStatus.DECLINED
         assert tx.updated_by_id == finance_user.id
 
+    @pytest.mark.parametrize("final_status", ["approved", "declined"])
+    def test_update_ended_finance_fail(self, final_status, finance_user):
+        tx = self.own_transaction(status=final_status)
+
+        response = self.update(
+            tx.id,
+            self.full_payload("declined"),
+            client=self.auth_client(finance_user),
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        tx.refresh_from_db()
+        assert tx.status == final_status
+
+    def test_update_put_finance_fail(self, finance_user):
+        tx = self.own_transaction(status="pending")
+
+        response = self.auth_client(finance_user).put(
+            company_transaction_detail_url(tx.id),
+            self.full_payload("declined"),
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        tx.refresh_from_db()
+        assert tx.status == "pending"
+
     @pytest.mark.parametrize("method", ["patch", "put"])
     def test_update_customer_support_fail(self, method, customer_support_user):
         self.company_branch.balance = Decimal("100.00")

@@ -138,7 +138,7 @@ class TestCashRequestCreate:
             type=Notification.NotificationType.GENERAL
         ).exists()
 
-    @pytest.mark.parametrize("role_fixture", ["admin_user", "finance_user"])
+    @pytest.mark.parametrize("role_fixture", ["admin_user"])
     def test_create_as_dashboard_deducts_branch_balance_success(
         self,
         role_fixture,

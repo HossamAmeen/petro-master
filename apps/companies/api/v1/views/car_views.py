@@ -37,6 +37,7 @@ from apps.shared.base_exception_class import CustomValidationError
 from apps.shared.constants import COMPANY_ROLES, DASHBOARD_ROLES
 from apps.shared.mixins.inject_user_mixins import InjectUserMixin
 from apps.shared.permissions import (
+    CompanyOrDashboardPermission,
     CustomerSupportReadOnlyPermission,
     StationWorkerPermission,
 )
@@ -73,7 +74,11 @@ class CarViewSet(InjectUserMixin, viewsets.ModelViewSet):
     queryset = Car.objects.select_related(
         "branch__district", "branch__company", "service", "backup_service"
     ).order_by("-id")
-    permission_classes = [IsAuthenticated, CustomerSupportReadOnlyPermission]
+    permission_classes = [
+        IsAuthenticated,
+        CompanyOrDashboardPermission,
+        CustomerSupportReadOnlyPermission,
+    ]
     filterset_class = CarFilter
     search_fields = [
         "code",
