@@ -396,3 +396,48 @@ class TestCashRequestCreate:
         assert CompanyBranch.objects.get(
             pk=company_driver.branch_id
         ).balance == Decimal("0.00")
+
+
+class TestCashRequestMockOtp:
+
+    def test_create_returns_otp_and_skips_sms_when_mock_on_success(
+        self,
+        settings,
+        auth_client,
+        company_owner,
+        company,
+        cash_request_payload_factory,
+        mock_cash_request_sms,
+    ):
+        settings.MOCK_CASH_OTP = True
+        set_balance(company, "1000.00")
+
+        response = auth_client(company_owner, company_id=company.id).post(
+            cash_request_list_url(), cash_request_payload_factory(), format="json"
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        cash_request = CompanyCashRequest.objects.get()
+        assert response.data["otp"] == cash_request.otp
+        assert response.data["id"] == cash_request.id
+        mock_cash_request_sms.assert_not_called()
+
+    def test_create_hides_otp_when_mock_off_success(
+        self,
+        settings,
+        auth_client,
+        company_owner,
+        company,
+        cash_request_payload_factory,
+        mock_cash_request_sms,
+    ):
+        settings.MOCK_CASH_OTP = False
+        set_balance(company, "1000.00")
+
+        response = auth_client(company_owner, company_id=company.id).post(
+            cash_request_list_url(), cash_request_payload_factory(), format="json"
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert "otp" not in response.data
+        mock_cash_request_sms.assert_called_once()

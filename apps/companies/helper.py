@@ -63,6 +63,9 @@ def get_car_operations_data(*args, **kwargs):
 
 
 def send_cash_request_otp(instance):
+    if settings.MOCK_CASH_OTP:
+        logger.info("MOCK_CASH_OTP on: SMS skipped for cash request %s", instance.pk)
+        return
     message = "كود استلام طلبك النقدي بمقدار {} هو {}".format(
         instance.amount, instance.otp
     )

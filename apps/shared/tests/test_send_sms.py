@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from apps.shared.send_sms import send_sms
+from apps.shared.send_sms import SMS_TIMEOUT_SECONDS, send_sms
 
 
 class TestSendSms:
@@ -30,5 +30,6 @@ class TestSendSms:
             "GET",
             "https://smssmartegypt.com/sms/api/?username=user&password=secret"
             "&sendername=Petro&message=hello&mobiles=01000000000",
+            timeout=SMS_TIMEOUT_SECONDS,
         )
         assert "OK: queued" in caplog.text

@@ -40,3 +40,20 @@ class TestStationOwnerUpdate:
         assert response.status_code == status.HTTP_200_OK, response.data
         station_owner.refresh_from_db()
         assert station_owner.name == "Updated Station Owner"
+
+
+class TestStationOwnerPasswordUpdate:
+
+    def test_update_password_is_hashed_success(
+        self, auth_client, admin_user, station_owner
+    ):
+        response = auth_client(admin_user).patch(
+            station_owners_detail_url(station_owner.id),
+            {"password": "New!Pass123"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        station_owner.refresh_from_db()
+        assert station_owner.password != "New!Pass123"
+        assert station_owner.check_password("New!Pass123")

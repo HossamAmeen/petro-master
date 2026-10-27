@@ -9,7 +9,7 @@ from .helpers import ALL_DAYS
 @pytest.fixture(autouse=True)
 def mock_sms():
     """Cash-request OTPs go out by SMS; never reach the provider."""
-    with patch("apps.companies.helper.send_sms") as send_sms:
+    with patch("apps.notifications.tasks.send_sms") as send_sms:
         yield send_sms
 
 

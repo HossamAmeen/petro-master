@@ -87,7 +87,10 @@ def assert_cash_request_payload(data, cash_request, user):
     company = cash_request.company
     assert data["id"] == cash_request.id
     assert data["code"] == cash_request.code
-    assert data["otp"] == cash_request.otp
+    if user.role in STATION_ROLES:
+        assert "otp" not in data
+    else:
+        assert data["otp"] == cash_request.otp
     assert data["driver"] == expected_driver_payload(driver)
     assert data["amount"] == expected_amount(cash_request, user)
     assert _as_decimal(data["company_cost"]) == _as_decimal(cash_request.company_cost)
