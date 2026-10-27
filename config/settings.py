@@ -182,8 +182,9 @@ CSRF_TRUSTED_ORIGINS = [
     "https://api.staging.petro-master.org",
     "https://petro-master.org",
     "https://www.petro-master.org",
-    "https://staging.petro-master.org",
+    "https://google.petro-master.org",
 ]
+
 
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.shared.exceptions.custom_exception_handler",
