@@ -211,4 +211,8 @@ class TestCompanyBranchList:
         assert response.status_code == status.HTTP_200_OK
         (item,) = response.data["results"]
         assert item["id"] == company_branch.id
-        assert item["created_by"] == user_ref(admin_user)
+        assert item["created_by"] == company_branch.created_by_id
+        assert item["created_by_user"] == user_ref(admin_user)
+        assert item["updated_by_user"] is None or isinstance(
+            item["updated_by_user"], dict
+        )
