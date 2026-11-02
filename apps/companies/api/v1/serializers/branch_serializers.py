@@ -36,7 +36,12 @@ class ListCompanyBranchNameSerializer(serializers.ModelSerializer):
 class ListCompanyBranchSerializer(serializers.ModelSerializer):
     district = ListDistrictSerializer()
     company = CompanyNameSerializer()
-    created_by = SingleUserSerializer()
+    # created_by / updated_by stay plain ids (mobile contract); the nested
+    # user objects for web are exposed under *_user.
+    created_by_user = SingleUserSerializer(source="created_by", read_only=True)
+    updated_by_user = SingleUserSerializer(
+        source="updated_by", read_only=True, allow_null=True
+    )
     cars_count = serializers.IntegerField()
     drivers_count = serializers.IntegerField()
     managers_count = serializers.IntegerField()
@@ -53,6 +58,10 @@ class RetrieveCompanyBranchSerializer(serializers.ModelSerializer):
     drivers_count = serializers.IntegerField()
     managers_count = serializers.IntegerField()
     managers = serializers.SerializerMethodField()
+    created_by_user = SingleUserSerializer(source="created_by", read_only=True)
+    updated_by_user = SingleUserSerializer(
+        source="updated_by", read_only=True, allow_null=True
+    )
 
     class Meta:
         model = CompanyBranch
