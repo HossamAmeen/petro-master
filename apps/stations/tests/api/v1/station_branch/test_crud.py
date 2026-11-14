@@ -121,6 +121,72 @@ class TestStationBranchCRUD:
         assert branch.id in ids
         assert other_station_branch.id not in ids
 
+    @pytest.mark.parametrize("role_fixture", ["customer_support_user", "finance_user"])
+    def test_list_as_read_only_dashboard_role_success(
+        self, role_fixture, request, auth_client, branch, other_station_branch
+    ):
+        user = request.getfixturevalue(role_fixture)
+
+        response = auth_client(user).get(branches_list_url(no_paginate="true"))
+
+        assert response.status_code == status.HTTP_200_OK
+        ids = returned_ids(response)
+        assert {branch.id, other_station_branch.id}.issubset(ids)
+
+    def test_list_excludes_unavailable_branch_success(
+        self, api_client, branch, station_branch_factory
+    ):
+        unavailable = station_branch_factory(
+            name="Closed Branch", is_available=False
+        )
+
+        response = api_client.get(branches_list_url(no_paginate="true"))
+
+        assert response.status_code == status.HTTP_200_OK
+        ids = returned_ids(response)
+        assert branch.id in ids
+        assert unavailable.id not in ids
+
+    def test_retrieve_unavailable_branch_not_found_fail(
+        self, auth_client, admin_user, station_branch_factory
+    ):
+        unavailable = station_branch_factory(
+            name="Closed Branch", is_available=False
+        )
+
+        response = auth_client(admin_user).get(branches_detail_url(unavailable.id))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_update_unavailable_branch_not_found_fail(
+        self, auth_client, admin_user, station_branch_factory
+    ):
+        unavailable = station_branch_factory(
+            name="Closed Branch", is_available=False
+        )
+
+        response = auth_client(admin_user).patch(
+            branches_detail_url(unavailable.id),
+            {"name": "Reopened Branch"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        unavailable.refresh_from_db()
+        assert unavailable.name == "Closed Branch"
+
+    def test_list_search_by_name_success(
+        self, api_client, branch, other_station_branch, station_branch_factory
+    ):
+        match = station_branch_factory(name="Zebra Fuel Branch")
+
+        response = api_client.get(
+            branches_list_url(search="Zebra", no_paginate="true")
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert returned_ids(response) == {match.id}
+
     def test_create_without_authentication_fail(
         self, api_client, station_branch_payload_factory
     ):
