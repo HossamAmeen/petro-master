@@ -4,6 +4,7 @@ import pytest
 from rest_framework import status
 
 from apps.companies.models.operation_model import CarOperation
+from apps.companies.tests.helpers import DELETED_TARGETS, soft_delete_car_or_driver
 from apps.stations.tests.helpers import operations_url, returned_ids, set_balance
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
@@ -260,3 +261,32 @@ class TestStationOperations:
         assert item["service_category"] == "خدمات أخرى"
         assert item["car"]["liter_count"] == 0
         assert item["car"]["cost"] == 0
+
+
+class TestStationOperationsAfterSoftDelete:
+    """Deleting a car or driver must not drop its operations from the list."""
+
+    @pytest.fixture(autouse=True)
+    def setup(
+        self,
+        auth_client,
+        company_owner,
+        company,
+        station_worker,
+        station,
+        car_operation_factory,
+    ):
+        self.owner_client = auth_client(company_owner, company_id=company.id)
+        self.worker_client = auth_client(station_worker, station_id=station.id)
+        self.operation = car_operation_factory(
+            status=CarOperation.OperationStatus.COMPLETED
+        )
+
+    @pytest.mark.parametrize("targets", DELETED_TARGETS)
+    def test_operations_keep_rows_of_deleted_car_or_driver_success(self, targets):
+        soft_delete_car_or_driver(self.owner_client, self.operation, targets)
+
+        response = self.worker_client.get(operations_url(no_paginate="true"))
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert self.operation.id in returned_ids(response)

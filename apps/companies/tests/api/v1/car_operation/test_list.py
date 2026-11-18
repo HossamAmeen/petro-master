@@ -8,6 +8,7 @@ from apps.companies.tests.api.v1.car_operation.helpers import (
     operation_list_url,
     returned_ids,
 )
+from apps.companies.tests.helpers import DELETED_TARGETS, soft_delete_car_or_driver
 from apps.stations.models.service_models import Service
 from apps.users.tests.helpers import user_ref
 
@@ -316,4 +317,35 @@ class TestCarOperationList:
         assert [item["id"] for item in response.data["results"]] == [operation.id]
         assert_operation_payload(
             response.data["results"][0], operation, company_owner, include_profits=False
+        )
+
+
+class TestCarOperationListAfterSoftDelete:
+    """Deleting a car or driver must not drop its operations from the list."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, auth_client, company_owner, company, car_operation_factory):
+        self.owner_client = auth_client(company_owner, company_id=company.id)
+        self.operation = car_operation_factory(
+            status=CarOperation.OperationStatus.COMPLETED
+        )
+
+    @pytest.mark.parametrize("targets", DELETED_TARGETS)
+    @pytest.mark.parametrize(
+        "role_fixture", ["company_owner", "admin_user", "station_worker"]
+    )
+    def test_list_with_deleted_car_or_driver_success(
+        self, targets, role_fixture, request, role_client
+    ):
+        soft_delete_car_or_driver(self.owner_client, self.operation, targets)
+
+        response = role_client(role_fixture).get(operation_list_url())
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        rows = {row["id"]: row for row in response.data["results"]}
+        assert self.operation.id in rows
+        assert_operation_payload(
+            rows[self.operation.id],
+            self.operation,
+            request.getfixturevalue(role_fixture),
         )

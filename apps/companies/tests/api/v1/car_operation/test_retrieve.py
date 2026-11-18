@@ -1,10 +1,12 @@
 import pytest
 from rest_framework import status
 
+from apps.companies.models.operation_model import CarOperation
 from apps.companies.tests.api.v1.car_operation.helpers import (
     assert_operation_payload,
     operation_detail_url,
 )
+from apps.companies.tests.helpers import DELETED_TARGETS, soft_delete_car_or_driver
 from apps.stations.models.service_models import Service
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
@@ -171,3 +173,30 @@ class TestCarOperationRetrieve:
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+class TestCarOperationRetrieveAfterSoftDelete:
+    """Deleting a car or driver must not change how its operations read."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, auth_client, company_owner, company, car_operation_factory):
+        self.owner_client = auth_client(company_owner, company_id=company.id)
+        self.operation = car_operation_factory(
+            status=CarOperation.OperationStatus.COMPLETED
+        )
+
+    @pytest.mark.parametrize("targets", DELETED_TARGETS)
+    @pytest.mark.parametrize(
+        "role_fixture", ["company_owner", "admin_user", "station_worker"]
+    )
+    def test_retrieve_with_deleted_car_or_driver_success(
+        self, targets, role_fixture, role_client
+    ):
+        soft_delete_car_or_driver(self.owner_client, self.operation, targets)
+
+        response = role_client(role_fixture).get(
+            operation_detail_url(self.operation.id)
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert_operation_payload(response.data, self.operation, include_profits=True)

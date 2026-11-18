@@ -28,6 +28,24 @@ class Company(AbstractBaseModel):
     def __str__(self):
         return self.name
 
+    def soft_delete_related(self, deleted_at):
+        """Deleting a company soft deletes everything that belongs to it and
+        deactivates its users (owners and branch managers)."""
+        from apps.accounting.models import CompanyKhaznaTransaction
+        from apps.companies.models.company_cash_models import CompanyCashRequest
+        from apps.users.models import CompanyBranchManager, CompanyUser
+
+        for queryset in (
+            CompanyBranch.objects.filter(company=self),
+            Car.objects.filter(branch__company=self),
+            Driver.objects.filter(branch__company=self),
+            CompanyBranchManager.objects.filter(company_branch__company=self),
+            CompanyCashRequest.objects.filter(company=self),
+            CompanyKhaznaTransaction.objects.filter(company=self),
+        ):
+            queryset.update(deleted_at=deleted_at)
+        CompanyUser.objects.filter(company=self).update(is_active=False)
+
     class Meta:
         verbose_name = "Company"
         verbose_name_plural = "1. Companies"

@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from apps.companies.api.v1.serializers.branch_serializers import (
     SingleBranchWithDistrictSerializer,
@@ -35,6 +36,12 @@ class DriverSerializer(serializers.ModelSerializer):
         model = Driver
         exclude = ("created_by", "updated_by")
         read_only_fields = ("code",)
+        extra_kwargs = {
+            # A soft-deleted driver still holds its unique license number.
+            "lincense_number": {
+                "validators": [UniqueValidator(queryset=Driver.all_objects.all())]
+            }
+        }
 
 
 class SingleDriverSerializer(serializers.ModelSerializer):

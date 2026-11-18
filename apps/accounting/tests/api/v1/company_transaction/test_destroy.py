@@ -1,11 +1,17 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 from rest_framework import status
 
-from apps.accounting.models import CompanyKhaznaTransaction
+from apps.accounting.models import CompanyKhaznaTransaction, KhaznaTransaction
+from apps.utilities.testing import assert_soft_deleted, listed_ids
 
-from .helpers import company_transaction_detail_url
+from .helpers import (
+    company_transaction_detail_url,
+    company_transaction_list_url,
+    create_payload,
+)
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
@@ -113,3 +119,55 @@ class TestCompanyKhaznaTransactionDestroy:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert CompanyKhaznaTransaction.objects.filter(id=tx.id).exists()
+
+
+class TestCompanyKhaznaTransactionSoftDelete:
+    @pytest.fixture(autouse=True)
+    def setup(
+        self,
+        auth_client,
+        admin_user,
+        company,
+        company_branch,
+        company_transaction_factory,
+    ):
+        self.client = auth_client(admin_user)
+        self.company = company
+        self.company_branch = company_branch
+        self.tx = company_transaction_factory(reference_code="111111")
+        response = self.client.delete(company_transaction_detail_url(self.tx.id))
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    def test_delete_keeps_row_with_deleted_at_success(self):
+        assert_soft_deleted(CompanyKhaznaTransaction, self.tx.id)
+        assert_soft_deleted(KhaznaTransaction, self.tx.id)
+
+    def test_deleted_transaction_hidden_from_list_success(self):
+        response = self.client.get(company_transaction_list_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert self.tx.id not in listed_ids(response)
+
+    def test_retrieve_deleted_transaction_not_found_fail(self):
+        response = self.client.get(company_transaction_detail_url(self.tx.id))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_delete_already_deleted_transaction_not_found_fail(self):
+        response = self.client.delete(company_transaction_detail_url(self.tx.id))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @patch("apps.shared.generate_code.random.randint", side_effect=[111111, 222222])
+    def test_create_skips_reference_code_of_deleted_transaction_success(self, randint):
+        """The deleted row keeps its unique `reference_code`, so the generator
+        must not hand that code out again."""
+        response = self.client.post(
+            company_transaction_list_url(),
+            create_payload(self.company, self.company_branch),
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED, response.data
+        created = CompanyKhaznaTransaction.objects.get(id=response.data["id"])
+        assert created.reference_code == "222222"

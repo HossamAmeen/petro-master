@@ -15,6 +15,7 @@ from apps.stations.tests.helpers import (
     set_balance,
 )
 from apps.users.models import StationBranchManager
+from apps.utilities.testing import assert_soft_deleted
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
@@ -136,9 +137,7 @@ class TestStationBranchCRUD:
     def test_list_excludes_unavailable_branch_success(
         self, api_client, branch, station_branch_factory
     ):
-        unavailable = station_branch_factory(
-            name="Closed Branch", is_available=False
-        )
+        unavailable = station_branch_factory(name="Closed Branch", is_available=False)
 
         response = api_client.get(branches_list_url(no_paginate="true"))
 
@@ -150,9 +149,7 @@ class TestStationBranchCRUD:
     def test_retrieve_unavailable_branch_not_found_fail(
         self, auth_client, admin_user, station_branch_factory
     ):
-        unavailable = station_branch_factory(
-            name="Closed Branch", is_available=False
-        )
+        unavailable = station_branch_factory(name="Closed Branch", is_available=False)
 
         response = auth_client(admin_user).get(branches_detail_url(unavailable.id))
 
@@ -161,9 +158,7 @@ class TestStationBranchCRUD:
     def test_update_unavailable_branch_not_found_fail(
         self, auth_client, admin_user, station_branch_factory
     ):
-        unavailable = station_branch_factory(
-            name="Closed Branch", is_available=False
-        )
+        unavailable = station_branch_factory(name="Closed Branch", is_available=False)
 
         response = auth_client(admin_user).patch(
             branches_detail_url(unavailable.id),
@@ -180,9 +175,7 @@ class TestStationBranchCRUD:
     ):
         match = station_branch_factory(name="Zebra Fuel Branch")
 
-        response = api_client.get(
-            branches_list_url(search="Zebra", no_paginate="true")
-        )
+        response = api_client.get(branches_list_url(search="Zebra", no_paginate="true"))
 
         assert response.status_code == status.HTTP_200_OK
         assert returned_ids(response) == {match.id}
@@ -274,7 +267,27 @@ class TestStationBranchCRUD:
         response = auth_client(admin_user).delete(branches_detail_url(empty.id))
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not StationBranch.objects.filter(id=empty.id).exists()
+        assert_soft_deleted(StationBranch, empty.id)
+
+    def test_deleted_branch_hidden_from_list_and_retrieve_fail(
+        self, api_client, auth_client, admin_user, branch, station_branch_factory
+    ):
+        deleted = station_branch_factory(name="Soft Deleted Branch")
+        client = auth_client(admin_user)
+        assert (
+            client.delete(branches_detail_url(deleted.id)).status_code
+            == status.HTTP_204_NO_CONTENT
+        )
+
+        list_response = api_client.get(branches_list_url(no_paginate="true"))
+        retrieve_response = client.get(branches_detail_url(deleted.id))
+        delete_again_response = client.delete(branches_detail_url(deleted.id))
+
+        assert list_response.status_code == status.HTTP_200_OK
+        assert deleted.id not in returned_ids(list_response)
+        assert branch.id in returned_ids(list_response)
+        assert retrieve_response.status_code == status.HTTP_404_NOT_FOUND
+        assert delete_again_response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_balance_without_authentication_fail(self, api_client, branch):
         response = api_client.post(

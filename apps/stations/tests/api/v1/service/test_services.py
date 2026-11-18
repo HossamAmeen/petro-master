@@ -9,6 +9,7 @@ from apps.stations.tests.helpers import (
     services_detail_url,
     services_list_url,
 )
+from apps.utilities.testing import assert_soft_deleted
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
@@ -109,7 +110,26 @@ class TestServiceAPI:
         )
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not Service.objects.filter(id=diesel_service.id).exists()
+        assert_soft_deleted(Service, diesel_service.id)
+
+    def test_deleted_service_hidden_from_list_and_retrieve_fail(
+        self, auth_client, admin_user, service, diesel_service
+    ):
+        client = auth_client(admin_user)
+        assert (
+            client.delete(services_detail_url(diesel_service.id)).status_code
+            == status.HTTP_204_NO_CONTENT
+        )
+
+        list_response = client.get(services_list_url(no_paginate="true"))
+        retrieve_response = client.get(services_detail_url(diesel_service.id))
+        delete_again_response = client.delete(services_detail_url(diesel_service.id))
+
+        assert list_response.status_code == status.HTTP_200_OK
+        assert diesel_service.id not in returned_ids(list_response)
+        assert service.id in returned_ids(list_response)
+        assert retrieve_response.status_code == status.HTTP_404_NOT_FOUND
+        assert delete_again_response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_retrieve_without_authentication_fail(self, api_client, service):
         response = api_client.get(services_detail_url(service.id))

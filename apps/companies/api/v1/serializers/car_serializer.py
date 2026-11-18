@@ -98,12 +98,13 @@ class CarSerializer(serializers.ModelSerializer):
                     code="invalid",
                     errors=[],
                 )
-            existing_car = Car.objects.filter(code=attrs["code"])
+            # `all_objects`: a soft-deleted car still holds its unique code.
+            # Live duplicates are already rejected by the field's validator.
+            existing_car = Car.all_objects.filter(code=attrs["code"])
             if self.instance:
                 existing_car = existing_car.exclude(id=self.instance.id)
             if existing_car.exists():
-                # The unique `code` field rejects duplicates first.
-                raise CustomValidationError(  # pragma: no cover
+                raise CustomValidationError(
                     message="رقم السيارة موجود بالفعل",
                     code="invalid",
                     errors=[],

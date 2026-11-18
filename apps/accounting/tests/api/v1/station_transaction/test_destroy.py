@@ -4,8 +4,9 @@ import pytest
 from rest_framework import status
 
 from apps.accounting.models import StationKhaznaTransaction
+from apps.utilities.testing import assert_soft_deleted, listed_ids
 
-from .helpers import station_transaction_detail_url
+from .helpers import station_transaction_detail_url, station_transaction_list_url
 
 pytestmark = [pytest.mark.api, pytest.mark.django_db]
 
@@ -108,3 +109,31 @@ class TestStationKhaznaTransactionDestroy:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert StationKhaznaTransaction.objects.filter(id=tx.id).exists()
+
+
+class TestStationKhaznaTransactionSoftDelete:
+    @pytest.fixture(autouse=True)
+    def setup(self, auth_client, admin_user, station_transaction_factory):
+        self.client = auth_client(admin_user)
+        self.tx = station_transaction_factory()
+        response = self.client.delete(station_transaction_detail_url(self.tx.id))
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    def test_delete_keeps_row_with_deleted_at_success(self):
+        assert_soft_deleted(StationKhaznaTransaction, self.tx.id)
+
+    def test_deleted_transaction_hidden_from_list_success(self):
+        response = self.client.get(station_transaction_list_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert self.tx.id not in listed_ids(response)
+
+    def test_retrieve_deleted_transaction_not_found_fail(self):
+        response = self.client.get(station_transaction_detail_url(self.tx.id))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_delete_already_deleted_transaction_not_found_fail(self):
+        response = self.client.delete(station_transaction_detail_url(self.tx.id))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
